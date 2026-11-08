@@ -1,0 +1,46 @@
+# Secrets and per-machine Claude Code state (never commit)
+.credentials.json
+settings.json
+settings.local.json
+settings.stash.json
+*.env
+.env*
+
+# Claude Code runtime folders, in case someone copies a whole ~/.claude in
+projects/
+sessions/
+session-env/
+shell-snapshots/
+file-history/
+compact-snapshots/
+paste-cache/
+backups/
+cache/
+downloads/
+ide/
+state/
+history.jsonl
+policy-limits.json*
+remote-settings.json*
+mcp-needs-auth-cache.json
+.last-*
+skills/synced/
+
+# Generated mod type stubs
+.claude-plugin/types/
+
+# Junk
+*.bak
+*.bak-*
+*.orig
+*.tmp
+__pycache__/
+*.pyc
+node_modules/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Knowledge graph output
+graphify-out/

@@ -1,0 +1,18 @@
+{
+  "name": "shawpartners-claude-plugins",
+  "owner": {
+    "name": "Muhammed Ali Khan",
+    "email": "muhammedali.khan@shawandpartners.com.au"
+  },
+  "plugins": [
+    {
+      "name": "web-dotnet-toolkit",
+      "source": "./plugins/web-dotnet-toolkit",
+      "displayName": "Web & .NET Toolkit",
+      "description": "Angular, React, Next.js, NestJS, TypeScript, API design, CLI tooling, .NET/C# best practices, and Context7 live docs lookup.",
+      "version": "1.0.0",
+      "keywords": ["angular", "react", "nextjs", "nestjs", "typescript", "dotnet", "csharp", "api-design"],
+      "category": "development"
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+{
+  "env": {
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "300000",
+    "CLAUDE_CODE_PLUGIN_DIRS": "__CLAUDE_DIR__\\mods\\answer-buttons",
+    "CONTEXT7_API_KEY": "__CONTEXT7_API_KEY__"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(grep*)",
+      "Bash(cd*)",
+      "WebSearch",
+      "Read(~/.claude/skills/**)",
+      "Read(~/.claude/agents/**)",
+      "Read(~/.claude/agent-notes/**)",
+      "Read(~/.claude/memory/**)",
+      "Read(~/.claude/settings.json)"
+    ],
+    "deny": [
+      "Bash(dotnet nuget push*)",
+      "Bash(nuget push*)",
+      "Bash(tf checkin*)",
+      "Bash(tf vc checkin*)",
+      "PowerShell(dotnet nuget push*)",
+      "PowerShell(nuget push*)",
+      "PowerShell(tf checkin*)"
+    ],
+    "defaultMode": "auto",
+    "additionalDirectories": [
+      "__CLAUDE_DIR__"
+    ]
+  },
+  "model": "opus",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/allow-claude-config-read.sh",
+            "shell": "bash",
+            "timeout": 10,
+            "statusMessage": "Checking read path..."
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/db-guard.sh",
+            "shell": "bash",
+            "timeout": 10,
+            "statusMessage": "Checking SQL for destructive statements..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell|Monitor",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/shaw-library-guard.sh",
+            "shell": "bash",
+            "timeout": 10,
+            "onFailure": "block",
+            "statusMessage": "Checking for unreviewed Shaw library publishes..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/auto-verify-fix.sh",
+            "shell": "bash",
+            "timeout": 20,
+            "statusMessage": "Verifying edited file..."
+          },
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/loop-detection.sh",
+            "shell": "bash",
+            "timeout": 10,
+            "statusMessage": "Checking for repeated edits..."
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/pre-compact-snapshot.sh",
+            "shell": "bash",
+            "timeout": 20,
+            "statusMessage": "Snapshotting state before compaction..."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/post-compact-restore.sh",
+            "shell": "bash",
+            "timeout": 15,
+            "statusMessage": "Restoring pre-compaction state..."
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "understand-anything@understand-anything": true,
+    "vercel-plugin@vercel": true
+  },
+  "extraKnownMarketplaces": {
+    "fullstack-dev-skills": {
+      "source": {
+        "source": "github",
+        "repo": "jeffallan/claude-skills"
+      }
+    },
+    "understand-anything": {
+      "source": {
+        "source": "github",
+        "repo": "Egonex-AI/Understand-Anything"
+      }
+    }
+  },
+  "outputStyle": "ELI5",
+  "effortLevel": "high",
+  "theme": "dark"
+}

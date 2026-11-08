@@ -1,0 +1,592 @@
+---
+name: init-adlc-repo
+description: Initialise a repo for the ADLC (AI Development Life Cycle) workflow — scaffolds .claude/ settings, a session-orientation pointer file, a project-local run skill, skill variable bindings, the docs/ governed-doc structure, and a CLAUDE.md written from what the repo actually contains. Stack-agnostic; detects language/platform from whatever manifest is present. Invoke via /init-adlc-repo, or when the user asks to "set up this repo for Claude", "initialise the ADLC workflow", "scaffold .claude", or is starting a new repo that will use idea-triage → orchestrator-development-pattern → graphify.
+license: MIT
+metadata:
+  author: https://github.com/mak100186
+  version: "1.0.0"
+  domain: repo-bootstrap
+  triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project
+  role: platform-engineer
+  scope: pre-development
+  related-skills: idea-triage, orchestrator-development-pattern, graphify, find-skills
+---
+
+# Initialise ADLC Repo
+
+Bootstraps a git repository for the **idea-triage → orchestrator-development-pattern → graphify**
+workflow. Stack-agnostic: every stack-specific value is read from a manifest that actually exists in
+the repo, or asked for — never guessed.
+
+Replaces the deprecated `/init-claude-settings` slash command. Slash commands still work but are on
+Anthropic's deprecation path; skills are the supported extension surface, so this scaffold both *is*
+a skill and *generates* a skill rather than a command.
+
+---
+
+## What this creates
+
+| Path | Purpose |
+|---|---|
+| `.claude/settings.json` | Permissions, default mode, effort level, **hooks wired to `~/.claude/hooks`** |
+| `.mcp.json` | Project-scoped MCP servers (Playwright, Context7) — committed, team-shared |
+| `.claude/memory.md` | Session-orientation **pointer file** — no content of its own |
+| `.claude/skills/run-app/SKILL.md` | Project-local launch skill (not a slash command) |
+| `.claude/SKILLS.md` | Variable bindings consumed by the global skills |
+| `CLAUDE.md` | Operating guidance, written only from verified facts |
+| `docs/adr/` | ADR home (`.gitkeep`'d) |
+
+It does **not** create a diagram render pipeline — see *Diagram convention* below.
+
+---
+
+## Step 0 — Confirm scope
+
+Run `git rev-parse --is-inside-work-tree`. If this is not a git repo, stop and tell the user to run
+it inside one (offer `git init`).
+
+## Step 1 — Check existing state
+
+Check for `.claude/settings.json`, `.mcp.json`, `.claude/memory.md`, `.claude/SKILLS.md`,
+`.claude/skills/`, `.claude/commands/`, and `CLAUDE.md`.
+
+If any exist, **show the user what's there and ask before touching it.** Merge or append; never
+clobber unless they explicitly say to replace. For `CLAUDE.md` specifically, prefer suggesting
+improvements to the existing file over rewriting it.
+
+If `.claude/commands/run.md` exists from the old `/init-claude-settings` scaffold, offer to migrate
+it to `.claude/skills/run-app/SKILL.md` and delete the command. Likewise, if
+`.claude/scripts/render-diagrams.ps1` or `docs/diagrams/` exist from that scaffold, offer to remove
+them — see *Diagram convention*.
+
+## Step 2 — Detect the stack
+
+Look for signal files. Do not hardcode; check what is actually present:
+
+| Signal | Stack | Read for commands |
+|---|---|---|
+| `package.json` | Node/JS/TS | `scripts` — dev/start/test/lint/build |
+| `angular.json` | Angular | `scripts` first, else `ng` CLI; note the dev port and `proxy.conf.json` |
+| `requirements.txt` / `pyproject.toml` | Python | `pytest`, `ruff`, `black`, entry point |
+| `Cargo.toml` | Rust | `cargo run` / `cargo test` |
+| `go.mod` | Go | `go run .` / `go test ./...` |
+| `*.csproj` / `*.sln` | .NET | `TargetFramework`, `Properties/launchSettings.json` |
+| `Gemfile` | Ruby | `bin/rails server` |
+| `pom.xml` / `build.gradle*` | Java/Kotlin | wrapper scripts |
+| `Makefile` | any | **check first** — a `run`/`up`/`dev` target usually *is* the entrypoint |
+| `docker-compose.y*ml` | any | note whether Compose is driven directly or wrapped by a Makefile |
+
+**A `Makefile` or equivalent wrapper outranks the raw toolchain command.** If `make up` exists, that
+is the entrypoint, and `docker compose up` is the anti-pattern to warn about — record that in
+`CLAUDE.md` (see Step 7).
+
+**No match → ask the user.** A repo with no commits and no manifest cannot be detected from. Ask what
+the stack will be and what the run/test commands are; do not infer from the repo name.
+
+Also detect whether the repo is **multi-toolchain** (e.g. an SPA + an API). If so, every quality
+claim must cover both halves — a green run on one says nothing about the other. Record that.
+
+## Step 3 — `.claude/settings.json`
+
+Write, if absent, starting from this base (permissions + identity fields — the `hooks` block is
+assembled separately below, never left as a hardcoded empty stub):
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Bash(*ls*)",
+      "Bash(*cat*)",
+      "Bash(*cd*)",
+      "Bash(*mkdir*)",
+      "Bash(*mv*)",
+      "Bash(*cp*)",
+      "Bash(*echo*)",
+      "Bash(*curl * http://127.0.0.1*)",
+      "Bash(*curl * http://localhost*)",
+      "Bash(*git log*)",
+      "Bash(*git status*)",
+      "Bash(*git diff*)",
+      "Bash(*git add*)",
+      "Bash(*git commit*)",
+      "Bash(*git branch*)"
+    ],
+    "deny": [
+      "Bash(*git push --force*)",
+      "Bash(*git push -f *)",
+      "Bash(*git reset --hard *)",
+      "Bash(*git stash*)",
+      "Bash(*git checkout*)",
+      "Bash(*git switch -c*)",
+      "Bash(*git switch -C*)",
+      "Bash(*git switch --create*)",
+      "Bash(*git switch --force-create*)",
+      "Bash(*rm -rf *)"
+    ],
+    "defaultMode": "auto",
+    "additionalDirectories": []
+  },
+  "effortLevel": "high"
+}
+```
+
+Then append allow-patterns **only** for tooling the detected stack actually uses — e.g.
+`Bash(*npm*)`/`Bash(*node*)` for Node, `Bash(*dotnet*)` for .NET, `Bash(*cargo*)` for Rust,
+`Bash(*make*)` for a Makefile-driven repo. Validate the file parses as JSON before moving on.
+
+**`git stash`, `git checkout` and branch-creating `git switch` (`-c`, `-C`, `--create`,
+`--force-create`) are denied, deliberately — do not "fix" this by moving any of them back to
+`allow`.** The first two discard uncommitted work silently, and a sub-agent has no way to signal
+that it did so: the only trace is a `git status` that comes back cleaner than it should. This is
+not hypothetical. On 2026-09-11 an orchestrated Developer sub-agent finished a bug fix, a Reviewer
+executed its regression test and confirmed it passed, and one of them then ran a bare `git stash`
+— most plausibly to demonstrate the new test failed against the pre-fix code — and never restored
+it. The entire fix vanished and had to be redone.
+
+`git switch -c` is denied for a related reason: it silently relocates the working tree onto a
+branch the human never asked for, carrying their uncommitted changes with it, so the next commit,
+push or PR lands somewhere they did not choose. Creating a branch is the user's decision — an
+agent asks for it rather than taking it. Plain `git switch <existing-branch>` is not in the deny
+list only because `git checkout` already covers moving between existing branches; do not read its
+absence as permission to add a switch-based workaround.
+
+A prompt-level prohibition does not hold here, which is why this belongs in `deny`. A sub-agent is
+a cold spawn that reasons independently, and "temporarily revert the file to prove the test is
+coupled to the fix" is a reasonable-sounding thing for a careful agent to invent unprompted. The
+deny list is the only layer that holds regardless of what any individual agent concludes.
+
+The supported alternative, worth stating wherever agents are told to verify a regression test:
+copy the file to the session scratchpad, edit the copy, and run the assertion against both. Every
+read-only git command — `git status`, `git diff`, `git log`, `git rev-parse` — stays allowed, and
+verification should lean on those.
+
+### Step 3a — Wire the `hooks` block from `~/.claude/hooks`
+
+**This is not optional and must never be left as an empty stub.** A generated project whose
+`settings.json` has empty `PreToolUse`/`PostToolUse`/`Stop`/`Notification` arrays silently runs
+none of the org's hook scripts — nothing about the file *looks* broken, so this only surfaces when
+someone later asks why loop-detection or db-guard never fired. Wire it at scaffold time, every time.
+
+1. **Resolve the global hooks directory.** It lives at `~/.claude/hooks` — this may be a plain
+   directory or a symlink to an org-managed share (e.g. `\\<server>\Claude\Prod\hooks`); either
+   way, list its contents. If the directory doesn't exist or is empty, skip this section entirely,
+   leave `hooks` unset (or `{}`) in `settings.json`, and say so plainly in the Step 9 summary —
+   do not fabricate hook entries for scripts that aren't there.
+
+2. **For each `*.sh` (or `*.ps1`/`*.py`, on a stack where that's the convention) script found**,
+   read its leading comment header. The convention in use is a first comment line shaped like:
+
+   ```
+   # <script-name> — <HookEvent> hook (matcher: <matcher>)
+   ```
+
+   e.g. `# loop-detection.sh — PostToolUse hook (matcher: Edit|Write)` or
+   `# pre-compact-snapshot.sh — PreCompact hook`. Extract `<HookEvent>` and `<matcher>` from that
+   line. If no matcher is given, use `""` (empty string) — per current Claude Code hooks docs, an
+   empty or omitted matcher means "match all" for that event; don't substitute `"*"` for this even
+   though it appears to also work, since it isn't the documented form. **Never guess an event or
+   matcher for a script whose header doesn't declare one** — skip it, list it under "needs manual
+   wiring" in the Step 9 summary instead, since a wrong matcher (e.g. gating a security hook on the
+   wrong tool) is worse than an unwired one.
+
+3. **Group scripts by `(event, matcher)`** and emit one entry per group, each `command` pointing at
+   the script's absolute path in the *global* hooks directory (not copied into the project — so an
+   org-side update to the script reaches every scaffolded project automatically):
+
+   ```json
+   "hooks": {
+     "PostToolUse": [
+       {
+         "matcher": "Edit|Write",
+         "hooks": [
+           { "type": "command", "command": "bash \"<resolved-hooks-dir>/loop-detection.sh\"" },
+           { "type": "command", "command": "bash \"<resolved-hooks-dir>/auto-verify-fix.sh\"" }
+         ]
+       }
+     ],
+     "PreToolUse": [
+       {
+         "matcher": "mcp__.*",
+         "hooks": [
+           { "type": "command", "command": "bash \"<resolved-hooks-dir>/db-guard.sh\"" }
+         ]
+       }
+     ],
+     "PreCompact": [
+       {
+         "matcher": "",
+         "hooks": [
+           { "type": "command", "command": "bash \"<resolved-hooks-dir>/pre-compact-snapshot.sh\"" }
+         ]
+       }
+     ],
+     "SessionStart": [
+       {
+         "matcher": "compact",
+         "hooks": [
+           { "type": "command", "command": "bash \"<resolved-hooks-dir>/post-compact-restore.sh\"" }
+         ]
+       }
+     ]
+   }
+   ```
+
+   Use the resolved absolute path (forward slashes, quoted) — on Windows this looks like
+   `bash "C:/Users/<user>/.claude/hooks/db-guard.sh"`. Every event a hook actually declared gets
+   its own array; do not add `Stop`/`Notification` keys unless a discovered hook declares them.
+
+4. Validate the resulting `settings.json` still parses as JSON, then report in Step 9 exactly which
+   hook scripts were wired to which event/matcher, and which (if any) were skipped and why.
+
+## Step 3b — `.mcp.json`: Playwright + Context7
+
+Write, if `.mcp.json` is absent at the repo root:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${CONTEXT7_API_KEY}"
+      }
+    }
+  }
+}
+```
+
+This file is meant to be **committed** — that's the point of using project-scoped `.mcp.json`
+instead of a per-machine entry in `~/.claude.json` (which is keyed by absolute project path and
+doesn't travel with the repo). Never write a real Context7 API key into this file: use the
+`${CONTEXT7_API_KEY}` environment-variable reference shown above, and in the Step 9 summary tell
+the user to set `CONTEXT7_API_KEY` in their own shell/OS environment (get a key from
+https://context7.com). Playwright needs no secret and works as-is.
+
+Mention in the summary that Claude Code will show a one-time trust prompt for the project's MCP
+servers the first time the repo is opened — that's expected, not a sign anything is misconfigured.
+
+If `.mcp.json` already exists, show the user its current `mcpServers` keys and ask before adding or
+overwriting `playwright`/`context7` entries — never clobber an existing server config silently.
+
+## Step 4 — `.claude/memory.md`
+
+This file is deliberately a **pointer, not a store**. Once idea-triage and
+orchestrator-development-pattern are wired in, the PRD, Architecture doc, ADRs, PMBook, and handoff
+doc are each the one governed home for their kind of information. Duplicating decisions, architecture,
+or status here would give the repo two versions of the same fact with no way to tell which is current
+— exactly the failure those docs exist to prevent.
+
+So it holds only static identity (which never goes stale) and a routing table:
+
+~~~markdown
+# Project — Session Orientation
+
+> Read this first in a new session, then follow the pointers below to
+> the actual source of truth. This file intentionally holds no
+> decisions, architecture, or status of its own — update the linked doc,
+> never this file, when any of that changes.
+
+---
+
+## Identity
+
+- Name: <TODO>
+- Owner: <TODO>
+- Type: <TODO>
+
+---
+
+## Where to Look
+
+| Topic | Source of truth |
+|---|---|
+| Problem, goals, scope | `docs/prd.md` |
+| System design, components, tech decisions | `docs/architecture.md` |
+| Why a specific technical decision was made | `docs/adr/` |
+| Feature backlog, phases, status | `docs/project-management.md` |
+| Current implementation state, what's next | `docs/handoff.md` |
+~~~
+
+Leave the `<TODO>`s. Never invent identity details.
+
+## Step 5 — `docs/` scaffolding
+
+Create `docs/adr/` with a `.gitkeep` so the convention exists (and survives a clone) before the first
+ADR is written. idea-triage creates `prd.md`, `architecture.md`, and `project-management.md` itself;
+the orchestrator creates `handoff.md`. Do not stub those — an empty governed doc reads as "this was
+filled in" and is worse than an absent one.
+
+**Do not create `docs/diagrams/`.** See *Diagram convention*.
+
+## Step 6 — `.claude/skills/run-app/SKILL.md`
+
+A **project-local skill**, not a slash command. The built-in `run` skill explicitly looks for a
+project skill covering app launch before falling back to its generic per-platform patterns, so this
+is the intended customization point.
+
+This is not redundant with the orchestrator: its Integration Agent runs format/lint/test/audit as
+automated gates but never starts an interactive dev server for a human to look at.
+
+Write it with this frontmatter, then a body tailored to the detected stack:
+
+```yaml
+---
+name: run-app
+description: Launch this project's app locally and verify it comes up. Use when asked to run, start, serve, or smoke-check the app, or to confirm a change works in the real app rather than only in tests.
+---
+```
+
+The body must cover:
+
+1. **Detect before starting** — re-derive the entrypoint from the repo rather than trusting the paths
+   this scaffold recorded; layouts move. If a `Makefile`/wrapper is the entrypoint, say so and name
+   the raw command it replaces as the thing *not* to run.
+2. **Prerequisites** — toolchain versions, installed dependencies, and any local service the app
+   needs (database, cache, model server, upstream API). Warn before starting, not mid-boot.
+3. **Start order** — for a multi-process app, start the backend first; a frontend dev-server proxy
+   fails its first requests if the API isn't listening yet.
+4. **Verify, don't assume** — `curl` the actual URLs. "Process still alive" is not "app came up";
+   a frontend dev server that fails to compile never binds at all.
+5. **Report** — the URLs, plus startup warnings that look benign but aren't: compile warnings,
+   pending-migration notices, CORS/proxy errors.
+6. **A fast-iteration path**, if the repo has one. If the normal entrypoint rebuilds a container
+   image on every change, find and document the bare/hot-reload alternative, which ports change, and
+   what to stop first so two processes don't fight over the same state. This is one of the
+   highest-value things the file can carry.
+
+Guardrails to include: don't scaffold a missing half unasked; suggest the install command rather than
+assuming one; never kill an existing listener to free a port; never apply database migrations as part
+of "starting the app".
+
+## Step 7 — `CLAUDE.md`
+
+Only write this if absent. If present, suggest improvements instead.
+
+### The rule that matters
+
+**Every command and every architectural claim in this file must come from a file you actually read,
+or from the user. Nothing inferred, nothing typical-for-this-stack.** A fabricated build command
+costs more than an absent one: an absent command gets asked about, a wrong one gets run.
+
+If the repo is pre-code, say so plainly and keep the file short. A CLAUDE.md that honestly says
+"no code yet, commands unverifiable" is a correct CLAUDE.md.
+
+### Required prefix
+
+Begin with exactly:
+
+```
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+```
+
+### Shape
+
+~~~markdown
+## Project status
+
+<One or two sentences: what this is, the stack, the deployment shape.> Phases
+<N-M> (<what they covered>) are complete; Phase <N> (<scope>) has not started.
+See `docs/handoff.md` for the current build state and what's next, and
+`docs/project-management.md` for the full feature backlog.
+
+## Starting the stack — always use `<entrypoint>`, not `<raw command>`
+
+```bash
+<entrypoint>          # the single starting point for operators and Claude Code sessions
+<status command>      # check what's currently running
+<stop command>        # stop it
+<logs command>        # tail logs
+```
+
+<What the entrypoint actually does that the raw command doesn't — dependency checks,
+service startup, model loading. Point at the setup doc for one-time prerequisites
+and at the ADR explaining any non-obvious infrastructure choice.>
+
+<Any platform-specific requirement — a required binary, a path assumption, a shell
+the recipes force.>
+
+**<The fast-iteration path, if one exists>** — when the normal entrypoint is too slow
+for a tight edit-verify loop, what to run instead, which ports change, and what to
+stop first so two processes don't fight over the same state.
+
+## Build / test commands
+
+<Per toolchain, in its own fenced block with the working directory named.>
+
+## Architecture
+
+<One paragraph of the big picture — the shape that requires reading several files to
+work out. Name the pattern and the notable technology choice, especially where it
+differs from the default a reader would assume.> Full component breakdown, technology
+decisions, and rationale live in `docs/architecture.md` and `docs/adr/` — read those
+before a structural or technology change, and add or amend an ADR when you make one.
+
+Governed docs (`docs/prd.md`, `docs/architecture.md`, `docs/project-management.md`,
+`docs/adr/`, `docs/handoff.md`) are specs the code must satisfy, not side artifacts —
+keep them in sync with any structural change in the same session, not as a follow-up.
+~~~
+
+### What to leave out
+
+- Anything discoverable in seconds — full file trees, every component, obvious conventions.
+- Generic engineering advice ("write tests", "handle errors", "don't commit secrets").
+- Invented sections — "Common Development Tasks", "Tips", "Support" — unless a file you read says it.
+- **The architecture itself.** One paragraph plus a pointer to `docs/architecture.md`. A full
+  description here becomes a second, competing source of truth that drifts silently.
+
+### What earns its place
+
+Operational facts that cost a session's time to rediscover: the one true entrypoint and the
+plausible-looking wrong one; the slow-path/fast-path split; a tool whose exit code lies; a
+platform-specific requirement; which of two processes must start first.
+
+Also fold in the important parts of any existing `README.md`, `.cursorrules`, `.cursor/rules/`, or
+`.github/copilot-instructions.md`.
+
+## Step 8 — Wire the skills: `.claude/SKILLS.md`
+
+Verify each skill exists at `~/.claude/skills/<name>/SKILL.md` before wiring it. Skip and report any
+that aren't installed.
+
+~~~markdown
+# Available Skills
+
+This file binds project-specific variable values to skills that accept parameters.
+Claude reads this file to know which skills are active and what paths to inject.
+
+**Stack:** <detected stack>
+
+---
+
+## Orchestrator Development Pattern
+
+Skill: `orchestrator-development-pattern` (located at `~/.claude/skills/orchestrator-development-pattern/SKILL.md`)
+Trigger: `/orchestrator-development-pattern` or when the user says "start development", "implement", "build".
+
+The orchestrator detects the platform at runtime.
+
+values:
+  project-management-doc: "./docs/project-management.md"
+  handoff-doc: "./docs/handoff.md"
+  source-code-directory: "./"
+  revision-file: "./REVISION.md"
+  changelog-file: "./CHANGELOG.md"
+  snyk-command: "<dependency audit command(s) for the detected stack>"
+  test-runbook-location: "./docs/testing/<FEATURE-ID>-<short-name>.md"
+  architecture-doc: "./docs/architecture.md"
+  test-cases-doc: "./docs/test-cases.md"
+  adr-directory: "./docs/adr"
+
+---
+
+## Idea Triage
+
+Skill: `idea-triage` (located at `~/.claude/skills/idea-triage/SKILL.md`)
+Trigger: `/idea-triage` or when the user presents a new idea before any code exists.
+
+values:
+  docs-directory: "./docs"
+  prd-file: "./docs/prd.md"
+  architecture-file: "./docs/architecture.md"
+  project-management-doc: "./docs/project-management.md"
+  handoff-doc: "./docs/handoff.md"
+  adr-directory: "./docs/adr"
+
+---
+
+## Graph-Assisted Context
+
+Skill: `graphify` (located at `~/.claude/skills/graphify/SKILL.md`)
+Trigger: `/graphify` or `/graphify query "<topic>"` or `/graphify --update`
+
+Use graphify before starting any feature that touches multiple modules.
+The graph report lives at `graphify-out/GRAPH_REPORT.md` after the first run.
+
+---
+
+## Find Skills
+
+Skill: `find-skills` (located at `~/.claude/skills/find-skills/SKILL.md`)
+Trigger: `/find-skills` or `/find-skills <query>`
+
+---
+
+## Shared-Path Invariant
+
+idea-triage's `architecture-file` and the orchestrator's `architecture-doc` are the
+**same physical file** — idea-triage writes it, the orchestrator reads it — but each
+skill names its own variable so either stays usable without the other installed.
+The same applies to `project-management-doc`, `handoff-doc`, and `adr-directory`.
+If any of these paths changes, change it in **both** blocks, or the two skills will
+silently disagree about which file is authoritative.
+~~~
+
+Fill `snyk-command` from the detected stack (`npm audit`, `pip-audit`, `cargo audit`,
+`dotnet list package --vulnerable`, …). For a multi-toolchain repo, bind **all** of them, and record
+any that report findings without a non-zero exit code — `dotnet list package --vulnerable` is the
+common offender, and gating on its exit code makes that half of the audit decorative.
+
+## Step 9 — Summarize
+
+Report what was created, what was skipped and why, and any `<TODO>` left for the user. Remind them
+these are project conventions meant to be committed, not local config. Explicitly call out:
+
+- Which hook scripts were wired (event + matcher for each) and which, if any, were skipped because
+  their header didn't declare an event/matcher, or because `~/.claude/hooks` was empty/missing.
+- That `.mcp.json` was created with `playwright` and `context7`, and that `CONTEXT7_API_KEY` needs
+  to be set in the user's environment before the Context7 server will authenticate.
+
+---
+
+## Diagram convention
+
+Diagrams are **fenced `mermaid` code blocks written directly in the governed docs.** GitHub, GitLab,
+Azure DevOps, and VS Code all render them natively.
+
+This scaffold deliberately creates **no** `docs/diagrams/` directories and **no** render script. The
+earlier `.mmd` → PNG pipeline required a global `mmdc` (`@mermaid-js/mermaid-cli`) install plus a
+headless Chromium via Puppeteer — a heavy dependency, an extra build step, and a stale-image failure
+mode where a doc cites a PNG that no longer matches its source. Inlining removes all three: the
+source *is* the render, so it cannot go stale.
+
+Consequently `diagrams-mmd-dir`, `diagrams-img-dir`, and `diagram-render-script` are **not** bound in
+`SKILLS.md`. The orchestrator's Documentation Drift Check treats unset diagram paths as "skip the
+diagram check and note the gap", so leaving them unbound is the supported configuration.
+
+Diagram *type* selection still matters and is unchanged — that guidance lives in idea-triage §2.3.
+
+---
+
+## Guardrails
+
+- Never overwrite an existing `.claude/` file or `CLAUDE.md` without explicit confirmation.
+- Never invent identity details in `memory.md` — leave `<TODO>`s.
+- Never add a decision, architecture, status, or open-question entry to `memory.md`. It is a pointer
+  file. That content belongs in the PRD / Architecture / ADRs / PMBook / handoff doc; putting it in
+  both places creates two versions of one fact with no way to tell which is current.
+- Never add a permission allow-pattern for tooling the repo doesn't use.
+- Never write a build, test, or run command into `CLAUDE.md` that you did not read out of a manifest
+  or receive from the user.
+- Never describe the architecture in `CLAUDE.md` beyond one orienting paragraph — it belongs in
+  `docs/architecture.md`.
+- Never create a `docs/diagrams/` tree or a render script.
+- Generate a project **skill**, not a slash command, for app launch.
+- Never leave `settings.json`'s `hooks` block as a hardcoded empty stub — always attempt discovery
+  against `~/.claude/hooks` first (Step 3a), and only leave it unset if that directory is genuinely
+  empty or absent.
+- Never fabricate a hook's event or matcher when its header comment doesn't declare one, and never
+  copy a hook script's contents into the project — always reference the global path so org-side
+  updates to the script keep reaching the project automatically.
+- Never write a real Context7 API key (or any other secret) into `.mcp.json` — it's a committed
+  file. Use `${VAR}` environment-variable expansion and tell the user to set the variable locally.
+- This skill touches `.claude/`, `.mcp.json`, `CLAUDE.md`, and `docs/adr/`. It does not modify
+  application code.

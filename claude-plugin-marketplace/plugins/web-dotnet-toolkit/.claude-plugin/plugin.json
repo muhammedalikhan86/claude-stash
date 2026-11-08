@@ -1,0 +1,10 @@
+{
+  "name": "web-dotnet-toolkit",
+  "description": "Front-end and .NET/C# development skills: Angular, React, Next.js, NestJS, TypeScript, API design, CLI tooling, .NET/C# best practices, and Context7 live docs lookup.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Muhammed Ali Khan",
+    "email": "muhammedali.khan@shawandpartners.com.au"
+  },
+  "license": "UNLICENSED"
+}

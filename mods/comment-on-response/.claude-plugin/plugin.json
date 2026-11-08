@@ -1,0 +1,1 @@
+{ "name": "comment-on-response", "version": "0.1.0", "description": "Select text in a response, run /comment, add a note; quote and note are appended to the prompt.", "types": "./types/index.d.ts" }

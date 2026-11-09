@@ -69,6 +69,21 @@ whole gate.
 | 33 | Edit Lists: the Orchestrator hands each doc Finalizer `<file> — <anchor> — <change>` lines (facts, not prose); the Finalizer greps the anchor, reads only around it and edits. A PMBook Finalizer had taken 20 minutes reading whole docs | SKILL.md Phase 3; templates.md Finalizer prompt; orchestrated-finalizer.md |
 | 34 | Doc Finalizers on `haiku`; the PMBook Finalizer goes to `sonnet` only in a run that needs the Version Pointer Sweep | SKILL.md Model Assignment, Steps 3.2–3.4 |
 
-Open: graphify keeps one scan root per output folder, so "one run per root, the later ones with
-`--update`" drops the earlier root (the shell graph in shaw-plugin-dashboard holds only
-`services/Shell.WebAPI`). Fix pending a layout decision: one graph folder per code root.
+Open: the `/graphify` skill pipeline keeps one scan root per output folder (`.graphify_root`), so
+"one run per root, the later ones with `--update`" risks dropping the earlier root; a Finalizer worked
+around it on 2026-11-06 by rebuilding both roots in full. The shell graph in shaw-plugin-dashboard is
+whole (887 frontend and 524 backend nodes); `.graphify_root` only names the last root built. The repos'
+own `scripts/graph.ps1` uses the `graphify update` CLI instead, which merges roots safely: tested
+2026-11-09 on shell (graphify 0.9.104) — 938 nodes after the frontend, 1,606 after both, and a later
+frontend-only update kept the backend (1,596). Fix pending a decision.
+
+## Graphify route, 2026-11-09 (plugin orchestrator 1.6.0 → 1.7.0)
+
+| # | Change | File |
+|---|---|---|
+| 35 | The Graphify Finalizer runs the repo's own `scripts/graph.ps1 -Component <name>` when it exists (the `graphify update` CLI: no LLM, no API cost, safe multi-root merge, same as `make graph-<component>`). No script and several roots: the same CLI per root with an absolute `GRAPHIFY_OUT`. The `/graphify` skill only for a single root. Never the skill once per root | SKILL.md Step 3.1; orchestrated-finalizer.md |
+| 36 | `scripts/graph.ps1` now stamps `+ uncommitted working tree` when the roots are dirty, matching the staleness rule. Committed in shaw-plugin-dashboard on branch `graph-stamp-uncommitted` (8b134692), not merged | shaw-plugin-dashboard `scripts/graph.ps1` |
+
+The Open note above is resolved for the plugin orchestrator by row 35. The non-plugin
+`orchestrator-development-pattern` Step 3.1 still says "once per entry, later ones `--update`"; no
+non-plugin repo lists more than one folder today, and the Finalizer now refuses that pattern.

@@ -62,14 +62,23 @@ orchestrator has already decided what changes; your job is to find each spot and
 
 ### Graphify
 
-Invoke the `graphify` skill via the `Skill` tool, scoped to the code paths you were given — never the
-project root, which would also pull docs/ADR/PMBook/handoff content into what must stay a
-code-structure graph.
+**Follow the route your Task-Specific Inputs name.** Some orchestrators name one of three:
 
-**Which paths.** Use `graphify-directories` when the Task-Specific Inputs supply it, falling back to
-`source-code-directory` when they do not. When it names more than one root, invoke once per root: the
-first as a fresh run, each subsequent one with `--update`, so they merge into a single graph rather
-than each writing its own.
+1. **A repo graph script** (e.g. `scripts/graph.ps1 -Component <name>`): run exactly the command given,
+   from the repo root. It builds and stamps the report itself; do not run graphify or stamp separately.
+   Check it exited 0 and that the report's first lines carry the stamp, then report the files.
+2. **The graphify command line, per root:** for each root in order, run `graphify update <root>` with
+   `GRAPHIFY_OUT` set to the absolute path of the output directory. Then stamp the report (below).
+3. **The `graphify` skill:** the default when no route is named — see below.
+
+Whatever the route, never scan the project root, which would also pull docs/ADR/PMBook/handoff content
+into what must stay a code-structure graph.
+
+**The skill route.** Invoke the `graphify` skill via the `Skill` tool, scoped to the code paths you were
+given. Use `graphify-directories` when the Task-Specific Inputs supply it, falling back to
+`source-code-directory` when they do not. **When it names more than one root, do not invoke the skill
+once per root** — the skill keeps one scan root per output folder, so a later `--update` can drop an
+earlier root. Use route 2 for several roots instead, and say so under Notes.
 
 **Where the output goes.** Use the output directory named in your Task-Specific Inputs (`graphify-out`,
 where supplied); default to `graphify-out/` at the project root when it is not. Do not hardcode a

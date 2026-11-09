@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.6.0"
+  version: "1.7.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -724,14 +724,32 @@ e.g. every change sits in a shared library or test folder outside all roots, whi
 does not scan. Then spawn no Graphify Finalizer, print `Graphify: skipped — <reason>`, and pass the same
 line to the Handoff Finalizer and the close-out summary.
 
-- **Task-Specific Inputs:** the component name; `graphify-directories` = this component's `code` roots;
-  output directory `graphify-out/<component>/`; whether `graph.json` already exists there (first run vs
-  `--update`).
+**How the graph is built — pick the first that applies, and name it in the Task-Specific Inputs:**
+
+1. **The repo's own graph script.** If `scripts/graph.ps1` exists at the repo root, the Finalizer runs
+   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1 -Component <component>` from
+   the repo root and nothing else — the script builds the graph and stamps the report. It uses the
+   `graphify update` command line, which re-extracts code with no LLM and no API cost, and merges several
+   roots into one graph safely (tested 2026-11-09: a later update of one root kept the other's nodes).
+   It is also what developers run as `make graph-<component>`, so the orchestrator and the team build
+   the graph the same way.
+2. **No script, several roots → the same command line, run directly.** For each root in order:
+   `graphify update <root>` with the environment variable `GRAPHIFY_OUT` set to the **absolute** path of
+   `graphify-out/<component>/` (a relative value resolves against the scanned folder and scatters stray
+   output folders). Then the Finalizer stamps the report itself. **Never the `/graphify` skill once per
+   root:** the skill keeps one scan root per output folder, so its "later ones with `--update`" can drop
+   the earlier root.
+3. **No script, one root → the `/graphify` skill**, scoped to that root, `--update` when `graph.json`
+   already exists in the output folder. The Finalizer stamps the report.
+
+- **Task-Specific Inputs:** the component name; which of the three routes, with the exact command for 1;
+  `graphify-directories` = this component's `code` roots; output directory `graphify-out/<component>/`;
+  for route 3, whether `graph.json` already exists there.
 - One graph per component, never the project root (planning docs would pollute a code-structure graph,
-  and a shared graph file can't be merged across branches). Several roots → one run per root, the later
-  ones with `--update`.
-- The Finalizer stamps `GRAPH_REPORT.md` with the component, `git rev-parse HEAD` and the roots, and
-  reports only `GRAPH_REPORT.md` as committable. Everything else in that folder is gitignored.
+  and a shared graph file can't be merged across branches).
+- `GRAPH_REPORT.md` is stamped with the component, `git rev-parse HEAD` and the roots (by the script on
+  route 1, by the Finalizer otherwise). The Finalizer reports only `GRAPH_REPORT.md` as committable.
+  Everything else in that folder is gitignored.
 - The graph is built before the commit, so the stamp also says `+ uncommitted working tree`: it describes
   the tree as it will be committed, not the stamped commit.
 - Before relying on a report you did not build, compare its stamped commit with `HEAD`: if the

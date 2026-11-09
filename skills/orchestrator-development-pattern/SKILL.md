@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.10.0"
+  version: "2.11.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -823,8 +823,10 @@ manual `/graphify` run over the project root, not this automatic one.
 1. **The repo's own graph script.** If the repo has one (e.g. `scripts/graph.ps1`, or a `make graph`
    target), name its exact command and the Finalizer runs that and nothing else — the script builds and
    stamps the report. That keeps the pipeline and the team building the graph the same way.
-2. **No script, more than one path → the graphify command line, per path.** For each path in order:
-   `graphify update <path>` with the environment variable `GRAPHIFY_OUT` set to the **absolute** path of
+2. **No script, more than one path → the graphify command line, per path.** For each changed path in
+   order (every path when `graphify-out/graph.json` does not exist yet; an unchanged path's nodes stay in
+   the graph): `graphify update <path>` with the environment variable `GRAPHIFY_OUT` set to the
+   **absolute** path of
    `graphify-out/` (a relative value resolves against the scanned folder and scatters stray output
    folders). It re-extracts code with no LLM and merges each path into the same graph — tested
    2026-11-09: a later update of one path kept the other's nodes. **Never the `/graphify` skill once per
@@ -833,8 +835,12 @@ manual `/graphify` run over the project root, not this automatic one.
 3. **No script, one path → the `/graphify` skill**, scoped to that path, with `--update` when
    `graphify-out/graph.json` already exists from a prior Finalization.
 
-Skip only for docs-only changes with no code touched; if skipping, state why explicitly instead of
-spawning the Finalizer for this Task. **Never spawned at all for a Spike** — see **Spike Flow**'s single
+**Runs only when code in the graphed paths changed.** Before Phase 3, for each path in
+`graphify-directories` (or `source-code-directory`) run `git status --porcelain -- <path>`. The run is
+not committed yet, so this shows exactly what it changed there. If every path prints nothing, spawn no
+Finalizer for this Task and print `Graphify: skipped — no change in <paths>`. Otherwise pass the
+changed paths in the Task-Specific Inputs: route 2 runs only those when `graphify-out/graph.json`
+already exists. **Never spawned at all for a Spike** — see **Spike Flow**'s single
 Spike Log Task. **For a P0 fast lane, this runs before Phase 2 Integration has validated the item** — an
 accepted, named exception to the normal "NEVER run graphify before Integration passes" rule (see
 Enforcement Rules); the fast lane's whole point is shipping before that gate runs.

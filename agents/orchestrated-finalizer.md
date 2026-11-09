@@ -68,7 +68,9 @@ orchestrator has already decided what changes; your job is to find each spot and
    from the repo root. It builds and stamps the report itself; do not run graphify or stamp separately.
    Check it exited 0 and that the report's first lines carry the stamp, then report the files.
 2. **The graphify command line, per root:** for each root in order, run `graphify update <root>` with
-   `GRAPHIFY_OUT` set to the absolute path of the output directory. Then stamp the report (below).
+   `GRAPHIFY_OUT` set to the absolute path of the output directory. When the inputs give a list of
+   changed roots and `graph.json` already exists, run only those roots: the others' nodes stay in the
+   graph. Otherwise run every root. Then stamp the report (below), listing every root.
 3. **The `graphify` skill:** the default when no route is named — see below.
 
 Whatever the route, never scan the project root, which would also pull docs/ADR/PMBook/handoff content

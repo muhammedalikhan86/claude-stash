@@ -48,3 +48,16 @@ Integration Diff Guard; the cp1252 caution; the batched Manual Verification.
 | # | Finding | Fix | File | Status |
 |---|---|---|---|---|
 | 28 | `orchestrated-integration` and `orchestrated-reviewer` dropped out of the session's agent list. Their `description:` is an unquoted YAML scalar holding `: ` ("rule: never", "audit: this"), which a strict YAML parser rejects; `orchestrated-finalizer` had the same ("release: updating"). | Each `: ` in the three descriptions became ` — `. All seven agent files now parse with js-yaml. | agents/orchestrated-integration.md, orchestrated-reviewer.md, orchestrated-finalizer.md | Done |
+
+## Integration speed-up, 2026-11-09 (plugin orchestrator 1.4.0 → 1.5.0)
+
+Evidence from the metrics logs: Phase 2 often ran as long as Phase 1 (1h06m vs 1h13m; 34m vs 29m), and
+most first-pass Reviewer-Integration FAILs were report or doc bookkeeping, not code — each one re-ran the
+whole gate.
+
+| # | Change | File |
+|---|---|---|
+| 29 | Doc-only retry: when every R-I issue is about docs or the report, the Integration retry fixes only those, carries the gate results forward and re-runs nothing; resume the same spawn where possible. The Orchestrator snapshots the tree before and after and hands R-I the list of changed files | SKILL.md Step 2.3; templates.md; orchestrated-integration.md; orchestrated-reviewer-integration.md |
+| 30 | Integration Self-Check before returning: numbers, scope, a drift line per doc path, every drift finding placed, skips recorded twice, known-red facts, every fix listed | orchestrated-integration.md; templates.md; SKILL.md Step 2.1 |
+| 31 | Reviewer-Integration skipped on a clean first pass (no fixes, tree unchanged against a snapshot, gate ran at the set scope, logs agree, self-check all ticked, nothing flaky or unresolvable, known-reds look right). Never skipped on a retry | SKILL.md Step 2.2, Enforcement, Telemetry, Output; mermaid |
+| 32 | Gate output goes to log files; agents read only summaries and failure blocks; R-I checks numbers against the logs | orchestrated-integration.md; orchestrated-reviewer-integration.md; templates.md; SKILL.md Step 2.1 |

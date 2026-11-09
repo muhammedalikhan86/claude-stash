@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.4.0"
+  version: "1.5.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -168,8 +168,9 @@ Edit this table to change a model; nothing else needs to change. Values are tier
   ▼
 [MANUAL VERIFICATION GATE] all queued Bugs in one message → "verified" / still broken → retry loop
   ▼
-[INTEGRATION] Test scope decided (component or full) → [INTEGRATION AGENT] diff guard, gate, fixes,
-              audit, E2E, drift → [REVIEWER-INTEGRATION] → retry ≤3 → Divide-and-Conquer → escalate
+[INTEGRATION] Test scope decided (component or full) → [INTEGRATION AGENT] diff guard, gate (output to
+              log files), fixes, audit, E2E, drift, self-check → [REVIEWER-INTEGRATION, skipped on a
+              clean first pass] → retry ≤3 (doc-only retry: no gate re-run) → Divide-and-Conquer → escalate
   ▼
 [FINALIZE] 4 parallel Finalizers: Graphify | PMBook (+sweep) | Handoff | Revision+Changelog+Runbook
   ▼
@@ -365,8 +366,8 @@ Estimated spawns: best <B> · typical ~<T> · worst <W>
 Type STOP at any time to pause the orchestrator.
 ```
 
-**Estimated spawns:** N items. Best = N × 2 (Developer + Reviewer) + 2 (Integration, Reviewer-Integration)
-+ 4 (Finalizers), plus one Design Gate spawn per UI item whose artboard needs an edit. Typical = Best ×
+**Estimated spawns:** N items. Best = N × 2 (Developer + Reviewer) + 1 (Integration; Reviewer-Integration
+is skipped on a clean first pass, Step 2.2) + 4 (Finalizers), plus one Design Gate spawn per UI item whose artboard needs an edit. Typical = Best ×
 1.3, or the observed retry rate from `metrics-log-file` if it has rows. Worst = N × 6 + 2 × 3 + 4. Every
 Developer spawn is Opus; Reviewers and Integration are Sonnet (Opus only at loop_count 3); Graphify is
 Haiku.
@@ -587,35 +588,82 @@ Profile as `Test scope: <full|component> — <command> — <reason>`, and print 
 Platform Profile with its Test scope line, the specialist skill, the component and its roots, completed
 features and verified bugs with their files, and the **paths** (never the contents) of `test-cases-doc`,
 `architecture-doc`, `platform-architecture-file`, `project-management-doc`, `test-runbook-location` and
-`adr-directory` — each "None provided" when absent — plus any Pending Deferred Integration IDs.
+`adr-directory` — each "None provided" when absent — plus any Pending Deferred Integration IDs, and a
+**gate log directory** (`<scratchpad>/gate-logs/<run id>/`).
+
+**Before spawning, snapshot the tree:** save `git status --porcelain` and `git diff --stat` (Step 2.2
+compares against them).
 
 The Integration Agent:
 0. Runs the **Cross-Component Diff Guard** first — a violation invalidates the rest of the pass.
-1. Runs the quality gate at the given scope — once. A green first run is final.
+1. Runs the quality gate at the given scope — once. A green first run is final. **Every gate command's
+   output goes to a log file** in the gate log directory; the agent reads only the summary and the
+   failure blocks, never a whole log. Test output is the largest token cost in this phase.
 2. Fixes test and build failures at the root (never by weakening a check).
 3. Runs the security audit.
 4. Runs E2E/smoke scenarios from `test-cases-doc` (in scope), or records the skip in two places.
 5. Checks cross-feature integration and dead code.
 6. Runs the **Documentation Drift Check** — this component's docs plus a read-only pass over
    `platform-architecture-file`. Drift is a defect, FAIL-worthy like a broken test.
-7. Returns an **Integration Output**.
+7. Runs its **Self-Check** — the bookkeeping checks Reviewer-Integration used to fail most first passes
+   on (every doc path has a drift line, every drift finding placed, every known-red's three facts, every
+   skip in both places, scope stated, numbers consistent) — and fixes its own Output before returning.
+8. Returns an **Integration Output**, with the Self-Check and the gate log paths.
 
 **Cross-Component Diff Guard:** inside this component's roots — fine. Outside every component's roots —
 allowed, each named with a one-line justification. Inside another component's roots — **FAIL**; the fix is
 a `Depends on:` work item in the owning component's PMBook, never a cross-border edit and never a quiet
 revert. `platform-architecture-file` modified — **FAIL**, always.
 
-### Step 2.2 — Invoke Reviewer-Integration Agent
+### Step 2.2 — Invoke Reviewer-Integration Agent (skipped on a clean first pass)
 
-`subagent_type: "orchestrated-reviewer-integration"`, `model: "sonnet"`, with the Integration Output, the
-condensed packets, the Test scope line, and the doc paths that were given to the Integration Agent.
-Returns `PASS` / `FAIL` / `UNVERIFIED` (UNVERIFIED handled as in Phase 1).
+Reviewer-Integration exists to catch a gamed fix and a dropped finding. When Integration fixed nothing,
+there is no fix to have gamed, and the Self-Check covers the findings — so the Orchestrator checks the
+pass itself and spawns no reviewer.
+
+**Skip it only when every one of these holds** (all mechanical, all from what the Orchestrator holds or
+can read in seconds):
+
+1. It is the first pass (`loop_count` 0), and the Integration Output's Overall Status is `PASS`.
+2. `Fixes Applied` is `None`, and the tree matches the Step 2.1 snapshot: `git status --porcelain` and
+   `git diff --stat` are unchanged. Any file the agent changed, even a doc, means a spawn.
+3. The gate ran in this pass at the Test scope that was set (not narrowed, nothing carried forward), and
+   the summary line in each gate log agrees with the reported numbers (`0 failed` beside each PASS).
+4. Every Self-Check line is ticked, and `Flaky Tests Detected` and `Unresolvable Issues` are `None`
+   (apart from a recorded E2E skip for a missing test-cases doc).
+5. Each known-red, if any, passes a quick look: its ID is in the owning component's live PMBook and
+   still open, and the failing file's path lies under that component's roots.
+
+Then print `Reviewer-Integration: skipped — clean first pass, no fixes, tree unchanged` and go to Phase 3.
+If any condition fails, or you are unsure, spawn it.
+
+**Otherwise spawn it:** `subagent_type: "orchestrated-reviewer-integration"`, `model: "sonnet"`, with the
+Integration Output, the condensed packets, the Test scope line, the doc paths that were given to the
+Integration Agent, and the gate log directory. Returns `PASS` / `FAIL` / `UNVERIFIED` (UNVERIFIED
+handled as in Phase 1).
 
 ### Step 2.3 — Integration Loop
 
 Same as Step 1.4: loop_count 1–2 at base models, loop_count 3 at the Escalated Model (Integration and
 Reviewer-Integration both `opus`). On a retry the Integration Agent gets loop_count, the issues, and its
-prior Output; it re-runs the gate once after its fixes and does not redo drift sections already cleared.
+prior Output, and does not redo drift sections already cleared. A retry is never a skip candidate for
+Step 2.2 — Reviewer-Integration always checks a retry.
+
+**Doc-only retry — no gate re-run.** Sort the FAIL issues first. If **every** issue concerns only the
+report or the docs — a missing or unplaced drift line, a wrong known-red tracker or owner, a skip
+recorded in one place, wording in a governed doc — and none questions a gate result, a fix, a test, code
+or config, mark the retry `Doc-only retry` in its Retry Context. The Integration Agent then fixes only
+the docs and its Output, edits no code, test or config file, and **does not re-run the gate**; it carries
+the gate results forward, marked `carried forward from pass <N>`, with the same log paths.
+Snapshot the tree before the retry (as in Step 2.1), compare after it, and pass Reviewer-Integration the
+list of files the retry changed — a plain `git diff` also shows the Developers' earlier work, so it cannot
+tell. Reviewer-Integration FAILs the retry if that list holds any code, test or config file. Any issue about code, tests or gate numbers makes it a normal retry, which re-runs the gate once
+after its fixes.
+
+Prefer **resuming the same Integration spawn** (`SendMessage` to its ID) with the issues for a doc-only
+retry — it already holds the docs and logs, so a cold re-read is wasted. If it is no longer available,
+spawn fresh with the Retry Context.
+
 If loop_count 3 still fails, run **Divide-and-Conquer** from `references/escalation.md` before escalating.
 
 **Known-red.** A failure that this run did not cause and that another work item already tracks is a
@@ -632,7 +680,7 @@ red.
 
 ## Phase 3 — Finalization
 
-Entered only on Reviewer-Integration `PASS` (except a P0 fast lane, which runs this phase early for one
+Entered only on Reviewer-Integration `PASS`, or on a skip under Step 2.2's rule (except a P0 fast lane, which runs this phase early for one
 Bug — see `references/spike-and-p0.md`). A Spike gets only its Spike Log.
 
 Spawn **four Finalizers in parallel** — four `Agent` calls in one message, each
@@ -785,6 +833,9 @@ Do every line before printing the final summary. Each was being skipped in pract
 - NEVER retry a Developer for a FAIL that lies wholly in another component's files — that is a
   cross-component dependency (Step 1.4).
 - NEVER accept a known-red without its tracking ID, owner and evidence (Step 2.3).
+- NEVER skip Reviewer-Integration unless every Step 2.2 skip condition holds; NEVER skip it on a retry.
+- NEVER let a doc-only retry edit code, tests or config, or re-run the gate; NEVER call a retry doc-only
+  when any issue questions a gate result, a fix, a test or code.
 - NEVER let a drift finding or a flaky test pass silently.
 - NEVER run Divide-and-Conquer more than once per run, or at any loop_count but 3.
 - NEVER let a Spike write outside its Spike Directory, or give it a Reviewer, Integration or the
@@ -866,7 +917,9 @@ required step. Appended directly by the Orchestrator, never overwritten:
 - **Per work item:** `Timestamp | Run ID | Item ID | Type | Wave | Started | Finished | Final loop_count |
   Escalated? | UNVERIFIED count | Verdict`
 - **Integration:** same shape with `Item ID: Integration`, plus `Test scope` and
-  `Divide-and-Conquer triggered?`
+  `Divide-and-Conquer triggered?`. In its Verdict cell, say whether Reviewer-Integration was skipped and
+  how many retries were doc-only (e.g. `PASS; R-I skipped` or `PASS on retry 1 (doc-only)`) — no new
+  column, so the header does not change.
 - **Run:** `Item ID: RUN`, with the wall-clock time of Phase 1, the Manual Verification wait, Phase 2 and
   Phase 3.
 
@@ -913,7 +966,8 @@ Starting integration validation...
 
 **After integration:**
 ```
-✅ Integration — PASS after <N> iteration(s)
+✅ Integration — PASS after <N> iteration(s)   (<M> doc-only)
+   Reviewer-Integration: PASS / skipped — clean first pass
    Test scope: <full|component>
    Fixes applied: <N>
    Tests: <N passed>

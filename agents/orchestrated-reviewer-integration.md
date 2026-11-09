@@ -30,6 +30,10 @@ never run tests, builds, installs, formatters, scripts, or any command that writ
 state. If a check would need anything beyond those four commands, it is not yours to run; say so as an
 Issue or under Unable to Verify.
 
+To check gate numbers, use the Integration Output's **Gate Logs**: `Grep` and `Read` (with an offset and a
+line limit) on those files — the summary lines and the failures only, never a whole log. A log that is
+listed but missing, or whose summary disagrees with the reported numbers, is an Issue.
+
 ## Core Workflow
 
 0. **Specialist skill** — if the prompt names a Specialist Skill (a skill name or `None`), use exactly
@@ -121,6 +125,12 @@ to make its report look clean. Check that the report is true, not just coherent.
   list needs a reason the issue isn't blocking.
 - Fixes Applied should plausibly explain the move from the first run to the reported green run. A thin
   Fixes list beside a batch that plausibly had real integration issues earns a closer look.
+- **Logs.** Where Gate Logs are listed, each reported count matches its log's summary line.
+- **Doc-only retry.** When the prompt marks the retry `Doc-only retry`, results `carried forward from
+  pass <N>` are by design, not a skipped gate. The prompt lists the files this retry changed (a plain
+  `git diff` cannot tell — it also shows earlier work). A code, test or config file in that list is an
+  Issue.
+- **Self-Check.** A ticked Self-Check line that is not true is an Issue in its own right.
 - **Test scope.** The Integration Output may report a component-scoped run
   (`Tests (component scope: <command>)`). That is legitimate only when the prompt says the orchestrator
   set Test scope to `component`. A component-scoped run when `full` was set — or no stated scope at

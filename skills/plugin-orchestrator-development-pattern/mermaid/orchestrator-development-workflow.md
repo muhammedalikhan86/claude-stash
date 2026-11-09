@@ -55,9 +55,13 @@ flowchart TD
     Int --> Red{"Failure this run\ndid not cause?"}
     Red -->|"tracking ID + owner by path\n+ git evidence"| KR["Known-red: recorded,\nnot silenced"]
     Red -->|"no tracking item"| AskU["Report to the user;\nthey decide whether to raise one"]
-    Red -->|none| RI
-    KR --> RI["2.2 Reviewer-Integration (sonnet)\nread-only git diff\nchecks scope + each known-red"]
-    AskU --> RI
+    Red -->|none| Clean
+    KR --> Clean{"Clean first pass?\nno fixes, tree unchanged,\nself-check all ticked,\nlogs agree"}
+    AskU --> Clean
+    Clean -->|"yes: Orchestrator checks,\nno spawn"| Label
+    Clean -->|no| RI["2.2 Reviewer-Integration (sonnet)\nread-only git diff + gate logs\nchecks scope + each known-red"]
+    RI -->|"FAIL, docs/report only"| DocRetry["Doc-only retry\n(resume same spawn)\nno gate re-run"]
+    DocRetry --> RI
     RI -->|FAIL ≤3| Int
     RI -->|FAIL at 3| DnC["Divide-and-Conquer once"]
     DnC -->|still failing| Esc

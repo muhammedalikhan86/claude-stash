@@ -34,7 +34,9 @@ Works in two contexts — detect which one you're in before starting:
    the entire codebase — every command the profile lists for the full suite, including other
    languages' suites. Never narrow it yourself ("no .NET file changed" is not a reason to skip one). If
    the prompt gives a stack order (what needs the app running and what needs it stopped), follow it. Note any `## Deferred Integration` Bug IDs for Step 8.
-2. **Run the quality gate once** — format, lint, tests (at the given scope), security audit.
+2. **Run the quality gate once** — format, lint, tests (at the given scope), security audit. Send each
+   command's output to a log file — in the gate log directory if one was given, else a temp folder — and
+   read only the summary lines and the failure blocks. See **Keeping Gate Output Out of Context**.
 3. **Triage every failure** — before classifying a failing test, re-run *that one test in isolation*
    once. Fails again (2/2) → real failure, triage below. Passes (1/2) → `Flaky — passed on retry`,
    reported under **Flaky Tests Detected**, never dropped. Classify real failures as in-scope-to-fix or
@@ -47,11 +49,16 @@ Works in two contexts — detect which one you're in before starting:
    only (a) the specific tests touched by a fix, then the gate once more after all fixes are in, or (b) a
    test that showed flakiness, per the single isolated re-run in Step 3. Never run the same passing suite
    more than once "for confidence". If any fix lands outside the component's code roots while under
-   `component` scope, switch to the full suite for that final run and say so.
+   `component` scope, switch to the full suite for that final run and say so. **A retry marked
+   `Doc-only retry` re-runs nothing:** fix only docs and your report, edit no code, test or config file,
+   and carry the gate results forward, marked `carried forward from pass <N>`. Docs do not change test
+   outcomes.
 6. **E2E/smoke validation** from the test-cases source, if provided — under `component` scope, only that
    component's scenarios. If none was provided, say so explicitly.
 7. **Check documentation drift** — see **Documentation Drift as a Defect**.
-8. **Report** — per the Output Template. For `## Deferred Integration` input, name exactly which Bug IDs
+8. **Self-Check** — run the **Self-Check Before Returning** list and fix your Output (or the doc) for
+   every line that fails. This is where most first-pass review failures used to come from.
+9. **Report** — per the Output Template. For `## Deferred Integration` input, name exactly which Bug IDs
    you re-validated (their regression test passes under this run's suite, not just in isolation). Never
    name an ID you didn't check — the PMBook Update resolves only the IDs you list.
 
@@ -93,6 +100,10 @@ exactly):
 - Lint:   PASS / FAIL
 - Tests (<full scope | component scope: <command>>):  PASS / FAIL — (N passed, N failed, N skipped)
 - Audit:  PASS / FAIL — (N vulnerabilities)
+(on a doc-only retry, add "carried forward from pass <N>" to each line)
+
+### Gate Logs
+- <step> — <log file path> — exit <code>
 
 ### Flaky Tests Detected
 - <test name>: Flaky — passed on retry (failed once, passed on isolated re-run)
@@ -117,9 +128,46 @@ exactly):
 <issues requiring design-level changes, or "None">
 (a skipped E2E for lack of a test-cases source is restated here too)
 
+### Self-Check
+- [x] or [ ] for each line of **Self-Check Before Returning**, with a short reason for any [ ]
+
 ### Overall Status
 PASS or FAIL
 ```
+
+---
+
+## Keeping Gate Output Out of Context
+
+A full test run can print thousands of lines. Read into your context, they cost more tokens than the
+rest of the pass together, and they hide the few lines that matter.
+
+- Run each gate command with its output sent to its own file:
+  `<command> > <log dir>/<step>-pass<N>.log 2>&1; echo "exit=$?"`.
+- Read the runner's summary lines (`tail -n 40`), then pull only what failed: `grep` for the failing
+  test names, `FAIL`, `error`, and read a few lines of context around each.
+- Never `cat` a whole log, and never run a long suite with its output going straight to you.
+- List every log path under **Gate Logs**, so a reviewer can check your numbers without re-running.
+
+## Self-Check Before Returning
+
+Tick each line only when it is true. In orchestrated mode, a clean pass with every line ticked can stand
+without a separate review, so a wrong tick ships.
+
+1. **Numbers agree.** Each PASS in Quality Gate Results has `0 failed`, and matches the summary line in
+   its log. Overall Status agrees with every section above it.
+2. **Scope.** The test scope you report is exactly the one given, and every command it calls for ran (or
+   is carried forward on a doc-only retry).
+3. **Every doc path has a drift line.** Each doc path you were given has an entry under Documentation
+   Drift, even "No drift found" — and "skipped — not provided" for each one you were not given.
+4. **Every drift finding is placed.** Each one shows as fixed (and also under Fixes Applied), handed to a
+   named owner, or flagged under Unresolvable Issues. None appears only once.
+5. **Every skip is recorded twice.** A skipped E2E or check sits under its own section and under
+   Unresolvable Issues.
+6. **Every known-red has its three facts.** Owner by the failing file's path; a tracking ID you found in a
+   live, still-open project-management item; and git evidence that this run did not cause it.
+7. **Every fix is listed.** Each file you changed appears under Fixes Applied with its root-cause reason.
+   No file changed that is not listed.
 
 **Standalone mode:** same structure, plain language, omit sections that don't apply.
 

@@ -320,6 +320,13 @@ operating in **orchestrated mode**. Your own "Fixing, Not Gaming" section is non
 `full` means every command in Test (full). Run them all; never drop one because you judge this run
 could not affect it.
 
+## Gate Log Directory
+<INSERT <scratchpad>/gate-logs/<run id>/>
+Send every gate command's output to its own log file here (`<command> > <dir>/<step>-pass<N>.log 2>&1`,
+then record the exit code). Read only the runner's summary lines and the failure blocks (`tail`, `grep`
+for the failing test names and their stack traces). Never read a whole log, and never let a long run
+print into your context.
+
 ## Stack Order
 <INSERT the Stack line and the order to run gates in, e.g. "stack is up: run E2E first; then stack-down;
 then build and the .NET suite" — or "None — nothing needs a running stack">
@@ -416,17 +423,28 @@ non-`exact` role), and for an action fired before the component has wired its ha
 ## Return Format
 
 Use exactly your own orchestrated-mode Output Template: Specialist Skill(s) Loaded / Quality Gate Results
-(state the test scope used) / Flaky Tests Detected / Fixes Applied / E2E Validation / Documentation Drift /
-Deferred Integration Re-Validated / Unresolvable Issues / Overall Status. Also list every out-of-root file
-from the Diff Guard with its justification. A missing Test Cases Doc means E2E is skipped, recorded under
-both E2E Validation and Unresolvable Issues.
+(state the test scope used) / Gate Logs / Flaky Tests Detected / Fixes Applied / E2E Validation /
+Documentation Drift / Deferred Integration Re-Validated / Unresolvable Issues / Self-Check / Overall
+Status. Also list every out-of-root file from the Diff Guard with its justification. A missing Test Cases
+Doc means E2E is skipped, recorded under both E2E Validation and Unresolvable Issues.
+
+Run your own **Self-Check** before returning and fix anything it finds. The doc paths it covers are the
+six above (Test Cases Doc, Architecture Doc, Platform Architecture, PMBook, Test Runbook, ADRs). If your
+pass was clean, the Orchestrator may skip Reviewer-Integration on the strength of it — so a ticked line
+must be true.
 
 ## Retry Context (only present on a retry — omit this section entirely on the first attempt)
 loop_count: <INSERT N>
+Retry kind: <INSERT "Doc-only retry" or "Normal retry">
 Previous Issues: <INSERT REVIEWER-INTEGRATION'S ISSUES LIST>
-Previous Integration Output: <INSERT PRIOR OUTPUT — Quality Gate Results / Fixes Applied / Documentation Drift / Unresolvable Issues>
-Address only the issues listed. Re-run the gate once after your fixes; treat drift sections your prior
-pass already cleared as still clear unless a Previous Issue reopens one.
+Previous Integration Output: <INSERT PRIOR OUTPUT — Quality Gate Results / Gate Logs / Fixes Applied / Documentation Drift / Unresolvable Issues>
+Address only the issues listed. Treat drift sections your prior pass already cleared as still clear
+unless a Previous Issue reopens one.
+- Normal retry: re-run the gate once after your fixes.
+- Doc-only retry: fix only the docs and your Output. Edit no code, test or config file, and do not re-run
+  the gate — carry the Quality Gate Results forward, marked `carried forward from pass <N>`, with the
+  same log paths. If an issue turns out to need a code or test change after all, stop and say so under
+  Unresolvable Issues instead of making it.
 ```
 
 ### Reviewer-Integration Agent Prompt
@@ -444,6 +462,10 @@ verdict. You are operating in **orchestrated mode** — this is the last gate be
 ## Doc Paths Given to the Integration Agent
 <INSERT the list: Test Cases Doc, Architecture Doc, Platform Architecture, PMBook, Test Runbook, ADRs — or
 "None provided" for each that was absent>
+
+## Gate Log Directory
+<INSERT the same directory given to the Integration Agent>
+Check the reported numbers against each log's summary lines (`tail` or `grep` — never read a whole log).
 
 ## Task Packets (all completed features and fixed bugs, condensed)
 <INSERT, PER ITEM: ID, Name/Title, Platform, and — Feature: Acceptance Criteria only; Bug: Bug Report's
@@ -463,7 +485,11 @@ ID or no evidence is a FAIL issue.
 
 ## Retry Context
 loop_count: <INSERT N — 0 if this is the first review>
+Retry kind: <INSERT "Doc-only retry", "Normal retry", or "None — first review">
 Previous Issues (if loop_count > 0): <INSERT PREVIOUS ISSUES LIST, or "None — first review">
+Files changed by this retry (doc-only retry only): <INSERT the Orchestrator's before/after snapshot list>
+On a doc-only retry the gate results are carried forward by design. That list must hold doc files only;
+a code, test or config file in it is a FAIL issue.
 ```
 
 ### Finalizer Agent Prompt

@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.5.0"
+  version: "1.6.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -132,14 +132,18 @@ Edit this table to change a model; nothing else needs to change. Values are tier
 | Integration | `sonnet` | `opus` |
 | Reviewer-Integration | `sonnet` | `opus` |
 | Finalizer — Graphify | `haiku` | — (no retry loop) |
-| Finalizer — PMBook Update (+ Version Pointer Sweep) | `sonnet` | — |
-| Finalizer — Handoff Update | `sonnet` | — |
-| Finalizer — Revision + Changelog, Test Runbook (bundle) | `sonnet` | — |
-| Finalizer — Spike Log | `sonnet` | — |
+| Finalizer — PMBook Update | `haiku`; `sonnet` when it also runs the Version Pointer Sweep | — |
+| Finalizer — Handoff Update | `haiku` | — |
+| Finalizer — Revision + Changelog, Test Runbook (bundle) | `haiku` | — |
+| Finalizer — Spike Log | `haiku` | — |
 
 - **The Developer escalates by effort, not model.** Effort lives in agent frontmatter and cannot be
   passed per spawn, so the two effort levels are two sibling definitions chosen by `subagent_type`. Still
   pass `model: "opus"`. `xhigh` needs extended thinking on; without it, it runs as `high`.
+- **Finalizers run on `haiku` because they get an Edit List** (changed 2026-11-09, Phase 3): the
+  Orchestrator says what changes where, and the Finalizer finds the spot and edits it. The Version Pointer
+  Sweep is the exception — moving version lines across many components takes judgement, so the PMBook
+  Finalizer goes up to `sonnet` in a run that needs the sweep.
 - **Reviewers run on `sonnet`, not `haiku`** (changed 2026-11-03). They gate Opus work against long
   rulebooks, and a wrong FAIL costs a whole Opus Developer round. Revisit with `metrics-log-file` data.
 - Escalation applies only at loop_count == 3 — the one attempt before a human is paged. Finalizers have
@@ -690,6 +694,23 @@ Pointer Sweep's permitted header edits; none touches `platform-architecture-file
 
 Each component has its own semver; version history rows go to `history-directory`, never into a live doc.
 
+**Edit Lists — the Orchestrator says what changes where.** A Finalizer used to read whole governed docs
+to work out its edits; a PMBook Finalizer once took 20 minutes. The Orchestrator already holds every
+fact, so it hands each doc Finalizer (all but Graphify) an **Edit List**: one line per edit, as
+`<file> — <anchor> — <change>`.
+
+- **Anchor:** something the Finalizer can find with one search — a row's ID (`OFA-F-003`), a section
+  heading (`## Bug Log`), or `end of <section>` for an append.
+- **Change:** the facts, short — `Status → Done`, `new row: OFA-B-012 | <one-line description> |
+  2026-11-09 | Fixed | Unreleased`, `entry under [Unreleased] → fix: OFA-B-012 <one line>`. Facts, not
+  finished paragraphs: writing the prose is the Finalizer's job, and an Opus-written paragraph costs
+  more than the Haiku spawn saves.
+- **Complete:** every edit the Finalizer must make is on the list. The Finalizer does no edit that is
+  not on it; anything else it notices goes under Notes.
+- Build the lists from what you already hold — the packets, the Developer Outputs, the Integration
+  Output (its drift findings handed to a Finalizer become list lines) and the Release label. Do not read
+  the docs in full to build them; a `Grep` for an anchor you are unsure of is enough.
+
 **Release label — decided once, before the spawn.** The PMBook Finalizer writes "Fixed In <label>" while
 the Changelog Finalizer writes the entry under that label, at the same time — so neither may pick it.
 Before spawning, read `changelog-file`: if it keeps an `[Unreleased]` section, the label is
@@ -718,9 +739,9 @@ line to the Handoff Finalizer and the close-out summary.
   the stamp carries `+ uncommitted working tree` and the only later commit is the one it was built for
   (the commit that also changed `GRAPH_REPORT.md`). That graph is fresh.
 
-### Step 3.2 — PMBook Update (Finalizer, `sonnet`)
+### Step 3.2 — PMBook Update (Finalizer, `haiku`; `sonnet` with the sweep)
 
-**Task-Specific Inputs:** `project-management-doc` path; features completed (set each to `Done` — this
+**Task-Specific Inputs:** the Edit List for the PMBook; `project-management-doc` path; features completed (set each to `Done` — this
 is the only place a feature becomes Done); verified bugs (one `## Bug Log` row each — an existing `Open`
 row is updated in place, never duplicated, and a "next ID" line is moved on); the `Release label:`; the Integration
 Output's Flaky Tests Detected (one `## Open Items` row each); the Deferred Integration IDs the Integration
@@ -732,17 +753,17 @@ headers moved.
 A Tranche boundary comes back under **Notes**; tell the user that `plugin-idea-triage`'s Tranche Closeout
 is available. Never archive from this pipeline.
 
-### Step 3.3 — Handoff Update (Finalizer, `sonnet`)
+### Step 3.3 — Handoff Update (Finalizer, `haiku`)
 
-**Task-Specific Inputs:** features completed with implementation notes, bugs fixed with root-cause notes,
+**Task-Specific Inputs:** the Edit List for the handoff doc; features completed with implementation notes, bugs fixed with root-cause notes,
 `handoff-doc` path. Appends to the current Tranche's live content only.
 
-### Step 3.4 — Revision + Changelog, Test Runbook (one Finalizer, `sonnet`)
+### Step 3.4 — Revision + Changelog, Test Runbook (one Finalizer, `haiku`)
 
 One spawn, bundled Task `Revision + Changelog, Test Runbook` — three disjoint files, no reason for two
 cold starts.
 
-**Task-Specific Inputs:** features completed with their Test Expectations; bugs fixed with their repro
+**Task-Specific Inputs:** the Edit List for each of the three files; features completed with their Test Expectations; bugs fixed with their repro
 steps; `revision-file`, `changelog-file` and `test-runbook-location` paths; the `Release label:`. A
 revision entry in the file's own form (an incremented integer if it keeps one, else a dated entry like
 its others); changelog entry under exactly the given label, with `feat` and `fix` categories, modules

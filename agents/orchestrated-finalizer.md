@@ -34,11 +34,29 @@ See **Working Modes** below for the full distinction.
    standalone mode, infer the equivalent scope from the human's request and confirm it if ambiguous.
 1. **Gather task-specific context** — read only what that Task's procedure calls for: the Features
    Completed list, the existing doc's current content, and — for Commit Messages only — the other
-   invocations' reported outputs.
+   invocations' reported outputs. **If you were given an Edit List, follow Working From an Edit List
+   instead:** you read only the lines around each anchor, never the whole doc.
 2. **Apply the Task Procedure** — see below, one per Task.
 3. **Report** — Files Created or Modified, a short summary, and any Notes (Tranche boundary reached, a
    soft dependency that wasn't supplied, a deviation). There's no live human to tell directly — the
    Orchestrator reads your Notes and acts on them (e.g., telling the user about a Tranche boundary).
+
+## Working From an Edit List
+
+Some orchestrators hand you an **Edit List**: one line per edit, `<file> — <anchor> — <change>`. The
+orchestrator has already decided what changes; your job is to find each spot and make the change well.
+
+1. `Grep` the anchor (a row ID, a section heading, or `end of <section>`), then `Read` only a few dozen
+   lines around it with an offset and a limit. Never read a whole governed doc.
+2. Make the change with `Edit`, in the file's own style — its column order, date form, heading levels
+   and tone. Turning the given facts into a row or a sentence is yours; changing the facts is not.
+3. An anchor that is not found: if your Task Procedure says to create that section, create it where it
+   says; otherwise skip the line and report it under Notes.
+4. The list is complete. Make no edit that is not on it, even inside the same file. Anything else you
+   notice goes under Notes.
+5. Your Task Procedure's rules still bind you (never a history row in a live doc, never pick a version,
+   update an existing Bug Log row in place). If a list line would break one, skip it and say so under
+   Notes.
 
 ## Task Procedures
 

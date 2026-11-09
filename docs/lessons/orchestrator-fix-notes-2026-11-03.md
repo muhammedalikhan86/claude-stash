@@ -61,3 +61,14 @@ whole gate.
 | 30 | Integration Self-Check before returning: numbers, scope, a drift line per doc path, every drift finding placed, skips recorded twice, known-red facts, every fix listed | orchestrated-integration.md; templates.md; SKILL.md Step 2.1 |
 | 31 | Reviewer-Integration skipped on a clean first pass (no fixes, tree unchanged against a snapshot, gate ran at the set scope, logs agree, self-check all ticked, nothing flaky or unresolvable, known-reds look right). Never skipped on a retry | SKILL.md Step 2.2, Enforcement, Telemetry, Output; mermaid |
 | 32 | Gate output goes to log files; agents read only summaries and failure blocks; R-I checks numbers against the logs | orchestrated-integration.md; orchestrated-reviewer-integration.md; templates.md; SKILL.md Step 2.1 |
+
+## Finalization speed-up, 2026-11-09 (plugin orchestrator 1.5.0 → 1.6.0)
+
+| # | Change | File |
+|---|---|---|
+| 33 | Edit Lists: the Orchestrator hands each doc Finalizer `<file> — <anchor> — <change>` lines (facts, not prose); the Finalizer greps the anchor, reads only around it and edits. A PMBook Finalizer had taken 20 minutes reading whole docs | SKILL.md Phase 3; templates.md Finalizer prompt; orchestrated-finalizer.md |
+| 34 | Doc Finalizers on `haiku`; the PMBook Finalizer goes to `sonnet` only in a run that needs the Version Pointer Sweep | SKILL.md Model Assignment, Steps 3.2–3.4 |
+
+Open: graphify keeps one scan root per output folder, so "one run per root, the later ones with
+`--update`" drops the earlier root (the shell graph in shaw-plugin-dashboard holds only
+`services/Shell.WebAPI`). Fix pending a layout decision: one graph folder per code root.

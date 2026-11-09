@@ -520,10 +520,19 @@ Version Pointer Sweep instructions say otherwise>
 <INSERT: S-ID, Question, Spike Directory, Files Created, and the Developer's Findings/recommendation
 verbatim>
 
+## Edit List
+<INSERT one line per edit: <file> — <anchor> — <change>. Omit this section only for Graphify.>
+These are all the edits you make. For each line: `Grep` the anchor, `Read` only the lines around it
+(offset and limit), make the change with `Edit`, in the file's own style. Do not read a whole governed
+doc. If an anchor is not found, follow your Task Procedure for a missing section (create it where it
+says), or, if it gives none, skip that line and report it under Notes. Make no edit that is not on the
+list; anything else you notice goes under Notes.
+
 ## Task-Specific Inputs
 <INSERT — see the matching Phase 3 step in SKILL.md>
 
 ## Return Format
 
-Use exactly your own Output Template: Task / Files Created or Modified / Summary / Notes.
+Use exactly your own Output Template: Task / Files Created or Modified / Summary / Notes. Under Notes,
+list every Edit List line you could not apply, and why.
 ```

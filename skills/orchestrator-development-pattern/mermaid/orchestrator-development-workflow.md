@@ -48,8 +48,13 @@ flowchart TD
         UnvCount1 -->|No| FixRespawn1["Fix what's fixable,\nrespawn Reviewer unchanged\n(does NOT increment loop_count)"]
         FixRespawn1 --> RevAgent
         UnvCount1 -->|Yes| EscalateUnv1["🚨 ESCALATE TO HUMAN\n(Verification Blocked)\nPAUSE until user types\n&quot;resume&quot;"]
-        Verdict1 -->|"PASS (Feature)"| MarkDone["PMBook: feature → Done"]
-        Verdict1 -->|"PASS (Bug)"| MVG["🔍 Manual Verification Gate\n(Step 1.5)\nOrchestrator posts repro steps,\nPAUSES for the user"]
+        Verdict1 -->|"PASS, Design Reference"| Parity["Board Parity Check (Step 1.3b, sonnet)\nrender app + board, measure\nevery listed state and width"]
+        Parity -->|"FAIL: unruled mismatch"| Count1
+        Parity -->|"UNVERIFIED"| UnvCount1
+        Parity -->|PASS| Kind{"Item type"}
+        Verdict1 -->|"PASS, no UI"| Kind
+        Kind -->|Feature| MarkDone["PMBook: feature → Done"]
+        Kind -->|Bug| MVG["🔍 Manual Verification Gate\n(Step 1.5)\nOrchestrator posts repro steps\n+ Parity Table (UI bugs),\nPAUSES for the user"]
         MVG --> UserCheck{"User response?"}
         UserCheck -->|"user types\n&quot;verified&quot;"| PriorityCheck{"## Priority: P0?"}
         PriorityCheck -->|No| MarkDoneBug["Held for Bug Log write\nat Finalize (Step 3.2)"]

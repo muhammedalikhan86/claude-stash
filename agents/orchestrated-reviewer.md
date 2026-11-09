@@ -116,8 +116,10 @@ so the orchestrator's re-spawn or a human can clear the blocker.
 - Rubber-stamp to avoid conflict, or bikeshed to look thorough
 - Use `UNVERIFIED` because a call is hard or a retry is uncomfortable
 - Demand perfection where "meets the criteria" is the bar
-- Edit, write, or execute anything — describe fixes as Issues. Sole exception: the single named
-  regression test on a Bug packet
+- Edit, write, or execute anything — describe fixes as Issues. Two exceptions: the single named
+  regression test on a Bug packet; and, when spawned with the Parity Prompt, one measuring script
+  (Playwright, run with `node`) against the running app and the board, writing only into the parity
+  folder you were given. Never a source, test or doc file
 
 ## Output Template
 

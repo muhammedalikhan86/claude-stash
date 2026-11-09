@@ -1,6 +1,6 @@
 # Plugin Orchestrator Development Pattern — Flow Diagram
 
-Reference only; `SKILL.md` is the source of truth. Updated 2026-11-06 for v1.4.0 (push and pull allowed on a go from the user or a hub session). Earlier, 2026-11-03 for v1.3.0 (UI Iteration, third diagram). v1.2.0 added (linked runs, the
+Reference only; `SKILL.md` is the source of truth. Updated 2026-11-10 for v1.9.0 (Board Parity Check, Step 1.3b). Earlier, 2026-11-06 for v1.4.0 (push and pull allowed on a go from the user or a hub session). Earlier, 2026-11-03 for v1.3.0 (UI Iteration, third diagram). v1.2.0 added (linked runs, the
 cross-component-dependency FAIL path, known-red failures, the stack lifecycle, the release label decided
 before Phase 3, designer-owned artboards, the Orchestrator commits by itself and never pushes). v1.1.0 added waves, batched manual verification, test scope,
 four Finalizers and Orchestrator-drafted commit messages.
@@ -41,14 +41,20 @@ flowchart TD
     XC --> Linked["Run as Linked Runs\n(see second diagram)"]
     Linked -->|"linked item passed review"| Rev
     Rev -->|UNVERIFIED ≤2| Rev
-    Rev -->|PASS Feature| Passed["passed review\n(PMBook written at Phase 3)"]
-    Rev -->|PASS Bug| Queue["queued for verification"]
-    Rev -->|PASS P0| P0["verify now → P0 fast lane"]
+    Rev -->|"PASS, UI packet"| Parity["1.3b Board Parity Check (sonnet)\nrender app + board, measure\nevery listed state and width"]
+    Parity -->|"FAIL: unruled mismatch, loop ≤3"| Dev
+    Parity -->|"FAIL, loop >3"| Esc
+    Parity -->|UNVERIFIED ≤2| Parity
+    Parity -->|PASS| Kind{"Item type"}
+    Rev -->|"PASS, no UI"| Kind
+    Kind -->|Feature| Passed["passed review\n(PMBook written at Phase 3)"]
+    Kind -->|Bug| Queue["queued for verification"]
+    Kind -->|P0| P0["verify now → P0 fast lane"]
     Passed --> More{"More waves?"}
     Queue --> More
     SpikeLog --> More
     More -->|yes| Wave
-    More -->|no| MV["1.5 Batched Manual Verification\n(one message, all bugs,\nall linked runs)"]
+    More -->|no| MV["1.5 Batched Manual Verification\n(one message, all bugs,\nall linked runs, Parity Tables)"]
     MV -->|still broken| Dev
     MV -->|all verified| Scope["2.0 Test scope:\nfull if shell / out-of-root change /\nno component command / linked runs;\nelse component"]
     Scope --> Int["2.1 Integration (sonnet)\ndiff guard per owning item,\nevery Test (full) command,\nstack order: E2E while up → down → build"]

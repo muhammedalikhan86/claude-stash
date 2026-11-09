@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.11.0"
+  version: "2.12.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -23,7 +23,11 @@ metadata:
     test-cases-doc,
     adr-directory,
     run-state-file,
-    metrics-log-file
+    metrics-log-file,
+    artboards-directory,
+    app-url,
+    artboard-server,
+    parity-viewports
   ]
 ---
 
@@ -140,6 +144,7 @@ is set per tier, not per version, and so is this table.
 |------|-------|-------|-----|
 | Developer | `sonnet` | `opus` | Feature implementation benefits from stronger coding judgment than a fixed checklist |
 | Reviewer | `haiku` | `sonnet` | Bounded verification against explicit acceptance criteria, not open-ended synthesis |
+| Board Parity Check (Step 1.3b) — `orchestrated-reviewer`, Parity Prompt | `sonnet` | `sonnet` | Rendering, stubbing states and measuring needs more than haiku; a bigger model does not measure better — only the Developer's fix changes the result |
 | Integration | `sonnet` | `opus` | Broad-scope root-causing across the whole codebase, same reasoning as Developer |
 | Reviewer-Integration | `haiku` | `sonnet` | Same bounded-verification shape as Reviewer, despite being the last gate before Finalization |
 | Finalizer — Graphify | `haiku` | — (no retry loop) | Mechanical — one scoped command (repo script, graphify CLI or Skill, per Step 3.1), no synthesis |
@@ -196,6 +201,7 @@ because the correctness gate already ran.
   │         │  FAIL (loop_count = 3) → ESCALATE TO HUMAN → PAUSE (type "resume" to continue)
   │         │  UNVERIFIED (≤2x, doesn't touch loop_count) → fix what's fixable → respawn Reviewer unchanged
   │         │  UNVERIFIED (3rd time) → ESCALATE TO HUMAN (Verification Blocked) → PAUSE (type "resume")
+  │         │  PASS + Design Reference → [BOARD PARITY CHECK] (Step 1.3b) — FAIL re-enters the retry loop
   │         ▼
   │    Feature → PMBook: status → Done → next item
   │    Bug → [MANUAL VERIFICATION GATE] (Step 1.5) Orchestrator posts repro steps → PAUSE
@@ -297,6 +303,14 @@ Step 0.0 is the one point every entry path passes through before diverging.
   just those, to keep the knowledge graph code-only).
 - `run-state-file` — convention `docs-directory/.orchestrator-run-state.json`; auto-created on first write, never asked about upfront. See **Run-State Checkpointing**.
 - `metrics-log-file` — convention `docs-directory/orchestrator-metrics.md`; auto-created on first append, never asked about upfront. See **Pipeline Telemetry**.
+- `artboards-directory` — optional; the folder of design boards the user interface is built to. Unset → no
+  packet carries a `## Design Reference` and Step 1.3b never runs, exactly as before this variable existed.
+- **For UI packets (Step 1.3b), when `artboards-directory` is set:** `app-url` — the app's address as a
+  pattern with the port offset in it, e.g. `http://localhost:{4200+offset}`, filled with **this checkout's**
+  offset (from its stack config; never assume 0); `artboard-server` — how the boards are served;
+  `parity-viewports` — layout widths to compare at (default `1440`). If `app-url` or `artboard-server` is
+  missing when a UI packet is planned, ask the user once before Phase 1 — the Parity Check is never
+  skipped for want of a URL.
 
 **Resume check:** immediately after the hard-dependency verification above, check whether `run-state-file`
 exists and its run is not marked complete. If so, stop and ask explicitly before doing anything else:
@@ -352,6 +366,10 @@ this step only replaces *where the work item's content comes from*, not any down
    **Task Packet Format**) for each item. Skip Step 0.4's feature-list announcement in favor of a one-line
    equivalent: `Bug Fix Mode — B-XXX: <one-line description>` (or, for a P0, `Bug Fix Mode [P0] — B-XXX:
    <one-line description>`).
+
+**A design mismatch on a built screen** (the screen differs from its board): find the work item that built
+that surface (the PMBook or `git log` on its files) and add 1 to that item's `Mismatches reported after
+hand-over` in `metrics-log-file` (see **Pipeline Telemetry**).
 
 ### Step 0.1c — Spike Intake (alternate entry point)
 
@@ -455,6 +473,14 @@ work item exits this loop immediately after Step 1.2 — see **Spike Flow**, rea
 
 Produce a Task Packet for the feature (see **Task Packet Format** below). This is the single source of truth for both the Developer and Reviewer.
 
+**UI packets, when `artboards-directory` is set:** resolve the board that draws each surface the item
+touches and fill the packet's `## Design Reference` — the board, the states to compare, and any ruled
+deviations. The board is the specification: the Developer builds to it and never decides the design while
+coding. If no board draws a surface, say so in the packet (`Compared against: Acceptance Criteria —
+<surface> not drawn`): the Acceptance Criteria are the spec, and Step 1.3b compares against them. A new
+layout with no board and no criteria that describe it fully goes to the user before the Developer is
+spawned.
+
 ### Step 1.2 — Invoke Developer Agent
 
 Spawn a Developer sub-agent via the Agent tool with `subagent_type: "orchestrated-developer"` and `model: "sonnet"` (see **Model Assignment**), using the **Developer Agent Prompt Template** below, with the Task Packet substituted in full.
@@ -480,6 +506,32 @@ The Reviewer Agent returns:
   inability to verify, not a softer FAIL)
 - **Issues** (if FAIL): numbered list — each references a specific acceptance criterion, describes the exact problem, and is actionable
 - **Unable to Verify** (if UNVERIFIED): what couldn't be checked and why
+
+### Step 1.3b — Board Parity Check (UI packets only)
+
+**Runs after the code Reviewer's PASS, before the Manual Verification Gate and Integration.** Skip only
+for a packet with no `## Design Reference`. A Reviewer that reads code cannot see a bold label, a heading
+that wraps to four lines, a loader that flashes for 60 ms, a dialog laid out differently or a filter that
+was never built. So the design check is measured on the rendered screen, with evidence.
+
+1. **Bring up** the app (the repo's `stack-up` binding, its run skill or `CLAUDE.md`) and the boards
+   (`artboard-server`), and check both answer. Fill `app-url` with this checkout's port offset.
+2. **Spawn** `subagent_type: "orchestrated-reviewer"`, `model: "sonnet"` (see **Model Assignment**), with
+   the **Parity Prompt** below: the packet, the app URL, the board URL, `parity-viewports`, and the folder
+   `<scratchpad>/parity/<run id>/<ID>[-retryN]/`. A separate spawn: the code Reviewer stays narrow.
+3. **It compares** every state in the packet's `States to compare` — populated, empty, loading, error,
+   full view, and every dialog and menu the packet touches — at every width in `parity-viewports` (at
+   least 1440). **Measured, not eyeballed:** computed font weight, size and colour; line counts of
+   headings; element order and wording; the table tools and paginator, and the paginator's choices;
+   tooltips and ⓘ icons; transient states sampled over time (how many loaders show, in what order).
+4. **It returns a Parity Table**, one row per element: `element | board | built | match | ruling`.
+   Screenshots and measurements stay in the parity folder.
+5. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. The mismatches go
+   back into Step 1.4's loop as the issues list, under the same 3-strike rule: a Developer retry, then
+   the code Reviewer, then this check again. UNVERIFIED (the app or board would not load) follows
+   **Handling an UNVERIFIED Verdict**. PASS → the item goes on as Step 1.4's "When verdict == `PASS`" says.
+6. **Keep the Parity Table's path** in `run-state-file`. Step 1.5 attaches it, and the metrics row
+   counts its mismatches.
 
 ### Handling an UNVERIFIED Verdict
 
@@ -547,7 +599,11 @@ stronger model is the one retry worth spending on before giving up. This is a fl
 rule, not the complexity-based selection mechanism still deferred — it only fires this one specific case
 (loop_count == 3), never earlier and never adjusted by task difficulty.
 
-When verdict == `PASS`:
+When verdict == `PASS`: **a UI packet's code PASS is not the item's PASS** — run Step 1.3b first. A
+Parity FAIL re-enters this loop with its mismatches as the issues list (`loop_count` goes up as for any
+FAIL); the retry goes to the code Reviewer, then Step 1.3b again. Only a Parity PASS, or a packet with no
+`## Design Reference`, goes on below.
+
 - Feature packet: update PMBook feature status → `Done`; log `✅ F-XXX <name> — PASS after <N> iteration(s)`;
   move to next work item
 - Bug packet: **do not move to the next work item yet** — proceed to Step 1.5 (Manual Verification Gate).
@@ -574,6 +630,10 @@ go straight from Reviewer PASS to the next work item, as before.
    2. ...
 
    Expected behavior: <from Bug Report>
+
+   Parity (UI bugs only): what was compared, before you look —
+   <the Step 1.3b Parity Table: element | board | built | match | ruling>
+   Screenshots: <parity folder path>
 
    Reply "verified" once you've confirmed the fix, or describe what's still wrong to send it back to the
    Developer.
@@ -994,6 +1054,17 @@ Write the test files. Do NOT run the test suite — test execution is the Integr
 ## Architecture Reference
 See: architecture-doc — <relevant section IDs or component names>
 
+## Design Reference
+<Omit this whole section when the work item touches no user interface, or `artboards-directory` is unset.>
+Board (the visual contract for this work): artboards-directory/<Surface>.<ext> — or
+  "Compared against: Acceptance Criteria — <surface> not drawn". Build to it; do not change it.
+States to compare: <the board states this item must match — populated, empty, loading, error, full
+  view, and each dialog and menu it touches>
+Ruled deviations: <each accepted difference from the board, with its source: a design row ID, or a
+  user ruling with its date — or "None". Only these may differ; anything else fails>
+Standing acceptance criterion (every UI packet): The built screen matches the board in every listed
+  state; the Parity Table (Step 1.3b) shows no unruled mismatch.
+
 ## Constraints
 <constraints from PRD or Architecture that apply>
 
@@ -1052,6 +1123,9 @@ State explicitly which assertion is the one that would have caught this bug.
 
 ## Architecture Reference
 See: architecture-doc — <relevant section IDs or component names, if applicable>
+
+## Design Reference
+<Omit this whole section when the bug touches no user interface. Same shape as the Feature packet's.>
 
 ## Constraints
 <constraints from PRD or Architecture that apply>
@@ -1169,6 +1243,12 @@ The Developer Output legitimately reports test files as "written, not yet run" �
 
 If the Task Packet's `Type` is `Bug`, apply one additional check beyond the Task Packet's Expected Output: actually run the single regression test named in the Task Packet's Note on Tests / Test Expectations, per your own **Scoped Execution for Bug-Type Packets** section — do not just read its assertions and infer it would pass. Report the command and its real output under your Output's `Regression Test Execution` field. If it fails when you run it, that's a MUST-fix issue regardless of what the Developer Output claims. Also check the fix addresses the stated root cause rather than papering over the symptom (e.g. suppressing an exception instead of preventing it) — flag symptom-only patches as an issue even if the test you ran passes. Note that this PASS is not the final word on the bug: a Manual Verification Gate with the user runs immediately after yours in this pipeline (see the Orchestrator's Step 1.5) — your job is confirming the regression test genuinely passes when executed, not confirming the reported symptom is gone from the user's perspective.
 
+If the Task Packet carries a `## Design Reference`, check the code against it: that every state in
+`States to compare` is built, and nothing the board draws is missing. Report any divergence you can see
+in the code as an issue. "The board looks out of date" is not a defence. **A static read does not
+satisfy the design check.** You may PASS the code, but the item is not done until the Board Parity Check
+(Step 1.3b) measures the rendered screen and passes. Do not claim the screen matches the board.
+
 ## Return Format
 
 Use exactly your own orchestrated-mode Output Template: Specialist Skill(s) Consulted / Verdict / Unable to
@@ -1187,6 +1267,58 @@ Previous Issues (if loop_count > 0): <INSERT PREVIOUS ISSUES LIST, or "None — 
 If loop_count > 0, apply your own "Keeping the Review Loop Convergent" section before writing any
 feedback: check whether your own previous issues were actually fixed first, and don't introduce a new
 category of complaint that was already true in round 1 but wasn't raised then.
+```
+
+---
+
+### Parity Prompt (Step 1.3b)
+
+```
+You are checking a built screen against its design board. You do not review code and you do not fix
+anything. You render both, measure both, and return a verdict. You are operating in **orchestrated mode**,
+spawned with the Parity Prompt: you may write and run one measuring script, and write only into the
+parity folder below.
+
+## Inputs
+Task Packet: <INSERT FULL TASK PACKET> — read its `## Design Reference`: States to compare, Ruled deviations.
+App URL: <INSERT app-url, filled with this checkout's port offset>
+Board URL: <INSERT the board's URL from artboard-server>
+Compared against: <"Board <file>" | "Acceptance Criteria — <surface> not drawn">
+Widths: <INSERT parity-viewports, at least 1440>
+Parity folder: <INSERT <scratchpad>/parity/<run id>/<ID>[-retryN]/>
+Repo root: <INSERT>
+
+## How to measure
+1. Write one CommonJS script, `<parity folder>/parity.cjs`. Load Playwright from the repo:
+   `const { chromium } = require(require.resolve('playwright', { paths: ['<repo root>'] }));`
+   Run it with `node <parity folder>/parity.cjs`. Output goes to the parity folder only. If the repo has
+   no Playwright, say so as UNVERIFIED — never install packages into the repo.
+2. For each width, and each state in States to compare, open the board's drawing of that state and the
+   app in the same state. Reach app states with `page.route` stubs: an empty response for empty, an
+   error status for error, a held response for loading. Open every dialog and menu the packet touches.
+3. For each element in each state, record on both sides: computed `font-weight`, `font-size`, `color`;
+   a heading's line count (height ÷ line-height); element order and exact wording; whether table tools
+   and the paginator are present, and the paginator's page-size choices; tooltips and ⓘ icons.
+4. Transient states: from navigation, sample every ~20 ms for 2 s — how many loaders show, in what order,
+   and for how long.
+5. Save a screenshot per state per width per side, and the raw measurements as JSON.
+
+## Verdict
+- Every difference is a row. A difference covered by a Ruled deviations line is a match with its ruling
+  named. Any **unruled** difference is a FAIL.
+- When Compared against is the Acceptance Criteria, a row is a mismatch when the built screen breaks a
+  criterion.
+- The app or board will not load, or a listed state cannot be reached even with stubs → UNVERIFIED for
+  that, with the reason. Never PASS what you did not measure.
+
+## Return Format
+Verdict: PASS | FAIL | UNVERIFIED
+Compared against: <as given>
+Parity Table:
+| State | Width | Element | Board | Built | Match | Ruling |
+Issues (if FAIL): one per unruled mismatch — state, width, element, board value, built value.
+Unable to Verify (if UNVERIFIED): what and why.
+Files: <the parity folder's contents>
 ```
 
 ---
@@ -1531,7 +1663,14 @@ skill does not itself analyze the log; it only writes it.
 
 **Written directly by the Orchestrator**, no sub-agent spawn, appended (never overwritten) at:
 - Every work item's terminal state (PASS or Escalate): one row — `Timestamp | Run ID | Item ID | Type |
-  Final loop_count | Escalated? | Escalated Model Used? | UNVERIFIED count | Verdict`.
+  Final loop_count | Escalated? | Escalated Model Used? | UNVERIFIED count | Parity mismatches caught |
+  Mismatches reported after hand-over | Verdict`. `Parity mismatches caught` is the total of unruled
+  mismatches across the item's Step 1.3b runs (`n/a` for a non-UI item). `Mismatches reported after
+  hand-over` starts at `0`; when Bug Fix Intake (Step 0.1b) takes a design mismatch the user found on a
+  surface this item built, add 1 to this item's row — the one edit an old row may take. It should trend
+  to zero; if it does not, the Parity Check is missing something, and that is worth raising with the user.
+  If the file's header row predates these two columns, start a new dated section (`### From <YYYY-MM-DD>`)
+  with the new header rather than rewriting old rows.
 - Integration's terminal state: the same row shape, with `Item ID: Integration` and an added
   `Divide-and-Conquer triggered?` column.
 

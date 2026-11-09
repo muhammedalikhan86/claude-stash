@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.9.0"
+  version: "2.10.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -142,7 +142,7 @@ is set per tier, not per version, and so is this table.
 | Reviewer | `haiku` | `sonnet` | Bounded verification against explicit acceptance criteria, not open-ended synthesis |
 | Integration | `sonnet` | `opus` | Broad-scope root-causing across the whole codebase, same reasoning as Developer |
 | Reviewer-Integration | `haiku` | `sonnet` | Same bounded-verification shape as Reviewer, despite being the last gate before Finalization |
-| Finalizer — Graphify | `haiku` | — (no retry loop) | Mechanical — scoped Skill invocation with fixed args, no synthesis |
+| Finalizer — Graphify | `haiku` | — (no retry loop) | Mechanical — one scoped command (repo script, graphify CLI or Skill, per Step 3.1), no synthesis |
 | Finalizer — PMBook Update | `sonnet` | — (no retry loop) | Tranche-boundary detection is a judgment call with real downstream effect |
 | Finalizer — Handoff Update | `sonnet` | — (no retry loop) | Synthesis-heavy — decides what's worth telling the next session |
 | Finalizer — Revision + Changelog | `haiku` | — (no retry loop) | Near-mechanical — lists facts already known from Features Completed |
@@ -804,9 +804,10 @@ now delegated to a sub-agent.**
 
 Spawn a Finalizer sub-agent via the Agent tool with `subagent_type: "orchestrated-finalizer"` and `model: "haiku"` (see **Model Assignment**), using the **Finalizer Agent Prompt** template, with:
 - **Task:** `Graphify`
-- **Task-Specific Inputs:** `graphify-directories` (or `source-code-directory`, wrapped as a
-  one-entry list, if `graphify-directories` is unset) — the array of path(s) to scope the graph to;
-  whether `graphify-out/graph.json` already exists (first run vs. `--update`)
+- **Task-Specific Inputs:** which route builds the graph (below), with the exact command for route 1;
+  `graphify-directories` (or `source-code-directory`, wrapped as a one-entry list, if
+  `graphify-directories` is unset) — the array of path(s) to scope the graph to; for route 3, whether
+  `graphify-out/graph.json` already exists (first run vs. `--update`)
 
 **Scope: the Finalizer must pass `graphify-directories` (falling back to `source-code-directory`) as
 graphify's path(s), never the project root.** Left unscoped, graphify defaults to the current
@@ -817,10 +818,20 @@ rationale mixed into architecture nodes) and cost (re-extracting prose that didn
 that runs after every single feature. If the user wants a combined code+docs graph, that's a deliberate
 manual `/graphify` run over the project root, not this automatic one.
 
-**Multiple entries:** when the resolved list has more than one path, invoke graphify once per entry —
-the first as a fresh run (or `--update` if `graphify-out/graph.json` already exists from a prior
-Finalization), every subsequent entry with `--update` — so each merges into the same `graphify-out/`
-rather than each entry producing its own separate output directory.
+**How the graph is built — pick the first that applies:**
+
+1. **The repo's own graph script.** If the repo has one (e.g. `scripts/graph.ps1`, or a `make graph`
+   target), name its exact command and the Finalizer runs that and nothing else — the script builds and
+   stamps the report. That keeps the pipeline and the team building the graph the same way.
+2. **No script, more than one path → the graphify command line, per path.** For each path in order:
+   `graphify update <path>` with the environment variable `GRAPHIFY_OUT` set to the **absolute** path of
+   `graphify-out/` (a relative value resolves against the scanned folder and scatters stray output
+   folders). It re-extracts code with no LLM and merges each path into the same graph — tested
+   2026-11-09: a later update of one path kept the other's nodes. **Never the `/graphify` skill once per
+   path:** the skill keeps one scan root per output folder, so a later `--update` can drop an earlier
+   path.
+3. **No script, one path → the `/graphify` skill**, scoped to that path, with `--update` when
+   `graphify-out/graph.json` already exists from a prior Finalization.
 
 Skip only for docs-only changes with no code touched; if skipping, state why explicitly instead of
 spawning the Finalizer for this Task. **Never spawned at all for a Spike** — see **Spike Flow**'s single

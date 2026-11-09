@@ -83,7 +83,6 @@ frontend-only update kept the backend (1,596). Fix pending a decision.
 |---|---|---|
 | 35 | The Graphify Finalizer runs the repo's own `scripts/graph.ps1 -Component <name>` when it exists (the `graphify update` CLI: no LLM, no API cost, safe multi-root merge, same as `make graph-<component>`). No script and several roots: the same CLI per root with an absolute `GRAPHIFY_OUT`. The `/graphify` skill only for a single root. Never the skill once per root | SKILL.md Step 3.1; orchestrated-finalizer.md |
 | 36 | `scripts/graph.ps1` now stamps `+ uncommitted working tree` when the roots are dirty, matching the staleness rule. Committed in shaw-plugin-dashboard on branch `graph-stamp-uncommitted` (8b134692), not merged | shaw-plugin-dashboard `scripts/graph.ps1` |
+| 37 | The non-plugin `orchestrator-development-pattern` (2.9.0 → 2.10.0) gets the same three routes in Step 3.1: repo graph script, else the graphify CLI per path, else the `/graphify` skill for one path only | orchestrator-development-pattern SKILL.md Step 3.1, Model Assignment |
 
-The Open note above is resolved for the plugin orchestrator by row 35. The non-plugin
-`orchestrator-development-pattern` Step 3.1 still says "once per entry, later ones `--update`"; no
-non-plugin repo lists more than one folder today, and the Finalizer now refuses that pattern.
+The Open note above is resolved by rows 35 and 37.

@@ -1,6 +1,6 @@
 # Gen-3 reference projects — templates for new work
 
-These are the live examples of the modern target pattern found in the estate. When starting a brand-new standalone project (see the decision rule in `SKILL.md`), scaffold from whichever of these is the closer analog and adjust names.
+These are the live examples of the modern target pattern found in the estate. When starting a brand-new standalone project (see the decision rule in `code-and-libraries.md`), scaffold from whichever of these is the closer analog and adjust names.
 
 There are **two distinct Gen-3 API shapes**, and picking the right one first saves rework:
 

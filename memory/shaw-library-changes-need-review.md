@@ -29,4 +29,4 @@ been built and used by its consumer on this machine.
    `%USERPROFILE%\.nuget\packages\<id lowercase>\<version>` (NuGet caches the first copy it
    restored and keeps serving it), then tell the consumer to restore again.
 4. After Muhammed publishes: `dotnet nuget remove source ShawLocal` once nothing needs it.
-See [[shaw-dotnet-estate]].
+See [[shaw-estate]] (the skill's `references/nuget.md`).

@@ -5,3 +5,6 @@
 
 # Renamed to memory/muhammed-owns-the-ofa-initiative.md
 memory/user-owns-the-ofa-initiative.md
+
+# Replaced by skills/shaw-estate
+skills/shaw-dotnet-estate

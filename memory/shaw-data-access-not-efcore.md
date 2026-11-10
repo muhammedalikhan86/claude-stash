@@ -27,5 +27,5 @@ design rather than discovering it during implementation.
 
 Applies to any Shaw & Partners .NET project unless he says otherwise for a specific case. It is a
 preference about which stack to build on, so it holds even when EF Core would be the more
-conventional choice outside this organisation. The companion `shaw-dotnet-estate` skill carries the
+conventional choice outside this organisation. The `shaw-estate` skill carries the
 estate-wide detail (package versions, the feed, the Gen-1/2/3 code generations).

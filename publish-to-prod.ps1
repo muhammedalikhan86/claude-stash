@@ -69,7 +69,9 @@ function Get-Key([string]$Dest) {
     # A short, unique name for a destination, used for its place in the backup folder.
     foreach ($root in @($Target, $ShareRoot) | Where-Object { $_ }) {
         if ($Dest.StartsWith($root + '\', [StringComparison]::OrdinalIgnoreCase)) {
-            return (Split-Path $root -Leaf) + '\' + $Dest.Substring($root.Length + 1)
+            $leaf = Split-Path $root -Leaf
+            if (-not $leaf) { $leaf = 'share-root' }   # a UNC share root (\\server\share) has no leaf name
+            return $leaf + '\' + $Dest.Substring($root.Length + 1)
         }
     }
     throw "Refusing to touch a path outside $Target and $ShareRoot : $Dest"

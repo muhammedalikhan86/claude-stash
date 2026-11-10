@@ -8,3 +8,7 @@ memory/user-owns-the-ofa-initiative.md
 
 # Replaced by skills/shaw-estate
 skills/shaw-dotnet-estate
+
+# Moved into skills/shaw-estate (code-and-libraries.md, nuget.md)
+memory/shaw-data-access-not-efcore.md
+memory/shaw-library-changes-need-review.md

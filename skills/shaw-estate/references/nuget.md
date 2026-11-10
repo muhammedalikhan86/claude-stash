@@ -37,7 +37,11 @@ does). Per-library detail, naming traps and observed pins: `shaw-libraries.md`.
 Any change to a library under `Libraries\ShawLibraries` goes on its own branch, is raised for review,
 is **reviewed by Muhammed**, and only then merges. Nothing of it reaches the server unreviewed: no
 check-in or push to the main line, no Release build (a Release build pushes to the feed), no
-`nuget push`. The libraries are TFVC, not git (`tf.exe` under Visual Studio 18 Professional).
+`nuget push`. Debug builds stay local and are fine. The libraries are TFVC, not git
+(`http://sic2tfs1:8080/tfs/libraries`, `tf.exe` under Visual Studio 18 Professional). Before editing,
+make the review unit first; when done, hand Muhammed the review and the publish command, and stop.
+Why: these packages are shared across the whole estate, so an unreviewed change reaches every consumer
+(Shaw.WebJob 2.1.0 and Shaw.Word 2.1.0 were once edited straight in the working folder).
 
 Develop and test locally first; no review is raised until the new version has been built and used by
 its consumer on this machine:
@@ -51,4 +55,4 @@ its consumer on this machine:
    restored), then restore the consumer again.
 4. After Muhammed publishes: `dotnet nuget remove source ShawLocal` once nothing needs it.
 
-Source: `memory/shaw-library-changes-need-review.md` (Muhammed, 2026-11-03).
+Muhammed's rule, 2026-11-03. The `shaw-library-guard.sh` hook enforces the no-Release-build, no-push part.

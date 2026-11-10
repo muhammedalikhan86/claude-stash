@@ -709,6 +709,11 @@ values:
   adr-directory: "./docs/adr"
   platform-architecture-file: "./docs/<shell>/architecture.md"
   snyk-command: "<dependency audit command(s) for the detected stack>"
+  # User interface — omit these four when the repo has no UI (see "UI bindings" below the template)
+  artboards-directory: "./docs/design/artboards/{component}"
+  app-url: "<http://localhost:{4200+offset}>"
+  artboard-server: "<command and port that serve artboards-directory>"
+  parity-viewports: "1440"
 
 ---
 
@@ -729,6 +734,7 @@ values:
   archive-directory: "./docs/{component}/archive"
   adr-directory: "./docs/adr"
   platform-architecture-file: "./docs/<shell>/architecture.md"
+  artboards-directory: "./docs/design/artboards/{component}"   # omit when the repo has no UI
 
 ---
 
@@ -781,7 +787,7 @@ plugin-idea-triage's `architecture-file` and the orchestrator's `architecture-do
 **same physical file** — triage writes it, the orchestrator reads it — but each skill names its
 own variable so either stays usable without the other installed. The same applies to
 `project-management-doc`, `handoff-doc`, `changelog-file`, `revision-file`, `history-directory`,
-`archive-directory` and `adr-directory`.
+`archive-directory`, `adr-directory` and `artboards-directory`.
 
 Both blocks use the same `{component}` templates, so the **component table is defined once** and a
 new component is one row. But a change to a *path shape* is still two edits — change it in both
@@ -798,10 +804,20 @@ Fill `snyk-command` from the detected stack (`npm audit`, `pip-audit`, `cargo au
 any that report findings without a non-zero exit code — `dotnet list package --vulnerable` is the
 common offender, and gating on its exit code makes that half of the audit decorative.
 
+**UI bindings.** The orchestrator's Board Parity Check needs `app-url` and `artboard-server` for every
+UI packet, and stops to ask when they are unbound. Fill them now from what the repo already says: the
+root `CLAUDE.md`, the run skill, the stack config (dev-server port, port offset per checkout), and the
+README of whatever serves or tests against the boards. Write `app-url` as a pattern with `{offset}` in
+it, never one checkout's fixed port. `artboards-directory` is templated per component, so each
+component's Design Gate sees only its own boards; if the repo already keeps boards elsewhere, use that
+shape in both blocks, and never flatten a per-component folder into one. Anything not found stays a `<TODO>` and is listed in Step 9. A repo with no user interface
+drops all four lines.
+
 ## Step 9 — Summarize
 
 Report what was created, what was skipped and why, and any `<TODO>` left for the user. Remind them
-these are project conventions meant to be committed, not local config.
+these are project conventions meant to be committed, not local config. Name the UI bindings that were
+filled (and the file each came from) and any left as `<TODO>`.
 
 ### In add mode
 

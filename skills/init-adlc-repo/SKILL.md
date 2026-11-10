@@ -501,6 +501,11 @@ values:
     - "<./src/Project>"
     - "<./tests/Project.Tests>"
   graphify-out: "./graphify-out"
+  # User interface — omit these four when the repo has no UI (see "UI bindings" below the template)
+  artboards-directory: "<./docs/design/artboards>"
+  app-url: "<http://localhost:{4200+offset}>"
+  artboard-server: "<command and port that serve artboards-directory>"
+  parity-viewports: "1440"
 
 `graphify-directories` keeps the knowledge graph on the code roots (Step 2); `source-code-directory`
 stays the repo root for platform detection. `scripts/graph.ps1` reads both bindings — change a root
@@ -569,6 +574,14 @@ Fill `snyk-command` from the detected stack (`npm audit`, `pip-audit`, `cargo au
 any that report findings without a non-zero exit code — `dotnet list package --vulnerable` is the
 common offender, and gating on its exit code makes that half of the audit decorative.
 
+**UI bindings.** The orchestrator's Board Parity Check needs `app-url` and `artboard-server` for every
+UI packet, and stops to ask when they are unbound. Fill them now from what the repo already says: the
+root `CLAUDE.md`, the run skill, the stack config (dev-server port, port offset per checkout), and the
+README of whatever serves or tests against the boards. Write `app-url` as a pattern with `{offset}` in
+it, never one checkout's fixed port. `artboards-directory` is the folder of design boards, if one
+exists. Anything not found stays a `<TODO>` and is listed in Step 9. A repo with no user interface
+drops all four lines.
+
 ## Step 9 — Summarize
 
 Report what was created, what was skipped and why, and any `<TODO>` left for the user. Remind them
@@ -577,6 +590,8 @@ these are project conventions meant to be committed, not local config. Explicitl
 - That the project `settings.json` has no `hooks` block (or which duplicate entries were removed from an
   existing one, and which project-only hooks were kept), and any `~/.claude/hooks` script that is not
   wired in the user's global `~/.claude/settings.json`.
+- The UI bindings that were filled (and the file each came from), any left as `<TODO>`, or that the
+  repo has no user interface and they were left out.
 - That `.mcp.json` was created with `playwright` and `context7`, and that `CONTEXT7_API_KEY` needs
   to be set in the user's environment before the Context7 server will authenticate.
 - **That `scripts/graph.ps1` builds the knowledge graph** (or why it was not copied), with its

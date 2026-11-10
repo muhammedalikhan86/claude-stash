@@ -10,9 +10,14 @@ trigger lines in `SKILL.md` at Step 0.4, Step 1.1b and Step 1.3b). Step numbers 
 `app-url` — the app's address as a pattern with the port offset in it, e.g.
 `http://localhost:{4200+offset}`, filled with **this checkout's** offset (from its stack config; never
 assume 0); `artboard-server` — how the board is served; `parity-viewports` — layout widths to compare at
-(default `1440`). If `app-url` or `artboard-server` is missing when a UI packet is planned, ask the user
-once before Phase 1 — the Parity Check is never skipped for want of a URL. Keep the answers in
-`run-state-file`; a resume that finds them missing asks again before Step 1.3b.
+(default `1440`). If `app-url` or `artboard-server` is missing when a UI packet is planned, **look in
+the repo before asking**: the root `CLAUDE.md`, the project's run skill (`.claude/skills/run/`), the
+stack config, and the README of whatever serves or tests against the boards (e.g.
+`business-tests/README.md`). If both are found there, use them, say where each came from in the Step 0.4
+announcement, and offer once (in the end-of-run summary, not mid-run) to write them into
+`.claude/SKILLS.md` so later runs read them directly. Only what the repo does not say is asked of the
+user — once, before Phase 1. The Parity Check is never skipped for want of a URL. Keep the values in
+`run-state-file`; a resume that finds them missing looks again, then asks, before Step 1.3b.
 
 ---
 

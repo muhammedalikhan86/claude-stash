@@ -1,7 +1,7 @@
 # 04 — UI packets: Design Gate and Board Parity Check
 
 Full procedure: `references/ui-packets.md`. Before Phase 1, if `app-url` or `artboard-server` is
-missing, the Orchestrator asks the user once; the Parity Check is never skipped for want of a URL.
+missing, the Orchestrator looks in the repo (CLAUDE.md, run skill, READMEs) and asks the user once only for what it cannot find; the Parity Check is never skipped for want of a URL.
 
 ## Design Gate (Step 1.1b) — before the Developer, never after
 

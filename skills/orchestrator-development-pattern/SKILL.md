@@ -297,9 +297,14 @@ and do not block — for Step 0.4 to surface in the plan announcement.
   pattern with the port offset in it, e.g. `http://localhost:{4200+offset}`, filled with **this checkout's**
   offset (from its stack config; never assume 0); `artboard-server` — how the boards are served;
   `parity-viewports` — layout widths to compare at (default `1440`). If `app-url` or `artboard-server` is
-  missing when a UI packet is planned, ask the user once, right after the Step 0.4 announcement and
-  before Phase 1 — the Parity Check is never skipped for want of a URL. Save the answers in
-  run-state's `decisions`; a resumed run that lacks them asks again before Step 1.3b.
+  missing when a UI packet is planned, **look in the repo before asking**: the root `CLAUDE.md`, the
+  project's run skill (`.claude/skills/run/`), the stack config, and the README of whatever serves or
+  tests against the boards. If both are found, use them, say where each came from in the Step 0.4
+  announcement, and offer once (in the end-of-run summary, not mid-run) to write them into
+  `.claude/SKILLS.md`. Only what the repo does not say is asked of the user — once, right after the
+  Step 0.4 announcement and before Phase 1. The Parity Check is never skipped for want of a URL. Save
+  the values in run-state's `decisions`; a resumed run that lacks them looks again, then asks, before
+  Step 1.3b.
 
 **Test Cases Doc checks.** A good doc has, for the current phase's features: at least one E2E or smoke
 scenario per feature in scope; concrete, executable scenarios, not placeholders; edge cases and

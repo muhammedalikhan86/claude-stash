@@ -43,4 +43,4 @@ Integration escalation, the Integration agent). An Integration resume reads the 
 `divideAndConquer` other than `not run` means it never runs again in this batch. Either way, the item's next terminal state gets a
 second metrics row, whose Final loop_count is this leg's count (see **Pipeline Telemetry**'s cell in SKILL.md; a
 restart at `loop_count` 0 also sets `loopCountAtEscalation` to 0, so no loop is counted twice). If run-state lacks `app-url` or
-`artboard-server` and a UI packet remains, ask again before Step 1.3b.
+`artboard-server` and a UI packet remains, look in the repo again, then ask, before Step 1.3b.

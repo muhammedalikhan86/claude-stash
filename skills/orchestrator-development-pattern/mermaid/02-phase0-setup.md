@@ -77,7 +77,7 @@ flowchart TD
     Conv["Step 0.3 Detect coding<br/>conventions; summary<br/>saved in run-state"]
     Ann["Step 0.4 Announce plan or<br/>Bug/Spike one-liner, Deferred<br/>warning; write run-state-file"]
     UI{"artboards-directory set,<br/>UI packet planned, app-url<br/>or artboard-server missing?"}
-    AskUrl["Ask user once"]
+    AskUrl["Look in CLAUDE.md,<br/>run skill, READMEs;<br/>ask user once for<br/>what is not found"]
     Out(["Phase 1<br/>see 03"])
 
     Entry -->|"build from PMBook"| PMB

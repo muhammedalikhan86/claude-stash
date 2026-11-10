@@ -8,7 +8,7 @@ when the user types "resume" at an escalation pause. A run that never pauses or 
 
 **Resuming:** on explicit confirmation, read `references/templates.md` first — a resumed run never
 reaches Phase 1's "read once, now" line. If a UI packet is unfinished and run-state lacks `app-url` or
-`artboard-server`, ask for it again before Step 1.3b. Then rebuild the position from the file — PMBook items persisted by ID
+`artboard-server`, look in the repo again, then ask, before Step 1.3b. Then rebuild the position from the file — PMBook items persisted by ID
 re-derive their packets from the current PMBook and run-state's conventions summary; the rest use the
 persisted packet. In a fresh session,
 treat every scratchpad path in the file as gone: re-write each packet to

@@ -37,9 +37,12 @@ A bump of the shell's `architecture-doc` reaches every plugin. For every *other*
 
 **Which pointers move.** Only the blockquote header lines of each component's `architecture-doc` and
 `project-management-doc` (`> PRD:`, `> Architecture:`, `> Platform Architecture:`). A `built against`
-line anywhere else — a handoff, changelog, revision file, test cases doc or runbook — is **reported, not
-moved**: list each under Notes with its file and version. Moving it would claim a review nobody did; the
-owning component's own run moves it.
+line anywhere else — a handoff, changelog, revision file, test cases doc or runbook — follows **the
+repo's own rule**. If the root `CLAUDE.md` or `.claude/SKILLS.md` says a stale pointer is a defect to be
+fixed, move it within the resolved component, and list each move under Notes. If the repo says nothing,
+it is **reported, not moved**: list each under Notes with its file and version, since moving it would
+claim a review nobody did. Either way, another component's pointer is only reported; that component's
+own run moves it.
 
 Repointing a header line, and adding the PMBook item in step 3, are the **only** edits to another
 component's documents this pattern permits. `platform-architecture-file` itself stays read-only.

@@ -104,6 +104,7 @@ Matches `orchestrator-development-pattern`'s expected Integration return format 
 ### Known-Reds
 - <test> — owner <component or module> — tracked by <ID>
 - <test> — owner <component or module> — accepted by the user
+- <test or audit finding> — owner <component or module> — accepted by the user (baseline: <file>)
 - <test> — owner <component or module> — untracked
   (each followed by an indented evidence line: the read-only git proof this run did not cause it;
   for a test in the prompt's `## Accepted Known-Reds`, the owner is still yours and the status is
@@ -243,7 +244,11 @@ A failure this run did not cause is not yours to fix, but do not just call it un
 Report it under **Known-Reds** as `- <test> — owner <component or module> — tracked by <ID>`. A test
 named in the prompt's `## Accepted Known-Reds` section keeps your own owner field and takes its status
 from that section's line (`— accepted by the user` or `— tracked by <ID>`), so the line stays
-`- <test> — owner <component or module> — <status>`. Any other with no live item is `— untracked`. Never invent an ID: the Orchestrator asks the user about every `— untracked` line.
+`- <test> — owner <component or module> — <status>`. A test or audit finding the repo's documented
+baseline names (the file the prompt's `## Accepted Known-Reds` cites as `baseline: <file>`, or a
+known-red or baseline section in the root `CLAUDE.md`) is `— accepted by the user (baseline: <file>)`,
+never `— untracked`; an audit finding so named is listed here too, and does not by itself make
+`Audit` FAIL. Any other with no live item is `— untracked`. Never invent an ID: the Orchestrator asks the user about every `— untracked` line.
 Give the evidence on an indented line beneath it. A tracked or accepted known-red with evidence does not by itself make Overall Status FAIL. Never skip,
 disable or loosen it.
 

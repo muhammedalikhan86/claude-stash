@@ -31,7 +31,8 @@ metadata:
     app-url,
     artboard-server,
     parity-viewports,
-    parity-command
+    parity-command,
+    known-red-baseline
   ]
 ---
 
@@ -89,6 +90,9 @@ starts back at the high bar.
 and run-state file, skip Step 0.4's run-id/run-state write, and append the item to the queue (save
 run-state). If Phase 2 has already started, save its full packet in run-state's `decisions.heldForNextRun`
 instead; it seeds the next run's queue (see **Run-State Checkpointing**). At Step 1.5's gate, a report of a *different* bug is an intake, not a rejection of the current one.
+An end-to-end check that waits on another item is carried in that other item's Acceptance Criteria
+(the item that lands last proves the whole path), never parked as Deferred Integration, which is for P0
+fast lanes only.
 
 ## Key design principles
 
@@ -276,6 +280,7 @@ exists and its run is not marked complete. If so, stop and ask explicitly before
 "Found an incomplete run from `<timestamp>`, last at `<item>` — resume it, or start fresh?" Never resume
 silently. On a confirmed resume, read `references/resume.md` first; it says where the run rejoins. If the file doesn't exist, or exists but
 its run is already marked complete, proceed normally — this check never blocks a fresh invocation.
+**Finished, close-out missed:** if every item in that file is terminal (a Feature `passed review`, a Bug `verified`, a Spike `findings recorded`, or `dropped`), and no phase or P0 lane is `started`, it is not a run to resume. Ask instead: "Run `<run id>` finished but its close-out never ran — run its close-out now, or mark it complete?" Do that (Step 3.6's close-out lines, or just mark it complete) before this run goes on. **Start fresh never loses an item:** before Step 0.4 replaces the file, name every item in it that is not terminal (`in progress`, `awaiting verification`, `escalated`) with its `parkedAt` folder, and put each into the new run's queue — its packet from `parkedAt`, or re-derived from its PMBook row — unless the user drops it.
 **Held intakes survive a new run:** before Step 0.4 writes the new file, the old file's
 `decisions.heldForNextRun` packets — whether its run is complete or the user chose "start fresh" — are
 announced and put into the new run's queue, where the next-free-ID scan sees them.
@@ -842,7 +847,8 @@ Spawn an Integration sub-agent via the Agent tool with `subagent_type: "orchestr
   of them were covered just because a full-suite run happened (see **Step 3.2**'s explicit-list resolution
   rule below).
 - **`## Accepted Known-Reds`** — one line per test the user has ruled on (see **Known-reds**):
-  `- <test> — accepted by the user` or `- <test> — tracked by <ID>`, or `None`. Passed on every
+  `- <test> — accepted by the user`, `- <test> — accepted by the user (baseline: <file>)` or
+  `- <test> — tracked by <ID>`, or `None`. Passed on every
   Integration spawn: the first, every retry (normal or fresh-spawn), and every Divide-and-Conquer
   `## Sub-problem` and `## Aggregate pass` spawn.
 - **`## Known Reds at Baseline`** — run-state's `baseline.reds` from Step 0.3b, one line per test with
@@ -912,6 +918,14 @@ and still red belongs under `### Known-Reds`, with how it failed at baseline —
 does not triage it as new — but it still needs a ruling below like any other known-red, and it is
 listed in the final summary. A test green at baseline and red now is this run's, never a known-red. A
 baseline red that is now green is noted on the final summary's `Baseline reds:` line.
+
+**Documented baseline.** A repo may document failures it already lives with: the file the
+`known-red-baseline` binding names, or else a known-red or baseline section in the root `CLAUDE.md`.
+Read it before the first Integration spawn. Each test or audit finding it names is already ruled — the
+user accepted it by writing it down — so it goes straight into the run's accepted known-red list as
+`- <test or finding> — accepted by the user (baseline: <file>)`, and into run-state's
+`decisions.acceptedKnownReds`, and the first `## Accepted Known-Reds` section already carries it. Such a
+line never pauses the run. A failure the baseline does not name is ruled as below.
 
 **A `— untracked` line pauses the run** before any Reviewer-Integration spawn. Ask the user, per test:
 raise a tracking item (the line becomes `— tracked by <new ID>`) or accept it (`— accepted by the user`).
@@ -1017,10 +1031,12 @@ manual `/graphify` run over the project root, not this automatic one.
 3. **No script, one path → the `/graphify` skill**, scoped to that path, with `--update` when
    `graphify-out/graph.json` already exists from a prior Finalization.
 
-**Runs only when code in the graphed paths changed.** Before Phase 3, for each path in
-`graphify-directories` (or `source-code-directory`) run `git status --porcelain -- <path>`. A path
-counts as changed if it prints anything **or** holds a file that `git log --grep "Run-Id: <run id>"
---name-only` lists (a commit made earlier in this run). If no path counts as changed, spawn no
+**Runs only when this run changed code in the graphed paths.** Before Phase 3, decide from **the run's
+own file set** (the one `## Foreign Paths` uses: every item's run-state `files`, every attempt, plus the
+`integration` block's `files`), never from raw `git status`: another session's or the user's
+uncommitted file under a path does not make it changed. A path in `graphify-directories` (or
+`source-code-directory`) counts as changed when a file in that set lies under it — committed earlier in
+this run or not. If no path counts as changed, spawn no
 Finalizer for this Task and print `Graphify: skipped — no change in <paths>`. Otherwise pass the
 changed paths in the Task-Specific Inputs: route 2 runs only those when `graphify-out/graph.json`
 already exists. **Never spawned at all for a Spike** — see **Spike Flow**'s single
@@ -1429,7 +1445,8 @@ path, files changed and commit ids, or "None provided">
 If any IDs are listed, re-validate each against the current working tree in this run.
 
 ## Accepted Known-Reds
-<INSERT one line per test the user ruled on: `- <test> — accepted by the user` or
+<INSERT one line per test the user ruled on, documented-baseline ones included:
+`- <test> — accepted by the user`, `- <test> — accepted by the user (baseline: <file>)` or
 `- <test> — tracked by <ID>`, or "None">
 
 ## Known Reds at Baseline
@@ -1649,7 +1666,7 @@ Never create or switch branches — ask the user, provide the command.
 
 `run-state-file` lets a fresh session pick an interrupted run back up. **The Orchestrator writes it
 directly** (`Write`/`Edit`, no sub-agent); this is bookkeeping, not code. **It is local and gitignored,
-never committed** — `init-adlc-repo` puts it in `.gitignore`; if it shows up untracked, it is missing
+never committed** — `init-adlc-repo` puts it, and the `.orchestrator-work/` park folders beside it, in `.gitignore`; if it shows up untracked, it is missing
 from there, and no commit step ever stages it.
 
 **Units and steps.** A unit is a work-item attempt, a P0 lane, Phase 2, or Phase 3. Each unit records
@@ -1678,7 +1695,7 @@ a verified Bug's regression test path, each Parity table path with its unruled-m
 with `unverifiedTotal` once the metrics row is written), the latest Developer Output (for a review-only
 item, the Build Record until a Developer returns), and the last Issues list and Unable to Verify report;
 `mode: review-only` when set; `outsideItem` (Steps 1.3 and 1.3b — defects and board differences outside
-the item, merged across retries); `reviewerMissRetry: used` once Step 1.4 has spent it. The run's
+the item, merged across retries); `reviewerMissRetry: used` once Step 1.4 has spent it; `parkedAt` (the durable folder an escalation pause parked the item in — `references/escalation.md`). The run's
 `baseline` (Step 0.3b: when it ran, or why it was skipped, and its `reds`); `foreignPaths` (Step 2.1). An `integration` block: `loop_count`, `unverifiedTotal`, `priorLoops`,
 the latest Integration Output, `outputPaths` (every saved Integration Output file, in order — Step 2.1), `files` (the union of changed files across every Integration pass and
 every Divide-and-Conquer sub-problem spawn), and `divideAndConquer: not run | running | confirmation pass | done`. At
@@ -1693,7 +1710,7 @@ as it always is for Bug and Spike intake items (no PMBook row to regenerate from
 
 **One `decisions` block**, written the moment the user (or the Orchestrator) decides, before acting on it:
 `commit: yes | no | ask`; the Release label per scope (`lane:<ID>`, `phase3` — each scope reuses only its
-own); the accepted known-reds, with any tracking ruling's assigned `OI-NNN`; `heldForNextRun` (full
+own); `acceptedKnownReds` — the accepted known-reds (documented-baseline ones marked with their file), with any tracking ruling's assigned `OI-NNN`; `heldForNextRun` (full
 packets of mid-run intakes held because Phase 2 had started — counted in the next-free-ID scan, announced
 at resume and at close-out, and seeding the next run's queue); the `app-url` / `artboard-server`
 answers; `rulings` (Step 1.2's design rulings and Step 1.4's `not an issue` rulings, each with its
@@ -1709,6 +1726,8 @@ finished run's record is its `metrics-log-file` rows and its commits (`Run-Id:` 
 verdict (so every `loop_count` change); at every user decision; when a Bug enters `awaiting
 verification`; at every terminal state and escalation; and at close-out, marked complete with the
 "🏁 Orchestrator Complete" summary. A file marked complete never triggers the Step 0.0 resume check.
+At that close-out, delete the `.orchestrator-work/<ID>/` park folder of every item that ended this run;
+keep one whose item is still non-terminal (its `parkedAt` carries it to the next run).
 
 **Repeat-safe writes.** A step re-run after a crash may repeat a write, so every governed-doc write
 checks for an entry for the same item ID (and run id and scope, where the doc carries them) and updates it instead
@@ -1727,6 +1746,8 @@ does not analyze the log; it only writes it. **Written directly by the Orchestra
 spawn, appended and never overwritten. Every row kind uses this one header:
 
 `| Timestamp | Run ID | Item ID | Type | Wave | Started | Finished | Final loop_count | Escalated? | UNVERIFIED count | Verdict | Test scope | Divide-and-Conquer triggered? | Known-reds | Phase times | Parity mismatches caught | Mismatches reported after hand-over |`
+
+**An older header.** If the log's last table has a different header (an earlier version of this skill, e.g. 14 columns), never rewrite, pad or re-order its rows. Append a heading `### From <YYYY-MM-DD>` and a new table with this header, then the row. Each table is read on its own.
 
 **Row kinds.** One per work item that reached a terminal state; one with `Item ID: Integration`, only if
 Phase 2 ran; one with `Item ID: RUN`, always, written at the 🏁 final summary. Every cell is filled — `—`

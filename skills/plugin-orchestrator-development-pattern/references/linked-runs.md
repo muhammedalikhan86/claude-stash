@@ -26,6 +26,17 @@ plugin change that breaks a test or contract the shell owns. They run in one orc
 - **Close-out (Step 3.6):** the RUN row goes into each linked component's `metrics-log-file`, and every
   run-state file with this run id is marked complete.
 
+**Not every `Depends on:` is a Linked Run.** When one side degrades gracefully without the other — it
+passes its own Integration and works, only less, until the other lands — run them as **separate runs
+linked by `Depends on:`**, not as Linked Runs: either side can land first. A request raised into this
+component by another component's run (its `Depends on:`) is a mid-run intake like any other: queued, or,
+once Phase 2 has started, held in `decisions.heldForNextRun` — the PMBook Finalizer may raise its row now
+so the other run can cite the ID.
+
+**An end-to-end check that waits on another item** is carried in the depended-on item's Acceptance
+Criteria — the item that lands last proves the whole path. It is never parked as Deferred Integration,
+which stays a P0 fast-lane mechanism only.
+
 ---
 
 ## FAIL — cross-component dependency (Step 1.4)

@@ -11,7 +11,8 @@ Parallel-Safety, Git Restrictions, Output Template) still applies.
 2. **The graphify command line, per root:** for each root in order, run `graphify update <root>` with
    `GRAPHIFY_OUT` set to the absolute path of the output directory. When the inputs give a list of
    changed roots and `graph.json` already exists, run only those roots: the others' nodes stay in the
-   graph. Otherwise run every root. Then stamp the report (below), listing every root.
+   graph. Otherwise run every root. Take the changed roots as given — the Orchestrator decided them from
+   the run's own files; never recompute them from `git status`, which also shows other sessions' files. Then stamp the report (below), listing every root.
 3. **The `graphify` skill:** the default when no route is named — see below.
 
 Whatever the route, never scan the project root, which would also pull docs/ADR/PMBook/handoff content

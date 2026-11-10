@@ -266,6 +266,7 @@ graphify-out/**
 
 # Orchestrator run-state: local resume data, rewritten by every run, never committed.
 **/.orchestrator-run-state.json
+**/.orchestrator-work/
 ```
 
 The three `graphify-out` lines have to be in that order. `graphify-out/**` excludes everything; git
@@ -522,6 +523,7 @@ values:
   revision-file: "./REVISION.md"
   changelog-file: "./CHANGELOG.md"
   snyk-command: "<dependency audit command(s) for the detected stack>"
+  # known-red-baseline: "<optional — a file listing failures and audit findings the repo already accepts>"
   test-runbook-location: "./docs/testing/<FEATURE-ID>-<short-name>.md"
   architecture-doc: "./docs/architecture.md"
   test-cases-doc: "./docs/test-cases.md"

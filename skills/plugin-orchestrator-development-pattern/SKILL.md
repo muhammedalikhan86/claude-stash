@@ -33,6 +33,7 @@ metadata:
     design-directory,
     design-rows-directory,
     design-rounds-directory,
+    known-red-baseline,
     run-state-file,
     metrics-log-file
   ]
@@ -190,7 +191,7 @@ at `orchestrator-development-pattern`.
 |---|---|---|
 | 1 | **The user named it** | Must appear in `components:`; if not, stop and list the valid names. |
 | 2 | **Work item ID prefix** | `OFA-F-003` → `ofa`. Case-insensitive, the segment before `-F-` / `-B-` / `-S-` / `-PM-`. A bare `F-031` resolves nothing. |
-| 3 | **An unfinished run-state file** | Glob `docs/*/.orchestrator-run-state.json`. **Exactly one** run id with `"complete": false` resolves it and means a resume (Step 0.0's Resume check) — a UI Iteration's file (`mode: ui-iteration`) included; Linked Runs' files share one run id and resume together. |
+| 3 | **An unfinished run-state file** | Glob `docs/*/.orchestrator-run-state.json`. **Exactly one** run id with `"complete": false` resolves it and means a resume (Step 0.0's Resume check) — a UI Iteration's file (`mode: ui-iteration`) included; Linked Runs' files share one run id and resume together. A file whose items are all terminal still resolves the component, but Step 0.0 offers its missed close-out, never a resume. |
 | 4 | **Branch name** | A path segment exactly matching one component name. Two matches resolve nothing. |
 | 5 | **Working-tree diff** | `git status --porcelain`: dirty, and every changed path under exactly one component's roots (paths outside all roots ignored). Two components' roots → resolves nothing; raise it. |
 | 6 | **Ask** | List each component with its tranche and open-item count. |
@@ -235,6 +236,7 @@ roots); `run-state-file` and `metrics-log-file` (auto-created).
 **Resume check:** if `run-state-file` exists and is not complete, ask: "Found an incomplete run from
 `<timestamp>`, last at `<item>` — resume it, or start fresh?" Never resume silently. On a confirmed resume, read
 `references/resume.md` first; it says where the run rejoins.
+**Finished, close-out missed:** if every item in that file is terminal (a Feature `passed review`, a Bug `verified`, a Spike `findings recorded`, or `dropped`), and no phase or P0 lane is `started`, it is not a run to resume. Ask instead: "Run `<run id>` finished but its close-out never ran — run its close-out now, or mark it complete?" Do that (Step 3.6's close-out lines, or just mark it complete) before this run goes on. **Start fresh never loses an item:** before Step 0.4 replaces the file, name every item in it that is not terminal (`in progress`, `awaiting verification`, `escalated`) with its `parkedAt` folder, and put each into the new run's queue — its packet from `parkedAt`, or re-derived from its PMBook row — unless the user drops it.
 
 **Held intakes:** when the old `run-state-file` is complete, or the user chose "start fresh", announce
 its `decisions.heldForNextRun` items now and put them into the new run's queue, before Step 0.4
@@ -730,6 +732,14 @@ agent's final reply, and never pass or cite the transcript.
 
 ### Step 2.2 — Invoke Reviewer-Integration Agent (skipped on a clean first pass)
 
+**Documented baseline.** A repo may document failures it already lives with: the file the
+`known-red-baseline` binding names, or else a known-red or baseline section in the root `CLAUDE.md`.
+Read it before the first Integration spawn. Each test or audit finding it names is already ruled — the
+user accepted it by writing it down — so it goes straight into the run's accepted known-red list as
+`- <test or finding> — accepted by the user (baseline: <file>)`, and into run-state's
+`decisions.acceptedKnownReds`, and the first `## Accepted Known-Reds` section already carries it. Such a
+line never pauses the run. A failure the baseline does not name is ruled as below; the owner is still the Integration Agent's.
+
 **Untracked known-reds first.** If any `### Known-Reds` line in the Integration Output ends
 `— untracked`, pause before this step — and before every Reviewer-Integration spawn, including a
 retry's and Divide-and-Conquer's — and ask the user, per test: raise a tracking item, or accept it?
@@ -850,7 +860,11 @@ an **Edit List**: one line per edit, as `<file> — <anchor> — <change>`.
   2026-11-09 | Fixed | Unreleased`, `entry under [Unreleased] → fix: OFA-B-012 <one line>`. Facts, not
   finished paragraphs: writing the prose is the Finalizer's job, and an Opus-written paragraph costs
   more than the Haiku spawn saves.
-- **Complete:** every edit the Finalizer must make is on the list.
+- **Complete:** every edit the Finalizer must make is on the list — including the content its own Task
+  file requires, which the Orchestrator owns. Read the Task file before writing its list: the Revision +
+  Changelog list carries a `smoke tests →` line (happy path, edge case, regression-sensitive flow; a
+  Bug's is its repro), and the Test Runbook list says per feature which runbook steps are owed, or
+  `no runbook steps owed`.
 - Build the lists from what you already hold — the packets, the Developer Outputs, the Integration
   Output (its drift findings handed to a Finalizer become list lines) and the Release label. Do not read
   the docs in full to build them; a `Grep` for an anchor you are unsure of is enough.
@@ -867,11 +881,12 @@ carries `Scope: phase3` (a P0 lane's: `Scope: lane:<ID>`) next to its `Run ID:`,
 
 ### Step 3.1 — Graphify (Finalizer, `haiku`)
 
-**Runs only when code in the component's `code` roots changed.** Before Phase 3, for each root run
-`git status --porcelain -- <root>`. A root also counts as changed when a file under it is in
-`git log --grep "Run-Id: <run id>" --name-only` — this run's committed files no longer show as
-uncommitted. If every root
-shows nothing (e.g. only docs, a shared library or a test folder outside
+**Runs only when this run changed code in the component's `code` roots.** Before Phase 3, decide from
+**the run's own file set** (Step 2.0's: every item's run-state `files`, every attempt, plus the
+`integration` block's `files`), never from raw `git status`: a foreign path under a root (another
+session's or the user's uncommitted file, Step 2.0) does not make it changed. A root counts as changed
+when a file in that set lies under it — committed earlier in this run or not. If no root
+does (e.g. only docs, a shared library or a test folder outside
 all roots changed — none of which the graph scans), spawn no Graphify Finalizer, print
 `Graphify: skipped — no change in <roots>`, and pass the same line to the Handoff Finalizer and the
 close-out summary. Otherwise keep the list of roots that did change: the routes below use it.
@@ -998,7 +1013,9 @@ saved but not complete.
 1. Append every `metrics-log-file` row now due, per **Pipeline Telemetry** (row kinds, timing,
    write-once; a resumed escalated item or a resumed Integration adds a row for its new leg).
    Linked Runs: the RUN row goes into each linked component's `metrics-log-file`.
-2. Mark `run-state-file` complete — Linked Runs: every run-state file with this run id.
+2. Mark `run-state-file` complete — Linked Runs: every run-state file with this run id. Delete the
+   `.orchestrator-work/<ID>/` park folder of every item that ended this run; keep one whose item is still
+   non-terminal (its `parkedAt` carries it to the next run).
 3. Surface every Finalizer `Notes` entry in the summary.
 4. List any `## Deferred Integration` row still `Pending`, any `heldForNextRun` item, and every item's
    `outsideItem` entries (Steps 1.3 and 1.3b), with what `decisions.outsideItemLog` says of each
@@ -1090,7 +1107,7 @@ the named hub — read `references/push-and-pull.md` and follow it exactly.
 ## Run-State Checkpointing
 
 `run-state-file` (default `docs/<component>/.orchestrator-run-state.json`) lets a fresh session resume.
-It is **local and gitignored — never committed**: it holds scratchpad paths and mid-run state that mean
+It is **local and gitignored — never committed**, like the `.orchestrator-work/` park folders beside it: it holds scratchpad paths and mid-run state that mean
 nothing in another checkout.
 The Orchestrator writes it directly — bookkeeping, not code.
 
@@ -1118,7 +1135,7 @@ the `decisions` block (below), each item's `loop_count`, `priorLoops`
 metrics row; reset per **Pipeline Telemetry**) and last verdict, the files of its Step 1.1b Artboard
 Edit Output (if any), its **`files`** — the union of the files in all its Developer Outputs, every
 attempt, read wherever an item's "files changed" is (Step 2.1, Deferred entries, Step 3.5) — its latest
-Developer Output (files changed, summary, deviations, Test Files Written) and both its last Issues list and its last Unable to Verify report, `loopCountAtEscalation` (saved at
+Developer Output (files changed, summary, deviations, Test Files Written) and both its last Issues list and its last Unable to Verify report, `parkedAt` (the durable folder an escalation pause parked it in, `references/escalation.md`), `loopCountAtEscalation` (saved at
 every escalation), `blockedGate` (`reviewer | parity |
 reviewer-integration | developer | integration | finalizer`, saved at any Verification Blocked escalation, cleared once the resume has respawned the role it names), the latest
 Integration Output, an `integration` block (Step 2.1's tree snapshot, `outputPaths` — every saved
@@ -1135,7 +1152,7 @@ A UI Iteration adds `"mode": "ui-iteration"`, `openedAt`, its `tweaks` log (numb
 files, time), `doneAt` once the user says "done", and its file set (`references/ui-iteration.md` step 3).
 **`decisions`** — written the moment the user (or the Orchestrator) decides, before acting on it:
 `commit: yes | no | ask`; the Release label per scope (`lane:<ID>`, `phase3`), each scope reusing only
-its own; the accepted known-red list, with each tracking ruling and its assigned OI id (saved before
+its own; `acceptedKnownReds` — the accepted known-red list (documented-baseline ones marked with their file), with each tracking ruling and its assigned OI id (saved before
 the PMBook write); `heldForNextRun` (Step 0.1b item 7); the `app-url` and `artboard-server` answers; `rulings` (Step 1.2's
 design rulings, and Step 1.4's overruled issues: item, issue, reason); `testCasesDoc` (Step 0.0); `outsideItemLog` (Phase 3's offer);
 `designHolds` (`references/ui-packets.md` §Design rows hold: item, open rows, round); `designRowsOwed`
@@ -1183,6 +1200,8 @@ Orchestrator, never overwritten. One header for every row (17 cells):
 ```
 | Timestamp | Run ID | Item ID | Type | Wave | Started | Finished | Final loop_count | Escalated? | UNVERIFIED count | Verdict | Test scope | Divide-and-Conquer triggered? | Known-reds | Phase times | Parity mismatches caught | Mismatches reported after hand-over |
 ```
+
+**An older header.** If the log's last table has a different header (an earlier version of this skill, e.g. 14 columns), never rewrite, pad or re-order its rows. Append a heading `### From <YYYY-MM-DD>` and a new table with this header, then the row. Each table is read on its own.
 
 **Three row kinds:** one per work item that reached a terminal state; one with `Item ID: Integration`,
 only if Phase 2 ran; one with `Item ID: RUN`, always. Every cell is filled — `—` where a column does not

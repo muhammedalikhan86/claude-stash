@@ -11,7 +11,7 @@ flowchart TD
     In(["Before the Finalizer spawn"])
     Lane{"P0 fast lane, and the queue<br/>holds a Feature or<br/>non-P0 Bug?"}
     Later["No Graphify here:<br/>the run's own Phase 3<br/>builds it"]
-    Status["git status --porcelain<br/>per graphed path, plus files<br/>in git log --grep<br/>Run-Id: run id"]
+    Status["Run's own files<br/>(items + integration),<br/>not raw git status,<br/>per graphed path"]
     Changed{"Any path changed?"}
     Skip["No Graphify spawn;<br/>print Graphify: skipped"]
     Route{"How to build?"}

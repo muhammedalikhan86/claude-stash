@@ -160,6 +160,8 @@ start of the Item cell of the Open Items rows in the owning component's PMBook (
 gives); it must exist and describe this failure (an ID the
 prompt's `## Accepted Known-Reds` section names must exist too).
 `accepted by the user` → OK only if the prompt's `## Accepted Known-Reds` section names that test.
+`accepted by the user (baseline: <file>)` → OK only if that file exists and names the test or audit
+finding (the prompt's section lists it too).
 `untracked` → FAIL (the Orchestrator should never send you one). A wrong owner, an ID that doesn't
 exist or doesn't match, an acceptance the prompt doesn't list, or no evidence → FAIL.
 Also FAIL a full-scope Output that skipped any suite the profile lists for the full run.

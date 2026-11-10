@@ -10,7 +10,7 @@ flowchart TD
     E1("Step 0.4, which Bug and<br/>Spike intakes also run") --> W
     E2("A step starts, a step ends:<br/>Developer, gate, D-and-C stage,<br/>Finalizer batch, commit") --> W
     E3("Every verdict") --> W
-    E4("Every user decision,<br/>before acting on it") --> D["decisions: commit, Release<br/>label per scope, known-red<br/>rulings, heldForNextRun,<br/>app-url, artboard-server,<br/>rulings: design + overruled"]
+    E4("Every user decision,<br/>before acting on it") --> D["decisions: commit, Release<br/>label per scope,<br/>acceptedKnownReds (incl.<br/>documented baseline), heldForNextRun,<br/>app-url, artboard-server,<br/>rulings: design + overruled"]
     D --> W
     E5("Each status change: in progress<br/>(start, FAIL, rejection, resume);<br/>Feature PASS: passed review;<br/>Bug PASS: awaiting verification,<br/>then verified; Spike: findings<br/>recorded; escalated; dropped") --> W
     E6("UI Iteration: opened, each<br/>tweak, doneAt, file set") --> W
@@ -39,9 +39,11 @@ Integration pass and Divide-and-Conquer sub-problem spawn.
 
 ```mermaid
 flowchart TD
-    S("run-state found, not<br/>complete; Linked: every<br/>file with that run id") --> Ask{"Ask: resume,<br/>or start fresh?"}
-    Ask -->|"fresh"| Fresh("Start fresh: announce<br/>heldForNextRun, put it in the<br/>new queue; UI Iteration: copy<br/>it unchanged, no queue")
-    Ask -->|"resume"| Pk["Read templates.md; fresh<br/>session: re-write packets,<br/>Developer Outputs, issues,<br/>Integration Output from run-state"]
+    S("run-state found, not<br/>complete; Linked: every<br/>file with that run id") --> AllT{"Every item terminal,<br/>nothing started?"}
+    AllT -->|"yes"| Missed("Finished, close-out missed:<br/>ask: run its close-out,<br/>or mark it complete")
+    AllT -->|"no"| Ask{"Ask: resume,<br/>or start fresh?"}
+    Ask -->|"fresh"| Fresh("Start fresh: name non-terminal<br/>items with parkedAt and queue<br/>them unless dropped; announce<br/>heldForNextRun, put it in the<br/>new queue; UI Iteration: copy<br/>it unchanged, no queue")
+    Ask -->|"resume"| Pk["Read templates.md; fresh<br/>session: re-write packets,<br/>Developer Outputs, issues,<br/>Integration Output from run-state<br/>(missing: parkedAt, else PMBook)"]
     Pk --> Prof["Print 0.0a block, announce<br/>heldForNextRun; Profile, waves,<br/>queue from the file"]
     Prof --> Done{"Run complete?"}
     Done -->|"yes"| Nothing("Nothing to resume")

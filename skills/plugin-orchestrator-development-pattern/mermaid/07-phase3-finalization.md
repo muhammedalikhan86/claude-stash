@@ -8,7 +8,7 @@ flowchart TD
     Label --> Out["Outside items? Ask once:<br/>one Bug per surface or grouped;<br/>save decisions.outsideItemLog"]
     Out --> Owed["Design rows owed: write<br/>decisions.designRowsOwed as<br/>Open rows in the open round"]
     Owed --> Lists["Edit List per doc Finalizer:<br/>file, anchor, change;<br/>no edit off the list;<br/>yes adds Open Bug rows"]
-    Lists --> G{"Roots changed: uncommitted,<br/>or in git log for<br/>this Run-Id?<br/>P0 lane: single-item run,<br/>or only Spikes remain"}
+    Lists --> G{"Roots changed by the<br/>run's own files<br/>(not raw git status)?<br/>P0 lane: single-item run,<br/>or only Spikes remain"}
     G -->|"no"| GS["Print Graphify skipped,<br/>tell Handoff + summary"]
     G -->|"yes"| GF{{"3.1 Graphify<br/>haiku, route below"}}
     Lists --> PM{{"3.2 PMBook Update<br/>haiku, sonnet with<br/>the sweep"}}
@@ -56,7 +56,7 @@ flowchart TD
     Each --> Aff{"Contract-affecting<br/>for that component?"}
     Aff -->|"yes"| Raise["Raise work item in its PMBook,<br/>bump its architecture-doc,<br/>history row"]
     Aff -->|"no"| Notes
-    Raise --> Notes("Report under Notes;<br/>other built-against lines<br/>reported, not moved")
+    Raise --> Notes("Report under Notes;<br/>other built-against lines:<br/>repo rule decides, else reported")
 ```
 
 Nodes: 7.

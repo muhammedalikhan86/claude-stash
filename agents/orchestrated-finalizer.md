@@ -45,7 +45,9 @@ orchestrator has already decided what changes; your job is to find each spot and
    says; otherwise skip the line and report it under Notes.
 4. The list is complete. Make no edit that is not on it, even inside the same file — except the PMBook
    Update procedure's own phase-status, open-item and tranche-boundary checks, which the PMBook
-   Finalizer always does. Anything else you notice goes under Notes.
+   Finalizer always does. Anything else you notice goes under Notes. If your Task Procedure requires
+   content the list lacks (e.g. smoke tests, runbook steps), do not invent it: report
+   `Edit List gap: <what>` under Notes.
 5. Your Task Procedure's rules still bind you (never a history row in a live doc, never pick a version,
    update an existing entry for the same item in place). If a list line would break one, skip it and say so under
    Notes.

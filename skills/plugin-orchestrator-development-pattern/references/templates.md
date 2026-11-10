@@ -504,7 +504,8 @@ as this run's changes; a failure that traces to one is classified like any known
 changed it, or `unknown`).
 
 ## Accepted Known-Reds
-<INSERT one line per test the user ruled at Step 2.2: "- <test> — accepted by the user" or
+<INSERT one line per test the user ruled at Step 2.2, documented-baseline ones included:
+"- <test> — accepted by the user", "- <test> — accepted by the user (baseline: <file>)" or
 "- <test> — tracked by <ID>" (ID `<COMPONENT>-OI-NNN`, at the start of an `## Open Items` row's Item
 cell in the owning component's PMBook) — or "None">
 

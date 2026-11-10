@@ -10,7 +10,9 @@ Phase 2's entry rule, the item statuses and the metrics rows referred to below a
 On explicit user confirmation, take the latest phase first and stop at the first match (a `dropped` item is skipped by every rule): run complete → nothing; an item with status `escalated` (or the
 `integration` block with `escalated: true`) → **Resuming after an escalation** (below);
 Phase 3 `done`, or nothing left unfinished and Phase 2's entry rule says Phase 2 is not owed → close-out; Phase 3 started → rejoin it at its recorded step;
-Reviewer-Integration PASS recorded → Phase 3; Phase 2 started → its recorded step. Otherwise, Phase 1:
+Reviewer-Integration PASS recorded → Phase 3; Phase 2 started → its recorded step (the known-reds in
+`decisions.acceptedKnownReds`, documented-baseline ones included, are already ruled and never asked
+again). Otherwise, Phase 1:
 a verified P0 lane not `done` → its recorded step, and then resume **continues** with the rest of this
 rule (it does not stop); a Spike with a Developer Output and no Spike Log → its Spike Log Finalizer (never
 a Reviewer); a Bug `awaiting verification` → Step 1.5's gate posted again; items at their first gate with no recorded result; and once every Phase 1 item is terminal
@@ -24,7 +26,7 @@ are used as stored. `blockedGate` is read by the escalation resume, the gate it 
 only then cleared. Announce any `heldForNextRun` items. In a fresh
 session, every scratchpad path in the file (saved packets, parity folders) is treated as gone: re-write
 each packet to `<scratchpad>/runs/<run id>/packet-<ID>.md` before the next spawn, and re-run a Parity
-Check rather than citing an old folder. Before any respawn, also re-write the saved Developer Output,
+Check rather than citing an old folder. A packet or output missing from both the scratchpad and run-state is read from the item's `parkedAt` folder; with no `parkedAt` either, re-derive the packet from the item's PMBook row and say so in the resume announcement. Before any respawn, also re-write the saved Developer Output,
 Issues list, Unable to Verify report and Integration Output to the scratchpad (the Output at its saved
 name, `integration-output-pass<N>.md`, the last of `integration.outputPaths`), so Previous Issues, a Report 2
 Reviewer respawn, Integration's Retry Context and the Phase 2/3 inputs all have their source. Never

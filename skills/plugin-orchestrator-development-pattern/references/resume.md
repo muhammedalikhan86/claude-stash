@@ -17,7 +17,7 @@ latest Developer Output (`devout-<ID>[-legN][-retryN].md`), its last Issues list
 Verify report, and the latest
 Integration Output there too (at its saved name, `integration-output-pass<N>.md`, the last of
 `integration.outputPaths`) — Previous Issues, a Verification Blocked Reviewer respawn, Integration's
-Retry Context and the Phase 2/3 inputs all read from them.
+Retry Context and the Phase 2/3 inputs all read from them. A packet or output missing from both the scratchpad and run-state is read from the item's `parkedAt` folder; with no `parkedAt` either, re-derive the packet from the item's PMBook row and say so in the resume announcement.
 
 **Where a resumed run rejoins.** Phase 0 is not re-run: print Step 0.0a's block, announce any
 `heldForNextRun` items, then take the Platform Profile, waves and queue from the file. Take the first
@@ -32,7 +32,8 @@ match, latest phase first; a step found `started` (not `done`) re-runs from its 
 5. Phase 3 started → Phase 3 at its recorded step;
 6. Reviewer-Integration PASS, or a recorded skip → Phase 3;
 7. Phase 2 started → its recorded step, with the `integration` block's counters (Step 2.2's untracked
-   known-red pause applies). A re-run Integration step reuses Step 2.1's saved snapshot (a re-run doc-only retry
+   known-red pause applies; the known-reds in `decisions.acceptedKnownReds`, documented-baseline ones
+   included, are already ruled and never asked again). A re-run Integration step reuses Step 2.1's saved snapshot (a re-run doc-only retry
    reuses its own saved "before" snapshot) and is never a Reviewer-Integration skip candidate. A Divide-and-Conquer `running` re-runs the aggregate pass; `confirmation
    pass` respawns its Reviewer-Integration. Only a Divide-and-Conquer escalation means none runs again:
    a FAIL that takes loop_count past 3 then escalates at once (template 1);

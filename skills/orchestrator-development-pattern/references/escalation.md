@@ -73,7 +73,7 @@ the item's status `escalated` (for Integration, `escalated: true` in the `integr
 `escalationFinalLoopCount` (the row's Final loop_count: `loop_count` minus the old
 `loopCountAtEscalation`, computed before this save overwrites it, 0 when never escalated, so a re-run
 writes the same value), `loopCountAtEscalation` (the item's, or the `integration` block's), and both the
-last Issues list and the last Unable to Verify report. Then append the item's `metrics-log-file` row
+last Issues list and the last Unable to Verify report. **Park the item** in the same save, before printing: copy its packet, its latest Developer Output (for Integration, the latest Integration Output) and its last Issues list and Unable to Verify report from the scratchpad to `<folder of run-state-file>/.orchestrator-work/<ID>/` (Integration: `.../integration/`), and record that folder as the item's `parkedAt`. The scratchpad does not outlive the session; this folder does, and it is gitignored with run-state. A resumed item that reaches a terminal state has its folder deleted at close-out. Then append the item's `metrics-log-file` row
 (terminal state `Escalated`; for Integration, the Integration row; Final loop_count from the saved
 `escalationFinalLoopCount`) plus a `RUN` row with Verdict `Paused (escalation)`. On "resume", set the status back to `in progress` (clear the block's flag),
 save at once, and follow **Resuming after an escalation** in `references/resume.md`.

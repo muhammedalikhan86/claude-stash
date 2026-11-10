@@ -330,6 +330,7 @@ graphify-out/**
 
 # Orchestrator run-state: local resume data, rewritten by every run, never committed.
 **/.orchestrator-run-state.json
+**/.orchestrator-work/
 ```
 
 The four lines have to be in that order and all four are needed. `graphify-out/**` excludes
@@ -742,6 +743,7 @@ values:
   adr-directory: "./docs/adr"
   platform-architecture-file: "./docs/<shell>/architecture.md"
   snyk-command: "<dependency audit command(s) for the detected stack>"
+  # known-red-baseline: "<optional — a file listing failures and audit findings the repo already accepts>"
   # User interface — omit these when the repo has no UI (see "UI bindings" below the template)
   design-directory: "./docs/design"
   design-rows-directory: "./docs/design/rows/{component}"

@@ -35,7 +35,9 @@ flowchart TD
     Start --> Deps
     Deps -->|missing| AskDeps --> Deps
     Deps -->|present| Resume
-    Resume -->|yes| AskResume
+    Resume -->|yes| AllTerm{"Every item terminal,<br/>nothing started?"}
+    AllTerm -->|"yes"| MissedClose("Finished, close-out missed:<br/>ask: run its close-out,<br/>or mark it complete") --> Held
+    AllTerm -->|"no"| AskResume
     AskResume -->|resume| Rebuild --> Order
     Order -->|"item status escalated, or<br/>integration block<br/>escalated: true"| RunEsc
     Order -->|"Phase 3 done, or nothing<br/>unfinished and Phase 2<br/>not owed; run not complete"| Close
@@ -49,7 +51,7 @@ flowchart TD
     P1 -->|"item with no<br/>recorded result"| Phase1
     P1 -->|"all terminal, no P0 lane<br/>unfinished, Phase 2 not<br/>started; Phase 2 owed"| RunP2
     P1 -->|"all terminal, no P0 lane<br/>unfinished; Phase 2<br/>not owed"| Close
-    AskResume -->|"start fresh"| Held
+    AskResume -->|"start fresh"| Carry("Non-terminal items named<br/>with parkedAt; queued unless<br/>the user drops them") --> Held
     Resume -->|"no, or complete"| Held
     Held --> Deferred
     Deferred --> IsPMB

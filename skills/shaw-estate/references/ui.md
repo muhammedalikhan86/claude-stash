@@ -13,7 +13,7 @@ an always-on rule in `~/.claude/rules/shaw-estate.md`.)
    a11y utilities.
 2. **Plain HTML is for text, layout and landmarks** — `p`, headings, `span`, `strong`, `div`,
    `section`, `article`, `header`, `footer`, `nav`, `main`, `aside`, `img`, a real `a` link, and the
-   `<canvas>` or `<svg>` a chart draws into. These carry no behaviour and Material has no component
+   `<canvas>` or `<svg>` a chart draws into (charts themselves: §Charts). These carry no behaviour and Material has no component
    for them.
 3. **Anything else in plain HTML needs Muhammed Ali Khan's sign-off, before it is built, recorded in
    writing.** A hand-built control re-implements focus management, keyboard behaviour, ARIA, density
@@ -64,6 +64,34 @@ in the brief's `## Build rules`:
    controls (`<button>`, `<input>`, `<label>`, `<select>` with no Material attribute or `mat-` parent)
    and raises each as a finding with its Material replacement; the build always uses the Material
    component, never the drawn markup.
+
+## Charts: Apache ECharts through ngx-echarts
+
+Material has no charts, so the house charting library is **Apache ECharts** (`echarts`), used in
+Angular through **`ngx-echarts`**. This is the preference for every Shaw Angular app: don't pick
+Chart.js, Highcharts, ApexCharts, D3 or hand-drawn SVG instead. Another library is a deviation that
+needs Muhammed Ali Khan's written sign-off, recorded in an ADR. The reference is the Shaw Portal
+(`shaw-plugin-dashboard`): `docs/adr/ADR-012-charting-library.md`, with the working setup in
+`apps/plugin0/src/app/core/echarts-setup.ts` (the advisor dashboard and landing page copy it). As of
+2026-11-11 it runs `echarts` 6.1.0 and `ngx-echarts` 20.0.1 on Angular 20; check the portal's
+`package.json` for the current versions before adding them elsewhere.
+
+How the portal uses it, which a new chart follows:
+
+1. **Tree-shaken imports only.** Import from `echarts/core` and register just the chart types and
+   components used, with `echarts.use([...])` in one `echarts-setup.ts`. Never `import * from 'echarts'`:
+   it pulls in everything. A chart type missing from the list renders blank with a console warning.
+2. **Canvas renderer** (`CanvasRenderer`). Nothing inside a chart is a DOM node, so give each chart
+   host `role="img"` and an `aria-label`, and test against the option object, not the rendered chart.
+3. **Colours come from the theme, never inline.** Register one ECharts theme built from the Material 3
+   tokens (`--shaw-sys-chart-1…6`, `--mat-sys-*`), resolved with `getComputedStyle`, because ECharts
+   can't read a CSS `var()`.
+4. **ECharts 6 needs `LegacyGridContainLabel`** registered wherever a grid uses `containLabel`;
+   without it the option is dropped silently and labels overlap.
+5. **Federated plugins:** provide `provideEchartsCore({ echarts })` on the chart-hosting component, not
+   in `app.config.ts`, and skip `/^echarts\/dist\//` in the Native Federation shared config.
+6. **On a design board,** a chart is drawn as a chart, labelled as an ECharts chart with its series
+   type (bar, line, pie and so on). It is not a set of hand-drawn shapes meant to be rebuilt as HTML.
 
 Hosting an Angular front end on the intranet (base href, `environment.prod.ts`, rewrite
 `Web.config`): `hosting-and-deployment.md` (DEP-6, DEP-7).

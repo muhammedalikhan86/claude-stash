@@ -249,7 +249,10 @@ baseline names (the file the prompt's `## Accepted Known-Reds` cites as `baselin
 known-red or baseline section in the root `CLAUDE.md`) is `— accepted by the user (baseline: <file>)`,
 never `— untracked`; an audit finding so named is listed here too, and does not by itself make
 `Audit` FAIL. Any other with no live item is `— untracked`. Never invent an ID: the Orchestrator asks the user about every `— untracked` line.
-Give the evidence on an indented line beneath it. A tracked or accepted known-red with evidence does not by itself make Overall Status FAIL. Never skip,
+Give the evidence on an indented line beneath it. A known-red the prompt names that no longer fails is
+reported as `- <test or finding> — owner <component or module> — no longer fails (<exact command>)`:
+the same command the baseline ran, with the same flags (e.g. `dotnet format --verify-no-changes`, not a
+narrower check), run on this tree. A narrower check proves nothing about it. A tracked or accepted known-red with evidence does not by itself make Overall Status FAIL. Never skip,
 disable or loosen it.
 
 ### The Judgment Test
@@ -276,6 +279,10 @@ Check what the project actually has:
 3. **Test runbook and test-cases doc vs flows** — both cover flows introduced or changed by this batch.
 4. **Diagrams** — referenced diagrams exist and still depict the current shape.
 5. **ADRs** — every cited decision-record ID exists and is still the active one.
+6. **Stale mentions of this batch's items** — `Grep` each item ID across the governed docs. A line that
+   contradicts what this batch did (a fixed bug still described as broken, a removed step still listed)
+   is drift. Status words the Finalizers will update (open → done) are theirs, not drift: under an
+   orchestrator, list each such line as `Drift: <doc> — stale <ID> mention at <anchor> — handed to <Finalizer>`.
 
 ### Fix Directly vs Flag
 

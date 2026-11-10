@@ -72,10 +72,14 @@ the Feature/Bug loop:
    Assignment**), scoped to this one Spike (`Scope: spike:<ID>`), with the `project-management-doc` path, once no P0 lane (with its
    commit if any) is open (one PMBook writer at a time — P0 step 4). It writes exactly one row to the PMBook's `## Spike Log` table
    (`ID | Question | Recommendation | Spike Directory | Follow-up`), creating that section if it doesn't
-   exist yet. No other Finalizer task runs — no Graphify, no Handoff Update, no Revision+Changelog, no Test
+   exist yet. **A planned spike** (its own PMBook row) also gets that row's `Status → Done` and each
+   done-when the row names (e.g. `recorded in architecture §3.5`), as extra Task-Specific Inputs. No other Finalizer task runs — no Graphify, no Handoff Update, no Revision+Changelog, no Test
    Runbook, no Commit Messages, since nothing was integrated or shipped.
-5. Spike code stays exactly where the Developer left it, inside its Spike Directory, uncommitted — the
-   Orchestrator neither commits it (see **Git Restrictions**) nor deletes it. What happens to it next —
+5. **Commit the docs, never the spike code.** The Orchestrator commits the governed-doc edits the Spike
+   Log Finalizer made (Step 3.6's rules and trailers), plus any query files the findings rest on, kept
+   in a tracked work folder (Shaw work: record the query a finding rests on). Spike code stays exactly
+   where the Developer left it, inside its Spike Directory, uncommitted — the Orchestrator neither
+   commits it (see **Git Restrictions**) nor deletes it. What happens to it next —
    promoted into a real Feature Task Packet, or abandoned in place — is the user's call after reading the
    Spike Log row.
 6. Log `🔎 S-XXX <question> — Findings recorded, see Spike Log`; this is its terminal state, so append

@@ -55,6 +55,30 @@ Rows are read from this component's `design-rows-directory`; the round is the re
 
 ---
 
+## Data sources check (Step 0.4)
+
+Runs before the plan is announced, for every planned item that changes what a user sees, whoever
+draws the boards. A `Depends on:` item being done is not proof the data exists: check the read it delivered.
+
+1. **List what the board shows.** For each UI item still in the queue, list every data field its board
+   (or, with no board, its Acceptance Criteria) displays on the surfaces it touches: each column, value,
+   count, badge, filter option and default.
+2. **Name where each comes from:** the API endpoint and response field the screen reads, and behind it
+   the database read (view, procedure or column). Read the code, and for a database query the server
+   itself — never a schema copy; record the query in the packet (Shaw work:
+   `~/.claude/skills/shaw-estate/references/databases-and-querying.md`).
+3. **Every field has a source, or this item's own scope adds it** → write the list into the packet's
+   `## Design Reference` as `Data sources:` (field → source, or `added by this item`). The Developer
+   builds to it and the Reviewer checks it.
+4. **A field with no source, outside this item's scope → ask before the plan is announced:**
+   (a) widen this item to add the read (this component only); (b) add a `Depends on:` item that adds it in the component that owns the data (Linked Runs when they must land together); or
+   (c) hold the item. Save the answer in run-state's `decisions.dataSourceGaps` (item, fields, ruling).
+   A held item works like a design hold (§Design rows hold, item 3): it leaves this run's queue with every item that depends
+   on it, its PMBook row is not touched, and the next run checks it again. Never let a Developer find
+   the gap mid-build.
+
+---
+
 ## Design Gate (Step 1.1b)
 
 **Before the Developer is spawned, never after** — except a UI Iteration, where it runs once at "done"

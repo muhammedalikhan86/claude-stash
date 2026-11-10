@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.11.1"
+  version: "1.12.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -66,7 +66,7 @@ Read each only when its trigger occurs. They are part of this skill.
 | `references/escalation.md` | A work item or Integration is about to escalate, or Divide-and-Conquer triggers |
 | `references/resume.md` | A resume is confirmed at Step 0.0's Resume check, or the user types "resume" at an escalation pause — what to read first, where the run rejoins, resuming after an escalation |
 | `references/ui-iteration.md` | A UI Iteration is opened (Step 0.1d) or found open on resume |
-| `references/ui-packets.md` | A planned packet touches a user interface (Step 0.4) — UI bindings, Design rows hold (Step 0.4), Design Gate (Step 1.1b), Board Parity Check (Step 1.3b) |
+| `references/ui-packets.md` | A planned packet touches a user interface (Step 0.4) — UI bindings, Design rows hold and Data sources check (Step 0.4), Design Gate (Step 1.1b), Board Parity Check (Step 1.3b) |
 | `references/linked-runs.md` | Work items in two components must land together (Step 0.0a), or a FAIL lies in another component's files (Step 1.4) |
 | `references/push-and-pull.md` | Before any push or pull — a go arrives from the user or a hub session, or this session is the hub |
 | `references/version-pointer-sweep.md` | Never by you — its path is handed to the PMBook Update Finalizer when a `> Version:` header moved |
@@ -357,7 +357,7 @@ and Reviewer-Integration prompts. Sub-agents use exactly what is named and skip 
 ### Step 0.4 — Plan Waves and Announce
 
 If a planned item changes what a user sees and `artboards-directory` is set, first follow
-`references/ui-packets.md` §Design rows hold: a held item is in no wave. Then build the waves (Step 1.0),
+`references/ui-packets.md` §Design rows hold, then §Data sources check: a held item is in no wave. Then build the waves (Step 1.0),
 and print:
 
 ```
@@ -892,7 +892,12 @@ an **Edit List**: one line per edit, as `<file> — <anchor> — <change>`.
   file requires, which the Orchestrator owns. Read the Task file before writing its list: the Revision +
   Changelog list carries a `smoke tests →` line (happy path, edge case, regression-sensitive flow; a
   Bug's is its repro), and the Test Runbook list says per feature which runbook steps are owed, or
-  `no runbook steps owed`.
+  `no runbook steps owed`. Each file gets a line for **every section it keeps per entry**: `Grep` the
+  file's headings first — a changelog that keeps its own `### Smoke tests` or `Files touched` gets a
+  line for each, not only the revision file.
+- **Every stale mention:** `Grep` each item ID across the governed docs (PMBook, handoff, changelog,
+  revision, test runbook, test-cases doc). Every line that states the item's status, or calls it open,
+  gets an Edit List line on the Finalizer that owns that file — a line no list names is left stale.
 - Build the lists from what you already hold — the packets, the Developer Outputs, the Integration
   Output (its drift findings handed to a Finalizer become list lines) and the Release label. Do not read
   the docs in full to build them; a `Grep` for an anchor you are unsure of is enough.
@@ -1054,7 +1059,7 @@ saved but not complete.
    Linked Runs: the RUN row goes into each linked component's `metrics-log-file`.
 2. Mark `run-state-file` complete — Linked Runs: every run-state file with this run id. Delete the
    `.orchestrator-work/<ID>/` park folder of every item that ended this run; keep one whose item is still
-   non-terminal (its `parkedAt` carries it to the next run). Delete this run's `runs/`, `gate-logs/` and
+   non-terminal (its `parkedAt` carries it to the next run). The delete applies only to the gitignored `.orchestrator-work/` under the run-state folder — never a tracked folder, even one a run used to park files, and never a folder a governed doc links to. Delete this run's `runs/`, `gate-logs/` and
    `parity/` folders in the work dir too, unless an item of the run is still non-terminal (a Bug
    `awaiting verification` keeps its gate logs for the `verified` reply).
 3. Surface every Finalizer `Notes` entry in the summary.
@@ -1196,7 +1201,7 @@ files, time), `doneAt` once the user says "done", and its file set (`references/
 its own; `acceptedKnownReds` — the accepted known-red list (documented-baseline ones marked with their file), with each tracking ruling and its assigned OI id (saved before
 the PMBook write); `heldForNextRun` (Step 0.1b item 7); the `app-url` and `artboard-server` answers; `rulings` (Step 1.2's
 design rulings, and Step 1.4's overruled issues: item, issue, reason); `testCasesDoc` (Step 0.0); `outsideItemLog` (Phase 3's offer);
-`designHolds` (`references/ui-packets.md` §Design rows hold: item, open rows, round); `designRowsOwed`
+`designHolds` (`references/ui-packets.md` §Design rows hold: item, open rows, round); `dataSourceGaps` (§Data sources check: item, fields, ruling); `designRowsOwed`
 (Step 1.2, the Design Gate and the hold: item, surface, change, source, then `written as <row ID>` or
 `not written — <why>`).
 **Also per item:** `mode` (`review-only` when set, Step 0.1), `outsideItem` (Steps 1.3 and 1.3b),

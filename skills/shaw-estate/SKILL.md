@@ -25,7 +25,7 @@ Read the reference a task needs; don't load them all.
 | `references/app-identity-and-sql.md` | What account a deployed app uses to reach SQL; production vs development connection strings. |
 | `references/sign-in-and-ad.md` | How users sign in; AD groups and roles; who-is-who tables. |
 | `references/app-owned-data.md` | A new app's own database: naming, DbUp, LocalDB, sharing within an initiative. |
-| `references/ui.md` | Any Shaw user interface (Angular Material house standard), including design boards, designer briefs and round prompts (§Design boards). |
+| `references/ui.md` | Any Shaw user interface (Angular Material house standard), including design boards, designer briefs and round prompts (§Design boards), and charts (ECharts via ngx-echarts, §Charts). |
 
 ## Standard architecture defaults — start from these, ask only about real deviations
 
@@ -34,7 +34,8 @@ again; ask only where the product genuinely needs something different, and recor
 ADR. The precedent is `shaw-plugin-dashboard` (Shaw Portal).
 
 1. **Front end:** Angular with Angular Material, served at `/<AppFolder>/` on `sic2iws1`;
-   `apiBaseUrl` set in `environment.prod.ts` (`ui.md`, `hosting-and-deployment.md`).
+   `apiBaseUrl` set in `environment.prod.ts`; charts with Apache ECharts via `ngx-echarts` (`ui.md`,
+   `hosting-and-deployment.md`).
 2. **API:** .NET (Gen 3, SDK-style), its own IIS application at `/api/<api-slug>` with its own
    "No Managed Code" pool. Same origin as the front end, so no CORS (`hosting-and-deployment.md`).
 3. **App identity:** the pool runs as the firm's gMSA; SQL is reached with Windows Integrated
@@ -65,5 +66,5 @@ Keep these apart when asking or designing:
 ## Always-on rules
 
 These are also in `~/.claude/rules/shaw-estate.md`, so they apply even before this skill loads:
-Angular Material house standard; `Shaw.DataAccess`, not EF Core; `Shaw.*` library changes need
+Angular Material house standard (charts: ECharts via ngx-echarts); `Shaw.DataAccess`, not EF Core; `Shaw.*` library changes need
 Muhammed's review; query output rules; no schema copies in a repository.

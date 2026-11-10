@@ -10,7 +10,8 @@ Don't copy those facts into other files; point to the skill.
 ## Hard rules (always on)
 
 1. **UI is Angular Material.** If Material or the CDK has a component, use it; any other plain-HTML
-   control needs Muhammed Ali Khan's written sign-off first. Detail: the skill's `references/ui.md`.
+   control needs Muhammed Ali Khan's written sign-off first. Charts are Apache ECharts via
+   `ngx-echarts`. Detail: the skill's `references/ui.md`.
 2. **Data access is `Shaw.DataAccess`, never EF Core.**
 3. **A change to any `Shaw.*` library goes branch → review by Muhammed → merge.** No check-in, push,
    Release build or `nuget push` before that. Detail: the skill's `references/nuget.md`.

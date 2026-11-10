@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.14.1"
+  version: "2.15.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -397,7 +397,7 @@ after the Developer Agent step instead of going to the Reviewer.
    question itself is unclear, ask; a Spike Task Packet built from a vague question produces vague findings.
 2. **Assign a Spike ID.** Scan `project-management-doc` for the highest existing `S-XXX` (in its `## Spike
    Log` table, if one exists yet — see Spike Flow's Finalizer step in `references/spike-and-p0.md`) **and**
-   run-state's queue and `decisions.heldForNextRun` (IDs already assigned), and assign the next free number. If none exists, start at `S-001`. IDs are stable once assigned, same rule as `F-XXX` / `B-XXX`.
+   run-state's queue and `decisions.heldForNextRun` (IDs already assigned), and assign the next free number. If none exists, start at `S-001`. IDs are stable once assigned, same rule as `F-XXX` / `B-XXX`. **A planned spike** — a PMBook row typed `Spike` (in the Feature Backlog or elsewhere) — keeps that row's ID; never mint a new one for it. Its question and done-when come from the row.
 3. **Assign a Spike Directory.** Default to repo-root `spikes/S-XXX/` — outside every source root and test
    discovery path, with no test config of its own — unless the user specifies otherwise. The full gate and
    Graphify exclude it. This is not optional — see the Task Packet's `## Spike Directory` field and
@@ -484,6 +484,28 @@ bound); when the repo draws its own boards, skip this step — Step 1.1 settles 
 5. **A change the Acceptance Criteria fully describe** (a label, a tooltip, a state of an existing
    control) does not hold: it goes on with the criteria as its spec (Step 1.1), and the drawing is owed —
    add it to `decisions.designRowsOwed` (Phase 3 **Design rows owed**).
+
+### Step 0.3d — Data Sources Check (UI items only)
+
+Runs before the plan is announced, for every planned item that changes what a user sees, whoever
+draws the boards. A `Depends on:` item being done is not proof the data exists: check the read it delivered.
+
+1. **List what the board shows.** For each UI item still in the queue, list every data field its board
+   (or, with no board, its Acceptance Criteria) displays on the surfaces it touches: each column, value,
+   count, badge, filter option and default.
+2. **Name where each comes from:** the API endpoint and response field the screen reads, and behind it
+   the database read (view, procedure or column). Read the code, and for a database query the server
+   itself — never a schema copy; record the query in the packet (Shaw work:
+   `~/.claude/skills/shaw-estate/references/databases-and-querying.md`).
+3. **Every field has a source, or this item's own scope adds it** → write the list into the packet's
+   `## Design Reference` as `Data sources:` (field → source, or `added by this item`). The Developer
+   builds to it and the Reviewer checks it.
+4. **A field with no source, outside this item's scope → ask before the plan is announced:**
+   (a) widen this item to add the read; (b) add a `Depends on:` item that adds it; or
+   (c) hold the item. Save the answer in run-state's `decisions.dataSourceGaps` (item, fields, ruling).
+   A held item works like a design hold (Step 0.3c, item 3): it leaves this run's queue with every item that depends
+   on it, its PMBook row is not touched, and the next run checks it again. Never let a Developer find
+   the gap mid-build.
 
 ### Step 0.4 — Announce Plan
 
@@ -1005,7 +1027,11 @@ For each parallel spawn, use the **Finalizer Agent Prompt** template below with 
 Task-Specific Inputs. Every Finalizer — Phase 3, a P0 lane's, the Commit Messages one — also gets
 `## Final Status per Item`: one line per item in its scope with its final run-state status (e.g.
 `F-013 — Done`, `B-007 — verified`, `B-009 — Hotfixed — Integration Pending`, `F-020 — dropped`), so no
-Finalizer guesses an item's state from the docs. None of them write code or run tests — that boundary stays with
+Finalizer guesses an item's state from the docs. Before spawning, `Grep` each item ID across the governed
+docs; every line that states the item's status or calls it open goes, with its file and line, to the
+Finalizer that owns that file (`Stale mentions:`), so none is left saying "open". The Revision + Changelog
+Finalizer is told every section `changelog-file` keeps per entry (`Grep` its headings: e.g.
+`### Smoke tests`, `Files touched`), and fills each. None of them write code or run tests — that boundary stays with
 Developer/Integration — they only touch governed docs, the knowledge graph, and (for 3.6) drafted text.
 
 **Release label — decided once, before the spawn.** The PMBook Finalizer writes `Fixed In <label>` while
@@ -1256,6 +1282,8 @@ States to compare: <the board states this item must match — populated, empty, 
   view, and each dialog and menu it touches>
 Ruled deviations: <each accepted difference from the board, with its source: a design row ID, or a
   user ruling with its date — or "None". Only these may differ; anything else fails>
+Data sources: <each field the board shows → its API field and database read, or "added by this item"
+  (Step 0.3d)>
 Standing acceptance criterion (every UI packet): The built screen matches the board in every listed
   state; the Parity Table (Step 1.3b) shows no unruled mismatch.
 
@@ -1403,7 +1431,8 @@ test passes. A Manual Verification Gate with the user follows your PASS (the Orc
 your job is the regression test, not the user's view of the symptom.
 
 If the Task Packet carries a `## Design Reference`, check the code against it: that every state in
-`States to compare` is built, and nothing the board draws is missing. Report any divergence you can see
+`States to compare` is built, nothing the board draws is missing, and each `Data sources:` field is read
+from the source named there. Report any divergence you can see
 in the code as an issue. "The board looks out of date" is not a defence. **A static read does not
 satisfy the design check.** You may PASS the code, but the item is not done until the Board Parity Check
 (Step 1.3b) measures the rendered screen and passes. Do not claim the screen matches the board.
@@ -1759,7 +1788,7 @@ own); `acceptedKnownReds` — the accepted known-reds (documented-baseline ones 
 packets of mid-run intakes held because Phase 2 had started — counted in the next-free-ID scan, announced
 at resume and at close-out, and seeding the next run's queue); the `app-url` / `artboard-server`
 answers; `rulings` (Step 1.2's design rulings and Step 1.4's `not an issue` rulings, each with its
-reason); `outsideItemLog` (Phase 3's offer); `designHolds` (Step 0.3c: item, open rows, round);
+reason); `outsideItemLog` (Phase 3's offer); `designHolds` (Step 0.3c: item, open rows, round); `dataSourceGaps` (Step 0.3d: item, fields, ruling);
 `designRowsOwed` (Steps 1.1–1.2 and 0.3c: item, surface, change, source, then `written as <row ID>` or
 `not written — <why>`); and `testCasesDoc` when Step 0.0 let a thin doc stand because an item fills it.
 
@@ -1772,7 +1801,7 @@ verdict (so every `loop_count` change); at every user decision; when a Bug enter
 verification`; at every terminal state and escalation; and at close-out, marked complete with the
 "🏁 Orchestrator Complete" summary. A file marked complete never triggers the Step 0.0 resume check.
 At that close-out, delete the `.orchestrator-work/<ID>/` park folder of every item that ended this run;
-keep one whose item is still non-terminal (its `parkedAt` carries it to the next run). Delete this run's
+keep one whose item is still non-terminal (its `parkedAt` carries it to the next run). The delete applies only to the gitignored `.orchestrator-work/` under the run-state folder — never a tracked folder, even one a run used to park files, and never a folder a governed doc links to. Delete this run's
 `runs/`, `gate-logs/` and `parity/` folders in the work dir too, unless an item of the run is still
 non-terminal (a Bug `awaiting verification` keeps its gate logs for the `verified` reply).
 

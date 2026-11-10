@@ -80,6 +80,8 @@ States to compare: <the board states this item must match — populated, empty, 
   view, and each dialog and menu it touches>
 Ruled deviations: <each accepted difference from the board, with its source: a design row ID, or a
   hub or user ruling with its date — or "None". Only these may differ; anything else fails>
+Data sources: <each field the board shows → its API field and database read, or "added by this item"
+  (Step 0.4, `references/ui-packets.md` §Data sources check)>
 Standing acceptance criterion (every UI packet): The built screen matches the board in every listed
   state; the Parity Table (Step 1.3b) shows no unruled mismatch.
 
@@ -265,7 +267,8 @@ You are operating in **orchestrated mode**.
 ## Pipeline-Specific Note
 
 If the Task Packet carries a `## Design Reference`, check the code against it: the named Material/CDK
-components, the styling sources, and that every state in `States to compare` is built. Report any
+components, the styling sources, that every state in `States to compare` is built, and that each
+`Data sources:` field is read from the source named there. Report any
 divergence you can see in the code as an issue. "The artboard looks out of date" is not a defence: it was
 settled at Step 1.1b before the Developer was spawned. **A static read does not satisfy the design
 check.** You may PASS the code, but the item is not done until the Board Parity Check (Step 1.3b)

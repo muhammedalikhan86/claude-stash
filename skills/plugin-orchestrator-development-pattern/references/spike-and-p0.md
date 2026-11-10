@@ -10,11 +10,11 @@ Bug. Both are named exceptions to specific steps, not parallel pipelines.
 Triggered instead of Step 0.1 only when the user explicitly asked for a spike — "spike this", "run a
 spike on X" — never inferred from exploratory-sounding language.
 
-1. **No PMBook row needed.** Take the question directly from the user, plus any approaches to try
+1. **No PMBook row needed** (an ad-hoc spike). Take the question directly from the user, plus any approaches to try
    ("explore freely" is a valid answer). If the question is unclear, ask.
 2. **Assign a Spike ID.** Next number after the highest `<COMPONENT>-S-XXX` in the PMBook's `## Spike Log`
    or among the IDs run-state's queue or `heldForNextRun` already holds; start at `<COMPONENT>-S-001` if none.
-   IDs are stable once assigned.
+   IDs are stable once assigned. **A planned spike** — a PMBook row typed `Spike` (in the Feature Backlog or elsewhere) — keeps that row's ID; never mint a new one for it. Its question and done-when come from the row.
 3. **Assign a Spike Directory.** Default repo-root `spikes/<ID>/`, outside every component's source
    roots and test discovery, unless the user says otherwise. Mandatory. No test config goes there; the
    full gate and Graphify exclude it.
@@ -35,9 +35,13 @@ Reached instead of Step 1.3, right after the Spike's Developer spawn (always
 3. Spawn one `orchestrated-finalizer`, Task = `Spike Log`, `model: "haiku"`, scoped to this Spike, its prompt carrying
    `Scope: spike:<ID>`. It
    writes one row to the PMBook's `## Spike Log` (`ID | Question | Recommendation | Spike Directory |
-   Follow-up`), creating the section if needed. No other Finalizer runs and no commit is made. It
-   waits for any open PMBook writer (below).
-4. Spike code stays where the Developer left it, uncommitted. What happens next is the user's call.
+   Follow-up`), creating the section if needed. **A planned spike** also gets Edit List lines for its
+   own row: `Status → Done`, and each done-when its row names (e.g. `recorded in architecture §3.5` →
+   a line for that file and section). No other Finalizer runs. It waits for any open PMBook writer (below).
+4. **Commit the docs, never the spike code.** The Orchestrator commits the governed-doc edits the Spike
+   Log Finalizer made (Step 3.5 rules, `Run-Id:` and `Items:` trailers), plus any query files the
+   findings rest on, kept in a tracked work folder (Shaw work: record the query a finding rests on). The
+   spike code stays where the Developer left it, uncommitted. What happens to it next is the user's call.
 5. Print the 🔎 block (`SKILL.md` **Output Format**); save `run-state-file`;
    move to the next work item; when none remain and the run has no Feature and no non-P0 Bug, go to
    Step 3.6's close-out (otherwise Phase 2). The close-out always runs.

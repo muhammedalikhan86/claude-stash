@@ -26,8 +26,11 @@ Written once (by triage, or by hand) and sent with the first round; later rounds
 # Designer brief — <app>
 
 ## Build rules
-- Every control must be buildable from <the repo's UI library — Shaw work: Angular Material / CDK>.
-  Draw the component, not a look-alike. A control the library lacks is a question, not a drawing.
+- Every control is drawn as a real component of <the repo's UI library — Shaw work: Angular Material
+  3 / CDK>: the component itself, not a look-alike; a plain `<button>`, `<input>`, `<label>` or
+  `<select>` is not allowed. A control the library lacks is a question, not a drawing.
+  <Shaw work: copy the full list from `~/.claude/skills/shaw-estate/references/ui.md` §Design boards, including its
+  named list of commonly hand-drawn controls.>
 - Use the design system's tokens; no one-off colours, sizes or fonts.
 
 ## States to draw for every screen
@@ -107,7 +110,8 @@ check, the files to open, and the change-log instruction from brief.md, restated
 | `design-post-sync` | — | anything run after a sync (e.g. refresh a demo repo), and whether Claude may push it |
 | `ui-contract` | `brief.md` §Build rules | the full UI contract, if the repo has one |
 
-Unbound and not found in the repo's `CLAUDE.md` or design README: `design-source` is asked for once
+Unbound and not found in the repo (its `CLAUDE.md`, run skill, design README, or the README and
+`package.json` scripts of whatever tests the boards — `sync-artboards` §Bindings used): `design-source` is asked for once
 (it cannot be guessed), then offered for `SKILLS.md`; every other one skips its step and the report
 says so. The folder bindings fall back to the defaults above.
 

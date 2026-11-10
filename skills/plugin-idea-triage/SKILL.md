@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code, i
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.2.0"
+  version: "1.3.0"
   forked-from: "idea-triage@1.8.1 (2026-09-10)"
   domain: product-workflow
   triggers: idea, new feature, new product, new plugin, new component, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
@@ -1356,7 +1356,8 @@ restate it in the governed docs.
    in `.claude/SKILLS.md`, add it with the default from `design-files.md` (rows templated per
    component), and say so.
 3. **Brief.** If `<design-directory>/brief.md` does not exist, write it from `design-files.md`
-   §brief.md, with the UI library from the platform's UI contract (Shaw work: Angular Material).
+   §brief.md, with the UI library from the platform's UI contract (Shaw work: Angular Material — copy
+   the Build rules from `~/.claude/skills/shaw-estate/references/ui.md` §Design boards).
 4. **Rows.** For every surface a backlog item changes, add rows to
    `<design-rows-directory>/<page>.md` (this component's folder): one row per surface and per state the
    item needs drawn (populated, empty, loading, error, each dialog or menu), Source the feature ID and

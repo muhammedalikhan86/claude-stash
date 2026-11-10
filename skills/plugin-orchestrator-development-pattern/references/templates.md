@@ -476,13 +476,15 @@ attempt) + its lane Finalizers' files, commit ids from `git log --grep "Run-Id: 
 **Place every drift finding.** Fix it yourself, or hand it to the Finalizer that owns the document —
 never leave one unplaced. Write each as `Drift: <doc> — <what> — fixed` or
 `Drift: <doc> — <what> — handed to <Finalizer>`. The owners:
-- PMBook Update: the PMBook and its history rows, the Version Pointer Sweep.
+- PMBook Update: the PMBook and its history rows, the Version Pointer Sweep, and a **new ADR** —
+  write it as `Drift: new ADR — <title> — <decision in one line> — handed to PMBook Update`; never pick its number or write the file.
 - Handoff Update: the handoff doc.
 - Revision + Changelog, Test Runbook: the revision file, the changelog and the test runbook.
 - Test Runbook: the test cases doc too — you fix code only there; hand each test-cases-doc gap off as
   `Drift: test cases doc — <what> — handed to Test Runbook`.
 - Yours to fix now: the architecture doc and READMEs inside this component's roots.
-- Flag only (Unresolvable Issues): diagrams, ADRs and the platform architecture file.
+- Flag only (Unresolvable Issues): diagrams, a change to an existing ADR, and the platform architecture
+  file.
 
 ## Known-Red Failures
 Classify any failure this run did not cause per your **Pre-Existing Failures** section. The component
@@ -555,6 +557,11 @@ list. Build the artboard to exactly this.>
 ## Scope
 Edit only the artboard files above (author one, per the README, if none exists). Touch no application
 code, test or other document. Do not run the test suite.
+
+## Build rules
+Draw every control as a real component of the repo's UI library, per the design brief's Build rules
+(Shaw work: Angular Material 3 / CDK, per `~/.claude/skills/shaw-estate/references/ui.md` §Design boards). No plain
+`<button>`, `<input>`, `<label>` or `<select>`.
 
 ## Return Format
 The files changed, and one line per change: what the artboard now shows that it did not before.
@@ -645,7 +652,7 @@ about each item's state; do not infer it from the docs.>
 
 ## Bugs Fixed
 <INSERT LIST: B-ID, one-line description, files changed, repro steps, `Regression test: <path>` (from
-the Developer Output's Test Files Written) — or "None this run" / "N/A">
+the Developer Output's Test Files Written), and `Verified with: <measurements>` when the user gave any — or "None this run" / "N/A">
 
 ## Spike Completed (only present when Task is Spike Log)
 <INSERT: S-ID, Question, Spike Directory, Files Created, and the Developer's Findings/recommendation

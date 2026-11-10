@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.10.0"
+  version: "1.11.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -236,7 +236,7 @@ roots); `run-state-file` and `metrics-log-file` (auto-created).
 **Resume check:** if `run-state-file` exists and is not complete, ask: "Found an incomplete run from
 `<timestamp>`, last at `<item>` — resume it, or start fresh?" Never resume silently. On a confirmed resume, read
 `references/resume.md` first; it says where the run rejoins.
-**Finished, close-out missed:** if every item in that file is terminal (a Feature `passed review`, a Bug `verified`, a Spike `findings recorded`, or `dropped`), and no phase or P0 lane is `started`, it is not a run to resume. Ask instead: "Run `<run id>` finished but its close-out never ran — run its close-out now, or mark it complete?" Do that (Step 3.6's close-out lines, or just mark it complete) before this run goes on. **Start fresh never loses an item:** before Step 0.4 replaces the file, name every item in it that is not terminal (`in progress`, `awaiting verification`, `escalated`) with its `parkedAt` folder, and put each into the new run's queue — its packet from `parkedAt`, or re-derived from its PMBook row — unless the user drops it.
+**Finished, close-out missed:** if every item in that file is terminal (a Feature `passed review`, a Bug `verified`, a Spike `findings recorded`, or `dropped`; a legacy item status `done` from an older run-state file counts as terminal), and no phase or P0 lane is `started`, it is not a run to resume. Ask instead: "Run `<run id>` finished but its close-out never ran — run its close-out now, or mark it complete?" Do that (Step 3.6's close-out lines, or just mark it complete) before this run goes on. **Start fresh never loses an item:** before Step 0.4 replaces the file, name every item in it that is not terminal (`in progress`, `awaiting verification`, `escalated`) with its `parkedAt` folder, and put each into the new run's queue — its packet from `parkedAt`, or re-derived from its PMBook row — unless the user drops it. **Rejoining from a park folder:** the item's packet, latest output, last verdict and `loop_count` come from its `parkedAt` folder (`park.json`), and it rejoins at the gate it was parked at, as `references/resume.md` §Resuming after an escalation says. Also list any `.orchestrator-work/<ID>/` folder that no run-state entry names (a file replaced by an older version of this skill) and offer it the same way.
 
 **Held intakes:** when the old `run-state-file` is complete, or the user chose "start fresh", announce
 its `decisions.heldForNextRun` items now and put them into the new run's queue, before Step 0.4
@@ -336,6 +336,8 @@ using a port, check what it serves — another process may already hold it with 
 start your own on a free port and pass that URL to the tests. The Orchestrator
 brings the stack to the right state before spawning a Reviewer or Integration Agent that needs it, and
 passes the order (e.g. "E2E first while up, then down, then build") in the Integration prompt.
+**The first `up` may be slow** (a cold build cache, e.g. a federated front end's first build): wait
+longer on the first start, and if it times out, retry it once before calling the stack failed.
 
 ### Step 0.3 — Detect Coding Conventions
 
@@ -409,6 +411,12 @@ then reds outside the component were not measured — say so in the Integration 
 already exists), and print `Baseline: skipped — <why>`. **A resume reuses the saved `baseline.reds`,
 never re-runs it** (`references/resume.md`): the tree now holds this run's changes, so a fresh run would
 count them as baseline.
+
+**An item whose code is already in the tree** (a carried-over or rejoined item, e.g. from `parkedAt`):
+reuse its old run's saved baseline when there is one. Otherwise, if that code is committed, take the
+baseline in a temporary `git worktree` of the last commit before it (removed afterwards); if it is not
+committed, run on the tree as it is and print `Baseline: includes <ID>'s uncommitted change`. Never
+stash, reset or check out over the user's tree to get a baseline.
 
 A baseline red is not this run's regression, but it is not waved through either: it still follows the
 known-red rule (Step 2.2 — an owner, and a tracking ID or the user's acceptance) and is listed in the
@@ -640,6 +648,24 @@ Reply per bug: "verified", or describe what's still wrong.
 - **A new bug** (a different problem, not this fix failing) → a mid-run intake (Step 0.1b, item 7), not
   a rejection of this bug.
 - **`verified`** → print the 🐛 block (**Output Format**); it joins Integration. (A P0 goes to its fast lane instead.)
+  A `verified` reply may carry **measurements** (a timing, a hash, a before/after count): save them
+  verbatim in run-state as the item's `verification`, and pass them to the Finalizers as the bug's
+  `Verified with: <measurements>` line — the PMBook Finalizer puts it in the Bug Log row, the Test Runbook
+  Finalizer in the bug's verification record.
+  **Measuring the "before" side** (when the user asks for a before/after check, or offers to run one):
+  1. **Pick the parent** — the commit just before this item's change, never a guess. Uncommitted change:
+     `HEAD` is the before. Committed: the item's first commit's first parent (`<first commit>^1`). Merged:
+     the merge's first parent (`<merge>^1`, the main line before it), never `^2`. Check it with
+     `git show --stat <parent>`, `git log -1 <parent>` and `git diff <parent> HEAD -- <item files>`: the item's
+     files must differ there, and only as the item changed them. Say which commit you picked and why.
+  2. **Build it aside:** `git worktree add --detach <scratchpad>/before-<ID> <parent>`. Never check out, stash
+     or reset the user's tree.
+  3. **One side at a time on a port**, or the before side on its own port offset. Stop the after side before
+     starting the before side on the same port, and restore the after side when done.
+  4. **Same inputs on both sides.** Pin anything the result depends on — a date, a month, a seed, a data
+     snapshot — and record it with the numbers. Save both raw outputs in the gate log folder.
+  5. **Clean up:** `git worktree remove <scratchpad>/before-<ID>`. Hand the user both results, the parent
+     commit and the pinned inputs; their `verified` reply carries them as above.
 - **Still broken** (only a reply that reports a failure, or says it is not fixed) → back into Step 1.4's loop with the user's description as the issues list;
   `loop_count` increments, same 3-strike rule. Rejected bugs can run as a wave. Re-post the gate for just
   those bugs when they pass Review again.
@@ -922,7 +948,8 @@ Graphify procedure holds the mechanics):
 `Regression test: <path>` from its Developer Output's Test Files Written; the
 `Release label: <label>`; on a P0 fast lane, `P0 fast lane: <B-ID>, Hotfixed On <date>`; the
 Integration Output's Flaky Tests Detected; the Integration Output's `Deferred
-Integration Re-Validated` list; the new Bugs from `decisions.outsideItemLog` (as Edit List lines); and, **only when this run
+Integration Re-Validated` list; the new Bugs from `decisions.outsideItemLog` (as Edit List lines); the
+**New ADR** lines (below, as Edit List lines) with the `adr-directory` path; and, **only when this run
 bumped a `> Version:` header**, the instruction to run the Version Pointer Sweep with the path
 `~/.claude/skills/plugin-orchestrator-development-pattern/references/version-pointer-sweep.md` and which
 headers moved.
@@ -932,6 +959,16 @@ each item's Status (`Status → Done`, a Bug row's `Fixed`). The Edit List names
 changes for each item — the phase's own status when its last item lands, and the release or provenance
 cells the PMBook keeps (Release label, run id) — so nothing is left to the Finalizer's guess, and no
 later step writes Status again.
+
+**New ADRs.** For each Integration drift line `Drift: new ADR — <title> — <decision> — handed to PMBook
+Update`, you pick the next free number in the shared `adr-directory` (one higher than the highest `ADR-<NNN>` there
+and than any already handed out this run; never reuse or renumber) and hand the PMBook Finalizer one
+line: `<adr-directory>/ADR-<NNN>-<slug>.md — new file — <title>; decision: <one line>; context: <why,
+from the drift line and the items behind it>; status: <Accepted | Proposed>`. `Accepted` only when the
+user ruled that decision in this run — cite where (the item ID and gate); otherwise `Proposed`. A
+superseded ADR is named on the same line (`supersedes: ADR-<NNN>`). With `adr-directory` unset, hand
+nothing and list the decision on the final summary's `New ADRs:` line as `not written — no
+adr-directory`. Every `Proposed` ADR is listed on that line for the user to rule on.
 
 A Tranche boundary (every phase `Done`) comes back under **Notes**. Put the `Tranche:` line in the final
 summary telling the user to run `plugin-idea-triage`'s Tranche Closeout. Never archive from this
@@ -1124,7 +1161,7 @@ when the item starts, on any FAIL or rejection that sends it back (Reviewer FAIL
 Step 1.5 confirmation → `verified`; a Spike Log row → `findings recorded`; an escalation → `escalated`;
 the user's explicit "drop" or "defer" of an item → `dropped`, saved at once — terminal, outside Phase
 2's entry rule and the resume rules, listed in the 🏁 summary. Terminal for resume: a Feature at
-`passed review`, a Bug at `verified`, a Spike at `findings recorded`, and `dropped`), `orchestratorFiles` (every governed file the Orchestrator itself writes — a drafted
+`passed review`, a Bug at `verified`, a Spike at `findings recorded`, and `dropped` (a legacy `done` from an older run-state file counts as terminal too)), `orchestratorFiles` (every governed file the Orchestrator itself writes — a drafted
 test-cases doc, a known-red tracking item, a linked item's PMBook row — appended when written; Step
 3.5's file list reads it), each unit's current `step` and
 `state: started | done` (a unit is a work-item attempt, a P0 lane, Phase 2 or Phase 3; a P0 lane's and
@@ -1159,7 +1196,7 @@ design rulings, and Step 1.4's overruled issues: item, issue, reason); `testCase
 (Step 1.2, the Design Gate and the hold: item, surface, change, source, then `written as <row ID>` or
 `not written — <why>`).
 **Also per item:** `mode` (`review-only` when set, Step 0.1), `outsideItem` (Steps 1.3 and 1.3b),
-`reviewerMissRetry: used` (Step 1.4). **Run-level:** `baseline` — `reds` (test, how it failed), the command
+`reviewerMissRetry: used` (Step 1.4), `verification` (a Bug's measurements from Step 1.5's reply, verbatim). **Run-level:** `phase` — where the pipeline is, exactly one of `phase0 | phase1 | phase2 | phase3 | closeout` (a UI Iteration: `ui-iteration`), saved as each begins; resume's "latest phase first" reads it (the PMBook's own phase name goes in `pmbookPhase`, never in `phase`; an older file with free text in `phase` is read from its units' `step` and `state` instead); `baseline` — `reds` (test, how it failed), the command
 that ran, or `skipped — <why>` (Step 0.4b); `foreignPaths` (Step 2.0).
 
 **One file per component, replaced by each new run.** Step 0.4 writes a new run over the last one's
@@ -1321,6 +1358,7 @@ Overruled:        <ID> — <issue> — not an issue: <reason> (one per line; or 
 Held for design:  <ID> — waits on <row IDs> (round <NNN>, open | sent <date>) (one per line; or "None")
 Design rows owed: <ID> — <surface: change> — written as <row ID> in round <NNN> | not written — <why> (one per line; or "None")
 Baseline reds:    <test> — still red / now green (one per line; "None"; or "skipped — <why>")
+New ADRs:         ADR-<NNN> <title> — Accepted (ruled at <ID>) | Proposed — needs your ruling (one per line; or "None")
 Foreign paths:    <path> — foreign (another session or the user) (one per line; or "None")
 Quality gate:     ✅  (test scope: <full|component>)
 Integration:      ✅ (or "Not run — <why: only P0 fast lanes / Spikes / escalated items>")

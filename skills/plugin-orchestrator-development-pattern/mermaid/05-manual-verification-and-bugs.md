@@ -33,7 +33,7 @@ or the user chose to start fresh).
 
 ```mermaid
 flowchart TD
-    S0("Bug passed Review,<br/>and Parity if UI") --> P0q{"Priority P0?"}
+    S0("Bug Review PASS,<br/>and Parity if UI:<br/>awaiting verification") --> P0q{"Priority P0?"}
     P0q -->|"yes"| Now["Verify this bug now,<br/>on its own, after<br/>every Review PASS"]
     P0q -->|"no"| Queue["Queue for the batched<br/>gate: status awaiting<br/>verification (never passed<br/>review), run-state saved"]
     Queue --> All{"Every item in the run<br/>passed or escalated?"}

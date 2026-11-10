@@ -113,7 +113,7 @@ sequenceDiagram
             O->>R: parity items marked verified by Step 1.3b, not by you
         end
     end
-    opt Bug items, once the whole run has passed review
+    opt Bug items awaiting verification, once every item is through Review
         O->>U: one Manual Verification message
         U-->>O: verified, a question (answered, asked again), or a reported failure
     end

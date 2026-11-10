@@ -25,7 +25,7 @@ Read the reference a task needs; don't load them all.
 | `references/app-identity-and-sql.md` | What account a deployed app uses to reach SQL; production vs development connection strings. |
 | `references/sign-in-and-ad.md` | How users sign in; AD groups and roles; who-is-who tables. |
 | `references/app-owned-data.md` | A new app's own database: naming, DbUp, LocalDB, sharing within an initiative. |
-| `references/ui.md` | Any Shaw user interface (Angular Material house standard). |
+| `references/ui.md` | Any Shaw user interface (Angular Material house standard), including design boards, designer briefs and round prompts (§Design boards). |
 
 ## Standard architecture defaults — start from these, ask only about real deviations
 

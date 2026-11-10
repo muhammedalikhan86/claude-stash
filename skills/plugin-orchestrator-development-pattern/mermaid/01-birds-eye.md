@@ -23,7 +23,7 @@ flowchart TD
     Loop -->|"FAIL past loop_count 3,<br/>UNVERIFIED x3, or<br/>linked item declined"| Esc("Escalate: metrics row,<br/>run-state, pause<br/>09")
     Esc -.->|"resume at saved position:<br/>a Phase 1 item, 13"| Loop
     Esc -.->|"resume at saved<br/>position: Phase 2"| P2
-    Loop -->|"all passed Review"| MV["Step 1.5 Manual Verification<br/>queued Bugs, if any<br/>05"]
+    Loop -->|"all through Review<br/>(Bugs awaiting verification)"| MV["Step 1.5 Manual Verification<br/>queued Bugs, if any<br/>05"]
     MV --> Left{"Run has a Feature<br/>or non-P0 Bug?"}
     Left -->|"yes"| P2["Phase 2, Steps 2.0–2.3<br/>Integration +<br/>Reviewer-Integration<br/>06"]
     UI -->|"done: rest of Phase 0,<br/>Design Gate, one Reviewer,<br/>Parity once"| P2

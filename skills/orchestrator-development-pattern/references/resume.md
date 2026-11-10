@@ -7,7 +7,7 @@ Phase 2's entry rule, the item statuses and the metrics rows referred to below a
 
 ## Where a resumed run rejoins
 
-On explicit user confirmation, take the latest phase first and stop at the first match (a `dropped` item is skipped by every rule): run complete → nothing; an item with status `escalated` (or the
+On explicit user confirmation, take the latest phase first (run-state's `phase`: `closeout`, `phase3`, `phase2`, `phase1`) and stop at the first match (a `dropped` item is skipped by every rule): run complete → nothing; an item with status `escalated` (or the
 `integration` block with `escalated: true`) → **Resuming after an escalation** (below);
 Phase 3 `done`, or nothing left unfinished and Phase 2's entry rule says Phase 2 is not owed → close-out; Phase 3 started → rejoin it at its recorded step;
 Reviewer-Integration PASS recorded → Phase 3; Phase 2 started → its recorded step (the known-reds in
@@ -16,7 +16,7 @@ again). Otherwise, Phase 1:
 a verified P0 lane not `done` → its recorded step, and then resume **continues** with the rest of this
 rule (it does not stop); a Spike with a Developer Output and no Spike Log → its Spike Log Finalizer (never
 a Reviewer); a Bug `awaiting verification` → Step 1.5's gate posted again; items at their first gate with no recorded result; and once every Phase 1 item is terminal
-(a Feature `passed review`, a Bug `verified`, a Spike `findings recorded`, or any item `dropped`; and no P0 lane unfinished) and Phase 2
+(a Feature `passed review`, a Bug `verified`, a Spike `findings recorded`, or any item `dropped`; a legacy item status `done` from an older run-state file counts as terminal; and no P0 lane unfinished) and Phase 2
 has not started → Phase 2's entry rule (Phase 2, or close-out if Phase 2
 is not owed).
 A step found `started` (not `done`) re-runs from its start, all its Finalizers included; a re-run commit

@@ -5,7 +5,9 @@ Parallel-Safety, Git Restrictions, Output Template) still applies.
 
 Update or create the runbook for each completed feature and fixed bug (for a bug, the manual check is
 walking the original repro steps): new flows, updated flows, edge cases, and
-step-by-step manual verification instructions a human could actually follow.
+step-by-step manual verification instructions a human could actually follow. A bug given a
+`Verified with: <measurements>` line gets it in its verification record word for word (the measured
+result, beside the steps that produced it).
 
 **The test cases doc, when Integration handed it to you.** Integration fixes code only: each gap it
 found in `test-cases-doc` reaches you as a `Drift: test cases doc — <what> — handed to Test Runbook`

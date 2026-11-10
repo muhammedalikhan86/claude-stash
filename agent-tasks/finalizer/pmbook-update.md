@@ -18,7 +18,7 @@ Given the Features Completed list and the PMBook path:
   (`ID | Description | Reported | Status | Fixed In`), creating the section after `## Feature Backlog`
   if it doesn't exist yet. If the bug already has a row (it was logged `Open` before it was fixed),
   update that row in place — never add a second one. Write the bug's given `Regression test: <path>`
-  into the row's Description. A verified fixed bug's `Status` is `Fixed`, except a P0 fast-lane bug (see below). If
+  into the row's Description, and its `Verified with: <measurements>` line, when given, word for word. A verified fixed bug's `Status` is `Fixed`, except a P0 fast-lane bug (see below). If
   the section keeps a "next ID" line, move it on past the highest ID now used. `Fixed In` is exactly the `Release label:` the prompt gives; never pick
   a version yourself.
 - **Flaky tests**: for each test named in the Task-Specific Inputs' flaky-test list, add, or update the
@@ -29,6 +29,13 @@ Given the Features Completed list and the PMBook path:
   `built against vN` header lines, and in a plugin repo the sideways sweep across other components).
   This Task owns it because it already owns the PMBook; no other parallel Finalizer touches those
   headers.
+- **New ADR**: for each line handed to you as `<adr-directory>/ADR-<NNN>-<slug>.md — new file — …`,
+  write that file. Copy the form of the folder's newest ADR (its headings, header lines and order) and
+  fill it from the line's title, decision, context and status; use exactly the number and file name
+  given — never pick, change or renumber one. If the folder has an index or README listing its ADRs,
+  add the new one there in the same form. Never edit an existing ADR, except to set its status to
+  `Superseded by ADR-<NNN>` when the line says `supersedes:` it. A number already taken, or no folder:
+  write nothing and report it under Notes.
 - **Deferred Integration — new P0 hotfix**: if your Task-Specific Inputs include a P0 Bug just fast-laned
   through its own Finalization, write its `## Bug Log` row with `Status: Hotfixed — Integration Pending`,
   and add, or update the existing, `## Deferred Integration` row (`Bug ID | Hotfixed On | Status: Pending`) that also

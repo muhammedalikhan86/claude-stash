@@ -48,7 +48,9 @@ Divide-and-Conquer spawn). A test red at baseline and still red goes under Known
 triage as new; a test green at baseline and red now is this run's. It runs the full
 suite, fixes failures, runs the security audit and E2E/smoke tests, and checks Documentation Drift, which
 is a FAIL-worthy defect. It fixes code, never the test-cases doc: each gap there is handed to the Test
-Runbook Finalizer (Step 3.5) as a `— handed to Test Runbook` drift line. Its Output lists `### Known-Reds` (each `tracked by <ID>`, `accepted by the
+Runbook Finalizer (Step 3.5) as a `— handed to Test Runbook` drift line, and never writes an ADR: a
+needed one comes back as `Drift: new ADR — … — handed to PMBook Update`, numbered by the Orchestrator and
+written by the PMBook Finalizer (Step 3.2). Its Output lists `### Known-Reds` (each `tracked by <ID>`, `accepted by the
 user`, or `untracked`) and `### Work Items Covered` (this run's Features and Bugs only; Deferred IDs go
 under `Deferred Integration Re-Validated`).
 

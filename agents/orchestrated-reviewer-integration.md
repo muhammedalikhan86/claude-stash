@@ -145,6 +145,8 @@ the files it names and judge the actual change, not the description:
   or its Documentation Drift line ends `— handed to <Finalizer>`, which counts as placed with no
   second entry. Any other finding that appears once and nowhere else has been dropped — FAIL.
 - The test-cases doc is never Integration's to edit: its gaps are handed to the Test Runbook Finalizer.
+- A new ADR is never Integration's to write: `Drift: new ADR — … — handed to PMBook Update` counts as
+  placed. An ADR file Integration created itself is an Issue.
   A test-cases doc listed under Fixes Applied, or edited by Integration itself (not by a work item's
   Developer), is an Issue.
 

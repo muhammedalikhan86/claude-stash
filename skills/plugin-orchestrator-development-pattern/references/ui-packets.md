@@ -84,7 +84,9 @@ Rows are read from this component's `design-rows-directory`; the round is the re
    (Step 0.4) normally catches it first; one that slips through gets its rows written the same way.
 5. **Name the component behind every surface** — each interactive or structural region as the Angular
    Material or CDK component that renders it (`mat-card`, `mat-table`, `matButton`, `cdkDropList`) — in
-   the packet's `## Design Reference`.
+   the packet's `## Design Reference`. A control the board draws as plain HTML is named by the Material
+   component that replaces it (Shaw work: `~/.claude/skills/shaw-estate/references/ui.md` §Design boards); the build
+   never copies the drawn markup.
 6. **A surface that cannot be a Material component halts the item.** Plain HTML beyond text, layout and
    landmarks needs the user's written sign-off in the project's UI contract first. Print
    `Design Gate: HALTED — <surface> has no Material component and no signed-off exception` and stop that

@@ -21,7 +21,7 @@ Retry Context and the Phase 2/3 inputs all read from them. A packet or output mi
 
 **Where a resumed run rejoins.** Phase 0 is not re-run: print Step 0.0a's block, announce any
 `heldForNextRun` items, then take the Platform Profile, waves and queue from the file. Take the first
-match, latest phase first; a step found `started` (not `done`) re-runs from its start:
+match, latest phase first (run-state's `phase`: `closeout`, `phase3`, `phase2`, `phase1`, `ui-iteration`); a step found `started` (not `done`) re-runs from its start:
 1. run complete → nothing to resume;
 2. an item with status `escalated`, or the `integration` block with `escalated: true` → **Resuming
    after an escalation** (below);
@@ -40,7 +40,7 @@ match, latest phase first; a step found `started` (not `done`) re-runs from its 
 8. a verified P0 whose lane is not `done` → the lane's recorded step (not started: the full lane);
    this one is not a first-match stop — once the lane is done, resume continues with 9–10 for the rest;
 9. every Phase 1 item is terminal — a Feature `passed review`, a Bug `verified`, a Spike `findings
-   recorded`, or `dropped` — no P0 lane is unfinished, and Phase 2 not started → Phase 2's entry rule
+   recorded`, or `dropped`; a legacy item status `done` from an older run-state file counts as terminal — no P0 lane is unfinished, and Phase 2 not started → Phase 2's entry rule
    (Phase 2, or Step 3.6's close-out when Phase 2 is not owed);
 10. otherwise each unfinished Phase 1 item (`in progress` or `awaiting verification`) rejoins at the
    first gate with no recorded result, with its saved `loop_count`, taking the first sub-rule that matches:

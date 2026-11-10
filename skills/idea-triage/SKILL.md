@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code. G
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.10.0"
+  version: "1.11.0"
   domain: product-workflow
   triggers: idea, new feature, new product, new project, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
   role: product-engineer
@@ -1222,7 +1222,8 @@ restate it in the governed docs.
    `design-rounds-directory` is not in `.claude/SKILLS.md`, add it with the default from
    `design-files.md`, and say so.
 3. **Brief.** If `<design-directory>/brief.md` does not exist, write it from `design-files.md`
-   §brief.md, with the repo's UI library (Shaw work: Angular Material).
+   §brief.md, with the repo's UI library (Shaw work: Angular Material — copy the Build rules from
+   `~/.claude/skills/shaw-estate/references/ui.md` §Design boards).
 4. **Rows.** For every surface a backlog item changes, add rows to `<design-rows-directory>/<page>.md`:
    one row per surface and per state the item needs drawn (populated, empty, loading, error, each
    dialog or menu), Source the feature ID and AC, Round `open`. A surface already drawn and matching

@@ -40,7 +40,7 @@ flowchart TD
     Caused -->|"no"| KR["Known-Reds: owner, tracked<br/>by ID, accepted, or<br/>untracked; git evidence"]
     KR --> E2E
     Flaky --> E2E
-    Fix --> E2E["E2E, then Drift Check:<br/>each finding fixed or handed<br/>to a Finalizer; test cases doc<br/>always to Test Runbook"]
+    Fix --> E2E["E2E, then Drift Check:<br/>each finding fixed or handed<br/>to a Finalizer; test cases doc<br/>always to Test Runbook;<br/>new ADR to PMBook Update"]
     E2E --> SC["Self-Check, every<br/>line ticked or fixed"]
     SC --> Out("Integration Output: Known-Reds,<br/>Work Items Covered,<br/>gate log paths")
 ```

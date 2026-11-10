@@ -32,5 +32,38 @@ an always-on rule in `~/.claude/rules/shaw-estate.md`.)
    carve-outs attached. In `shaw-plugin-dashboard` it is the UI component contract in
    `docs/shell/architecture.md` §3, with `ADR-008` behind it.
 
+## Design boards and designer prompts
+
+The house standard binds the **boards** too, not only the built code. A board is the specification
+the build is checked against, so a control drawn as plain HTML either gets copied into the build or
+starts an argument at parity. Any brief, round prompt or board edit for Shaw work carries these rules,
+in the brief's `## Build rules`:
+
+1. **Draw the real component, not a look-alike.** Every control on a board is the Angular Material 3
+   or CDK element itself: `matButton` / `matIconButton` / `mat-menu-item`, `mat-form-field` +
+   `matInput` with a `mat-label`, `mat-select`, `mat-checkbox`, `mat-slide-toggle`,
+   `mat-button-toggle-group`, `mat-chip-row`, `mat-table`, `mat-list`, `mat-dialog`, `mat-menu`.
+2. **A plain `<button>`, `<input>`, `<label>` or `<select>` is not allowed on a board.** Plain HTML is
+   for text, layout and landmarks only, as in point 2 above.
+3. **Name the controls designers most often hand-draw**, because a brief that lists components
+   generally still gets these as plain markup (the Log Viewer's first round, 2026-11-10, drew all of
+   them as `<button>` / `<label>`):
+   - a removable chip → `mat-chip-row` with a `matChipRemove` button;
+   - a sortable column header → `mat-sort-header`;
+   - a calendar or day grid → `mat-calendar` / `mat-date-range-picker`;
+   - a clickable list or results row → `mat-list-item` in a `mat-action-list`;
+   - a trigger that looks like a field → `matButton="outlined"`, or a read-only `matInput` in a
+     `mat-form-field`;
+   - a "show more" link-button → `matButton="text"`;
+   - a field label → `mat-label` inside the `mat-form-field`;
+   - a set of toggle buttons → `mat-button-toggle-group`;
+   - section tabs → `mat-tab-nav-bar` + `mat-tab-link`.
+4. **A control Material does not have is a question, not a drawing.** The designer asks in the change
+   log; the exception needs Muhammed Ali Khan's written sign-off (point 3 above) before it is drawn.
+5. **The hand-back says which component each control is.** The sync checks the boards for plain
+   controls (`<button>`, `<input>`, `<label>`, `<select>` with no Material attribute or `mat-` parent)
+   and raises each as a finding with its Material replacement; the build always uses the Material
+   component, never the drawn markup.
+
 Hosting an Angular front end on the intranet (base href, `environment.prod.ts`, rewrite
 `Web.config`): `hosting-and-deployment.md` (DEP-6, DEP-7).

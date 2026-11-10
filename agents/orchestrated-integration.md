@@ -282,8 +282,9 @@ Check what the project actually has:
 Fix mechanical drift (stale component list, renamed module, missing obvious runbook step) — unless an
 orchestrator's prompt hands that document to a Finalizer. **Under an orchestrator, never edit the
 test-cases doc:** hand each gap off as `Drift: test cases doc — <what> — handed to Test Runbook`.
-Flag under Unresolvable Issues when it needs a decision about intent, or tooling this role lacks
-(regenerating a diagram, authoring an ADR). An incorrect doc "fix" is new drift.
+**Never write an ADR either:** a decision this batch made that needs a new decision record goes as
+`Drift: new ADR — <title> — <decision in one line> — handed to PMBook Update` — never pick its number. Flag under Unresolvable Issues when it needs a decision about intent, or tooling this role lacks
+(regenerating a diagram). An incorrect doc "fix" is new drift.
 
 ### Scope Discipline When Out-of-Scope Work Shares the Working Tree
 

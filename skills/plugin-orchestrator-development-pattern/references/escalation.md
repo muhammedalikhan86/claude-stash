@@ -59,7 +59,7 @@ resume check still finds it). On "resume" (a Verification Blocked pause included
 after an escalation** in `references/resume.md`. When the resumed run finishes, it appends a second RUN
 row `Complete`.
 
-**Park the item** in the same save, before printing: copy its packet, its latest Developer Output (for Integration, the latest Integration Output) and its last Issues list and Unable to Verify report from the scratchpad to `<folder of run-state-file>/.orchestrator-work/<ID>/` (Integration: `.../integration/`), and record that folder as the item's `parkedAt`. The scratchpad does not outlive the session; this folder does, and it is gitignored with run-state. A resumed item that reaches a terminal state has its folder deleted at close-out.
+**Park the item** in the same save, before printing: copy its packet, its latest Developer Output (for Integration, the latest Integration Output) and its last Issues list and Unable to Verify report from the scratchpad to `<folder of run-state-file>/.orchestrator-work/<ID>/` (Integration: `.../integration/`), with a `park.json` holding its status, `loop_count`, `priorLoops`, last verdict, `blockedGate` and the gate it stopped at, and record that folder as the item's `parkedAt`. The scratchpad does not outlive the session; this folder does, and it is gitignored with run-state. A resumed item that reaches a terminal state has its folder deleted at close-out.
 
 **"Drop" or "defer" instead of "resume":** set the item's status to `dropped` and save run-state at
 once, with the drop's event time; then append the item's one `metrics-log-file` row, Verdict `Dropped`,

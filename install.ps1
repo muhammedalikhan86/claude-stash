@@ -26,11 +26,23 @@
 
   The Shaw database password in rules/shaw-estate.md is carried over from your old copy if it had one.
 
+  -Link (what create-symlinks.bat runs): instead of copying from this repo, links ~/.claude to the
+  team's shared copies on the PROD share (-ProdDir), which publish-to-prod.ps1 fills from this repo:
+    - agents, agent-notes, agent-tasks, hooks, output-styles, commands: the whole folder is linked. If
+      your folder holds items of your own, each shared item is linked one by one instead and yours stay.
+    - skills, memory, rules: each shared item is linked one by one; your own items stay.
+    - CLAUDE.md: linked, so every account on the machine reads the same file.
+    - Copied, not linked: rules/shaw-estate.md (it holds your DB password) and mods (they write into
+      their own folder).
+  Same backup, manifest and rollback as above. Making a symlink needs an administrator window. Nothing
+  on the share is ever written; this mode only reads it.
+
 .EXAMPLE
   .\install.ps1 -WhatIf                         # preview every step; changes nothing
   .\install.ps1                                 # install (backs up first)
   .\install.ps1 -Context7Key ctx7sk-...         # also fill the Context7 key into a new settings.json
-  .\install.ps1 -Rollback "$env:USERPROFILE\.claude-backups\install-20261110-153000"
+  .\install.ps1 -Link -ClaudeDir "$env:USERPROFILE\.claude-lachlan"   # link one account to PROD (admin)
+  .\install.ps1 -Rollback "$env:USERPROFILE\.claude-backups\install-claude-20261110-153000"
   .\install.ps1 -Rollback "<backup folder>" -WhatIf   # preview the rollback
 #>
 [CmdletBinding()]
@@ -40,14 +52,25 @@ param(
     [string]$Context7Key = "",
     [string]$ClaudeDir = (Join-Path $env:USERPROFILE ".claude"),
     [string]$BackupRoot = (Join-Path $env:USERPROFILE ".claude-backups"),
+    [switch]$Link,
+    [string]$ProdDir = "\\sic2tfs1\Claude\Prod",
     [switch]$Force   # kept for old instructions; items are now always replaced (with a backup)
 )
 
 $ErrorActionPreference = "Stop"
 $Repo = $PSScriptRoot
+$ClaudeDirGiven = $PSBoundParameters.ContainsKey('ClaudeDir')
 $ClaudeDir = [IO.Path]::GetFullPath($ClaudeDir).TrimEnd('\')
+$ProdDir = $ProdDir.TrimEnd('\')
+$Src = if ($Link) { $ProdDir } else { $Repo }   # where the items come from
 $Merged = "skills", "agents", "agent-notes", "agent-tasks", "commands", "hooks", "output-styles", "rules", "memory", "mods"
 $KeepGenerated = ".claude-plugin\types", ".last_update_check"
+# -Link: folders linked whole; items copied rather than linked.
+$LinkFolders = "agents", "agent-notes", "agent-tasks", "hooks", "output-styles", "commands"
+$CopyItemsInLinkMode = @("rules\shaw-estate.md")
+$CopyFoldersInLinkMode = @("mods")
+# Tests only: this account can't make symlinks, so the sandbox uses junctions (folders) and hard links (files).
+$TestLinks = $env:CLAUDE_STASH_TEST_LINKS -eq '1'
 
 # ---------------------------------------------------------------- helpers
 
@@ -211,8 +234,8 @@ function Get-RepoFiles {
 }
 
 function Copy-FromRepo([string]$Rel) {
-    # Copies the repo's item <Rel> (a file or a folder) to ~/.claude/<Rel>.
-    $src = Join-Path $Repo $Rel
+    # Copies the source's item <Rel> (a file or a folder; the repo, or PROD with -Link) to ~/.claude/<Rel>.
+    $src = Join-Path $Src $Rel
     $dst = Join-Path $ClaudeDir $Rel
     Assert-Inside $dst
     if ($WhatIf) { return }
@@ -257,7 +280,7 @@ function Restore-DbPassword($Info) {
     if (-not (Test-Path -LiteralPath $old -PathType Leaf) -or -not (Test-Path -LiteralPath $new)) { return }
     $m = [regex]::Match((Read-Text $old), 'Password=([^;<\s"]+);')
     $text = Read-Text $new
-    if ($WhatIf) { $text = Read-Text (Join-Path $Repo "rules\shaw-estate.md") }
+    if ($WhatIf) { $text = Read-Text (Join-Path $Src "rules\shaw-estate.md") }
     if ($m.Success -and $text.Contains('<DB_PASSWORD>')) {
         if (-not $WhatIf) { Write-Text $new $text.Replace('<DB_PASSWORD>', $m.Groups[1].Value) }
         Write-Host "[KEEP]   rules\shaw-estate.md: DB password carried over from your old copy" -ForegroundColor DarkGray
@@ -287,6 +310,45 @@ function Install-RepoItem([string]$Rel) {
     if ($Rel -eq 'rules\shaw-estate.md') { Restore-DbPassword $info }
 }
 
+function Test-LinkedTo([string]$Path, [string]$To) {
+    # True if $Path is already a link to $To.
+    if (-not (Test-Exists $Path)) { return $false }
+    $k = Get-Kind $Path
+    if ($k -in 'symlink', 'junction') { return (Get-LinkTarget $Path).TrimEnd('\').Equals($To.TrimEnd('\'), [StringComparison]::OrdinalIgnoreCase) }
+    if ($TestLinks -and $k -eq 'hardlink') { return @(Get-OtherHardLinks $Path) -contains [IO.Path]::GetFullPath($To) }
+    return $false
+}
+
+function New-LinkAt([string]$Path, [string]$To) {
+    $type = 'SymbolicLink'
+    if ($TestLinks) { $type = if (Test-Path -LiteralPath $To -PathType Container) { 'Junction' } else { 'HardLink' } }
+    New-Item -ItemType $type -Path $Path -Target $To -ErrorAction Stop | Out-Null
+}
+
+function Link-Item([string]$Rel) {
+    # -Link: makes ~/.claude/<Rel> a link to <ProdDir>/<Rel>, backing up what was there.
+    $target = Join-Path $ClaudeDir $Rel
+    $to = Join-Path $ProdDir $Rel
+    Assert-Inside $target
+    if (-not (Test-Path -LiteralPath $to)) { Say "SKIP  " "$Rel (not on $ProdDir)" Yellow; return }
+    if (Test-LinkedTo $target $to) { Say "OK    " "$Rel (already linked)" DarkGray; return }
+    $info = $null
+    if (Test-Exists $target) { $info = Backup-Item $Rel; $info.action = 'replace'; Add-Action $info }
+    else { Add-Action @{ action = 'create'; path = $Rel } }
+    if (-not $WhatIf) {
+        Assert-NoLinkedParent $target
+        $p = Split-Path $target -Parent
+        if (-not (Test-Path -LiteralPath $p)) { New-Item -ItemType Directory -Path $p -Force | Out-Null }
+        # Made under a temporary name first, so if the link can't be made the old item is still there.
+        $tmp = "$target.link-tmp"
+        if (Test-Exists $tmp) { Remove-Target $tmp }
+        New-LinkAt $tmp $to
+        Remove-Target $target
+        Rename-Item -LiteralPath $tmp -NewName (Split-Path $target -Leaf)
+    }
+    if ($info) { Say "LINK  " "$Rel -> $to (the old one is backed up)" Yellow } else { Say "LINK  " "$Rel -> $to" Green }
+}
+
 # ---------------------------------------------------------------- rollback
 
 function Invoke-Rollback([string]$Dir) {
@@ -298,6 +360,8 @@ function Invoke-Rollback([string]$Dir) {
     # Whatever is there now (including edits made after the install) is saved here before rollback removes it.
     $saveDir = Join-Path $Dir ("before-rollback-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
     $saved = $false
+    # The backup knows which folder it came from; use that unless -ClaudeDir was passed.
+    if ($m.claudeDir -and -not $ClaudeDirGiven) { $script:ClaudeDir = $ClaudeDir = $m.claudeDir }
     if ($m.claudeDir -and -not $m.claudeDir.Equals($ClaudeDir, [StringComparison]::OrdinalIgnoreCase)) {
         throw "This backup was taken from $($m.claudeDir), not $ClaudeDir. Pass -ClaudeDir `"$($m.claudeDir)`"."
     }
@@ -391,48 +455,88 @@ if ($Rollback) { Invoke-Rollback $Rollback; return }
 # ---------------------------------------------------------------- install
 
 $stamp = Get-Date -Format "yyyyMMdd-HHmmss"
-$script:BackupDir = Join-Path $BackupRoot "install-$stamp"
+$modeName = if ($Link) { "link" } else { "install" }
+$script:BackupDir = Join-Path $BackupRoot ("{0}-{1}-{2}" -f $modeName, (Split-Path $ClaudeDir -Leaf).TrimStart('.'), $stamp)
 $commit = ""
-try { $commit = (& git -C $Repo rev-parse --short HEAD 2>$null) } catch { }
-$script:Manifest = [pscustomobject]@{ created = (Get-Date).ToString("o"); claudeDir = $ClaudeDir; repo = $Repo; repoCommit = $commit; actions = @() }
+if (-not $Link) { try { $commit = (& git -C $Repo rev-parse --short HEAD 2>$null) } catch { } }
+$script:Manifest = [pscustomobject]@{ created = (Get-Date).ToString("o"); mode = $modeName; claudeDir = $ClaudeDir; source = $Src; repoCommit = $commit; actions = @() }
 $script:PasswordKept = $false
 
-Write-Host "Installing claude-stash into $ClaudeDir"
+if ($Link) { Write-Host "Linking $ClaudeDir to the shared copies in $ProdDir" }
+else { Write-Host "Installing claude-stash into $ClaudeDir" }
 if ($WhatIf) { Write-Host "Preview only (-WhatIf): nothing will be changed.`n" -ForegroundColor Cyan }
-else {
+
+function Stop-Install([int]$Code, [string[]]$Lines) {
+    # Ends the run before anything was changed, removing the empty backup folder.
+    $Lines | ForEach-Object { Write-Host $_ -ForegroundColor Red }
+    if (-not $WhatIf -and (Test-Path -LiteralPath $script:BackupDir)) { Remove-Item -LiteralPath $script:BackupDir -Recurse -Force }
+    exit $Code
+}
+
+if ($Link) {
+    # The share must be readable, and this window must be able to make links, before anything changes.
+    try { $null = Get-ChildItem -LiteralPath $ProdDir -Force -ErrorAction Stop }
+    catch { Stop-Install 2 @("[STOP]   Can't read $ProdDir. Nothing was changed.", "         Connect to the network (or VPN), then run again.") }
+    $probe = Join-Path ([IO.Path]::GetTempPath()) ("claude-link-probe-" + [guid]::NewGuid().ToString('N'))
+    try {
+        if ($TestLinks) { New-Item -ItemType Junction -Path $probe -Target $ProdDir -ErrorAction Stop | Out-Null }
+        else { New-Item -ItemType SymbolicLink -Path $probe -Target $ProdDir -ErrorAction Stop | Out-Null }
+        (Get-Item -LiteralPath $probe -Force).Delete()
+    }
+    catch {
+        if ($WhatIf) { Write-Host "[WARN]   this window can't make links; the real run needs an administrator window.`n" -ForegroundColor Yellow }
+        else { Stop-Install 3 @("[STOP]   This window can't make links. Nothing was changed.", "         Open Command Prompt or PowerShell as administrator and run again.") }
+    }
+}
+
+if (-not $WhatIf) {
     New-Item -ItemType Directory -Path $script:BackupDir -Force | Out-Null
     Save-Manifest
     Write-Host "Backup folder: $script:BackupDir`n" -ForegroundColor Cyan
 }
 if (-not (Test-Path $ClaudeDir) -and -not $WhatIf) { New-Item -ItemType Directory -Path $ClaudeDir | Out-Null }
 
-$dirty = @(& git -C $Repo status --porcelain 2>$null)
-if ($dirty.Count) { Write-Host "[NOTE]   the repo has uncommitted changes; the working copy is what gets installed." -ForegroundColor Cyan }
+$script:RepoFiles = $null
+if (-not $Link) {
+    $dirty = @(& git -C $Repo status --porcelain 2>$null)
+    if ($dirty.Count) { Write-Host "[NOTE]   the repo has uncommitted changes; the working copy is what gets installed." -ForegroundColor Cyan }
 
-# The plugin Developer agents are generated from orchestrated-developer.md; warn if they are stale.
-try {
-    $global:LASTEXITCODE = 0
-    & (Join-Path $Repo "scripts\build-developer-agents.ps1") -Check
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[WARN]   generated developer agents are stale or missing (see above). Run scripts\build-developer-agents.ps1, then re-install." -ForegroundColor Yellow
+    # The plugin Developer agents are generated from orchestrated-developer.md; warn if they are stale.
+    try {
+        $global:LASTEXITCODE = 0
+        & (Join-Path $Repo "scripts\build-developer-agents.ps1") -Check
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[WARN]   generated developer agents are stale or missing (see above). Run scripts\build-developer-agents.ps1, then re-install." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "[WARN]   could not check generated developer agents: $_" -ForegroundColor Yellow
     }
-} catch {
-    Write-Host "[WARN]   could not check generated developer agents: $_" -ForegroundColor Yellow
+
+    $script:RepoFiles = Get-RepoFiles
+    if (-not $script:RepoFiles) { Write-Host "[WARN]   git not available; copying whole folders from the repo instead." -ForegroundColor Yellow }
 }
 
-$script:RepoFiles = Get-RepoFiles
-if (-not $script:RepoFiles) { Write-Host "[WARN]   git not available; copying whole folders from the repo instead." -ForegroundColor Yellow }
+function Get-SourceNames([string]$Folder) {
+    # The items the source holds in this folder (in the repo: git-visible ones only, when git is available).
+    if ($script:RepoFiles) {
+        return @($script:RepoFiles | Where-Object { $_.StartsWith("$Folder/") } | ForEach-Object { ($_ -split '/')[1] } | Sort-Object -Unique)
+    }
+    return @(Get-ChildItem -LiteralPath (Join-Path $Src $Folder) -Force | ForEach-Object Name)
+}
 
-# Pre-flight: every link this install will replace must be readable (so it can be backed up),
+# Pre-flight: every link this run will replace must be readable (so it can be backed up),
 # checked before anything is changed.
 $unreachable = @()
 foreach ($folder in $Merged) {
+    if (-not (Test-Path -LiteralPath (Join-Path $Src $folder))) { continue }
     $t = Join-Path $ClaudeDir $folder
-    if (-not (Test-Path -LiteralPath (Join-Path $Repo $folder))) { continue }
     $cands = @($t)
-    if ($script:RepoFiles) { $cands += @($script:RepoFiles | Where-Object { $_.StartsWith("$folder/") } | ForEach-Object { Join-Path $ClaudeDir ((($_ -split '/')[0..1]) -join '\') } | Sort-Object -Unique) }
+    if (-not ((Test-Exists $t) -and ((Get-Kind $t) -in 'symlink', 'junction'))) {
+        $cands += @(Get-SourceNames $folder | ForEach-Object { Join-Path $t $_ })
+    }
     foreach ($c in $cands) {
         if ((Test-Exists $c) -and ((Get-Kind $c) -in 'symlink', 'junction')) {
+            if ($Link -and (Test-LinkedTo $c (Join-Path $ProdDir $c.Substring($ClaudeDir.Length + 1)))) { continue }   # already right; not replaced
             # Test-Path can say yes for a dangling link, so actually try to list it.
             try { $null = Get-ChildItem -LiteralPath $c -Force -ErrorAction Stop }
             catch { $unreachable += "$c -> $(Get-LinkTarget $c)" }
@@ -440,71 +544,80 @@ foreach ($folder in $Merged) {
     }
 }
 if ($unreachable.Count) {
-    Write-Host "[STOP]   These links can't be read, so they can't be backed up. Nothing was changed." -ForegroundColor Red
-    $unreachable | ForEach-Object { Write-Host "         $_" -ForegroundColor Red }
-    Write-Host "         Connect to the network (or VPN) so the share is reachable, then run again." -ForegroundColor Red
-    if (-not $WhatIf -and (Test-Path -LiteralPath $script:BackupDir)) { Remove-Item -LiteralPath $script:BackupDir -Recurse -Force }
-    exit 2
+    Stop-Install 2 (@("[STOP]   These links can't be read, so they can't be backed up. Nothing was changed.") +
+        @($unreachable | ForEach-Object { "         $_" }) +
+        @("         Connect to the network (or VPN) so the share is reachable, then run again."))
+}
+
+function Convert-LinkedFolder([string]$Folder, [string[]]$Names) {
+    # A whole folder that is a link: back it up, unlink, keep anything the source doesn't have.
+    $target = Join-Path $ClaudeDir $Folder
+    $info = Backup-Item $Folder
+    if (-not $info.contentCopied) { throw "Could not read the contents behind $Folder ($($info.linkTarget)), so its extra items can't be kept. Nothing in $Folder was changed. Check the share is reachable and run again." }
+    $info.action = 'unlinkFolder'
+    Add-Action $info
+    Remove-Target $target
+    if (-not $WhatIf) { New-Item -ItemType Directory -Path $target | Out-Null }
+    Say "UNLINK" "$Folder was a link to $($info.linkTarget); link removed, now a real folder (the link's target is untouched)" Yellow
+    $bakFolder = Join-Path $script:BackupDir $info.backup
+    if (-not $WhatIf) {
+        Get-ChildItem -LiteralPath $bakFolder -Force | Where-Object { $Names -notcontains $_.Name } | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $target $_.Name) -Recurse -Force
+            Say "KEEP  " "$Folder\$($_.Name) (not in the shared set; kept from the old folder)" DarkGray
+        }
+        # Links that sat inside the linked folder (the backup holds none) are re-made, unless the source
+        # replaces the item they belong to.
+        foreach ($l in @($info.innerLinks)) {
+            if (-not $l -or $Names -contains (($l.path -split '\\')[1])) { continue }
+            $lp = Join-Path $ClaudeDir $l.path
+            try {
+                New-Item -ItemType $l.type -Path $lp -Target $l.target -ErrorAction Stop | Out-Null
+                Say "KEEP  " "$($l.path) (a link; re-made, pointing at $($l.target))" DarkGray
+            }
+            catch { Write-Host "[TODO]   could not re-make the link $($l.path). As admin: New-Item -ItemType $($l.type) -Path `"$lp`" -Target `"$($l.target)`"" -ForegroundColor Cyan }
+        }
+    }
+    else {
+        Get-ChildItem -LiteralPath $target -Force -ErrorAction SilentlyContinue | Where-Object { $Names -notcontains $_.Name } | ForEach-Object {
+            Say "KEEP  " "$Folder\$($_.Name) (not in the shared set; kept from the old folder)" DarkGray
+        }
+    }
 }
 
 foreach ($folder in $Merged) {
-    $repoFolder = Join-Path $Repo $folder
-    if (-not (Test-Path -LiteralPath $repoFolder)) { continue }
+    if (-not (Test-Path -LiteralPath (Join-Path $Src $folder))) { continue }
     $target = Join-Path $ClaudeDir $folder
+    $names = @(Get-SourceNames $folder)
 
-    # The repo's items in this folder (git-visible ones only, when git is available).
-    if ($script:RepoFiles) {
-        $names = @($script:RepoFiles | Where-Object { $_.StartsWith("$folder/") } | ForEach-Object { ($_ -split '/')[1] } | Sort-Object -Unique)
+    if ($Link -and $LinkFolders -contains $folder) {
+        # Link the whole folder, unless it holds items of the user's own.
+        $extras = @()
+        if ((Test-Exists $target) -and (Get-Kind $target) -eq 'dir') {
+            $extras = @(Get-ChildItem -LiteralPath $target -Force | Where-Object { $names -notcontains $_.Name } | ForEach-Object Name)
+        }
+        if (-not $extras.Count) { Link-Item $folder; continue }
+        Say "NOTE  " "$folder holds items of your own ($($extras -join ', ')); linking each shared item one by one so yours stay" Cyan
     }
-    else { $names = @(Get-ChildItem -LiteralPath $repoFolder -Force | ForEach-Object Name) }
 
-    if ((Test-Exists $target) -and ((Get-Kind $target) -in 'symlink', 'junction')) {
-        # A whole folder linked to the share: back it up, unlink, keep anything the repo doesn't have.
-        $info = Backup-Item $folder
-        if (-not $info.contentCopied) { throw "Could not read the contents behind $folder ($($info.linkTarget)), so its extra items can't be kept. Nothing in $folder was changed. Check the share is reachable and run again." }
-        $info.action = 'unlinkFolder'
-        Add-Action $info
-        Remove-Target $target
-        if (-not $WhatIf) { New-Item -ItemType Directory -Path $target | Out-Null }
-        Say "UNLINK" "$folder was a link to $($info.linkTarget); link removed, now a real folder (the share is untouched)" Yellow
-        $bakFolder = Join-Path $script:BackupDir $info.backup
-        if (-not $WhatIf) {
-            Get-ChildItem -LiteralPath $bakFolder -Force | Where-Object { $names -notcontains $_.Name } | ForEach-Object {
-                Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $target $_.Name) -Recurse -Force
-                Say "KEEP  " "$folder\$($_.Name) (not in this repo; kept from the old folder)" DarkGray
-            }
-            # Links that sat inside the linked folder (the backup holds none) are re-made, unless the repo
-            # replaces the item they belong to.
-            foreach ($l in @($info.innerLinks)) {
-                if (-not $l -or $names -contains (($l.path -split '\\')[1])) { continue }
-                $lp = Join-Path $ClaudeDir $l.path
-                try {
-                    New-Item -ItemType $l.type -Path $lp -Target $l.target -ErrorAction Stop | Out-Null
-                    Say "KEEP  " "$($l.path) (a link; re-made, pointing at $($l.target))" DarkGray
-                }
-                catch { Write-Host "[TODO]   could not re-make the link $($l.path). As admin: New-Item -ItemType $($l.type) -Path `"$lp`" -Target `"$($l.target)`"" -ForegroundColor Cyan }
-            }
-        }
-        else {
-            Get-ChildItem -LiteralPath $target -Force -ErrorAction SilentlyContinue | Where-Object { $names -notcontains $_.Name } | ForEach-Object {
-                Say "KEEP  " "$folder\$($_.Name) (not in this repo; kept from the old folder)" DarkGray
-            }
-        }
-    }
+    if ((Test-Exists $target) -and ((Get-Kind $target) -in 'symlink', 'junction')) { Convert-LinkedFolder $folder $names }
     elseif (-not (Test-Exists $target)) {
         Add-Action @{ action = 'mkdir'; path = $folder }
         if (-not $WhatIf) { New-Item -ItemType Directory -Path $target | Out-Null }
         Say "NEW   " "$folder\" Green
     }
 
-    foreach ($n in $names) { Install-RepoItem (Join-Path $folder $n) }
+    foreach ($n in $names) {
+        $rel = Join-Path $folder $n
+        if (-not $Link -or $CopyItemsInLinkMode -contains $rel -or $CopyFoldersInLinkMode -contains $folder) { Install-RepoItem $rel }
+        else { Link-Item $rel }
+    }
 }
 
 # Global instructions
-Install-RepoItem "CLAUDE.md"
+if ($Link) { Link-Item "CLAUDE.md" } else { Install-RepoItem "CLAUDE.md" }
 
 # Retired items
-$retired = Join-Path $Repo "retired.txt"
+$retired = Join-Path $Src "retired.txt"
 if (Test-Path -LiteralPath $retired) {
     foreach ($line in Get-Content -LiteralPath $retired) {
         $r = $line.Trim()
@@ -525,7 +638,7 @@ if (Test-Path -LiteralPath $retired) {
 }
 
 # settings.json
-$template = Read-Text (Join-Path $Repo "settings.template.json")
+$template = Read-Text (Join-Path $Src "settings.template.json")
 $template = $template.Replace("__CLAUDE_DIR__", $ClaudeDir.Replace('\', '\\'))
 if ($Context7Key) { $template = $template.Replace("__CONTEXT7_API_KEY__", $Context7Key) }
 $settings = Join-Path $ClaudeDir "settings.json"
@@ -557,6 +670,7 @@ Write-Host @"
 if ($WhatIf) { Write-Host "`nPreview done. Nothing was changed." -ForegroundColor Cyan }
 else {
     Write-Host "`nDone. Backup and manifest: $script:BackupDir" -ForegroundColor Cyan
-    Write-Host "To undo:  .\install.ps1 -Rollback `"$script:BackupDir`"" -ForegroundColor Cyan
+    Write-Host "To undo:  powershell -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Rollback `"$script:BackupDir`"" -ForegroundColor Cyan
+    if ($Link) { Write-Host "          (run it as administrator, so the old links can be re-made)" -ForegroundColor Cyan }
     Write-Host "Restart Claude Code (or run /reload-plugins) to pick everything up."
 }

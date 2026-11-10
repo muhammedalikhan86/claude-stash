@@ -4,10 +4,46 @@ Shaw & Partners' shared Claude Code setup: skills, agents, hooks, rules, memory,
 styles, plus the lessons learned building them. Clone it, run the installer, and a new developer
 gets the same Claude Code that the rest of the team already uses.
 
-This repo replaces the old `\\sic2tfs1\Claude\Prod` share and its `create-symlinks.bat`. Everything
-here is a real file. There are no symlinks and no network paths.
+This repo is the source. The `\\sic2tfs1\Claude\Prod` share is where it is published for the team.
 
-## Install
+```
+claude-stash repo  --publish-to-prod.ps1-->  \\sic2tfs1\Claude\Prod  <--links--  each person's ~/.claude
+   (edit here)          (maintainer)            (shared copy)          create-symlinks.bat (every account)
+```
+
+There are two ways to set up a machine:
+
+1. **Linked to the share (the team default).** Run `create-symlinks.bat`. Your `~/.claude` links to
+   the share, so you get updates as soon as they are published, and every Claude Code account on
+   your machine shares one copy. Needs the network or VPN while you work. See
+   [docs/share/README.md](docs/share/README.md), which is also the share's own README.
+2. **Local copy.** Run `install.ps1` (below). Real files, no network needed, updated when you
+   `git pull` and run it again. For working offline, or for trying changes before publishing.
+
+You can switch between them any time; each one backs up what it replaces.
+
+## Publish to the share (maintainers)
+
+```powershell
+.\publish-to-prod.ps1 -WhatIf     # preview; changes nothing
+.\publish-to-prod.ps1             # publish
+.\publish-to-prod.ps1 -Target \\sic2tfs1\Claude\Dev -ShareRoot ""   # try it on Dev first
+```
+
+1. It refuses to run if the repo has uncommitted changes, the generated developer agents are stale,
+   or `rules/shaw-estate.md` holds a real password instead of the `<DB_PASSWORD>` placeholder.
+2. It copies everything to a staging folder on the share, then swaps each item in, moving the old
+   one into `\\sic2tfs1\Claude\Backups\publish-<date-time>\`. An item someone has open is skipped and
+   reported; run it again later.
+3. Besides the shared items, it puts `install.ps1`, `retired.txt` and `settings.template.json` in
+   `Prod`, and `create-symlinks.bat` and [docs/share/README.md](docs/share/README.md) at the share root.
+4. It lists anything on the share that this repo doesn't hold, and leaves it alone.
+5. To undo: `.\publish-to-prod.ps1 -Rollback "\\sic2tfs1\Claude\Backups\publish-<date-time>"`.
+
+After publishing, people pick up changes the next time Claude Code starts. A new skill, memory file
+or rule needs them to run `create-symlinks.bat` again, so it gets linked too.
+
+## Install a local copy
 
 Needs: Windows, Claude Code, Git Bash (`bash` on PATH) and Python 3 (the hooks use both).
 
@@ -27,7 +63,7 @@ Preview first, then install. Nothing is changed by the preview:
 What the installer does:
 
 1. **Backs up first.** Everything it replaces or deletes is copied to
-   `~/.claude-backups/install-<date-time>/`, with a `manifest.json` of every change, written as it goes.
+   `~/.claude-backups/install-<account>-<date-time>/`, with a `manifest.json` of every change, written as it goes.
 2. Copies each skill, agent, agent task file, hook, rule, memory, mod and output style this repo holds
    into `~/.claude`, replacing the old copy. Your own skills and other items are left alone.
 3. Replaces old symlinks to `\\sic2tfs1\Claude\Prod` with real files. Only the link is removed; the
@@ -43,8 +79,8 @@ What the installer does:
 To undo an install, pass its backup folder (the installer prints the exact command at the end):
 
 ```powershell
-.\install.ps1 -Rollback "$env:USERPROFILE\.claude-backups\install-<date-time>" -WhatIf   # preview
-.\install.ps1 -Rollback "$env:USERPROFILE\.claude-backups\install-<date-time>"
+.\install.ps1 -Rollback "$env:USERPROFILE\.claude-backups\install-claude-<date-time>" -WhatIf   # preview
+.\install.ps1 -Rollback "$env:USERPROFILE\.claude-backups\install-claude-<date-time>"
 ```
 
 Rollback puts back every file and link, including the symlinks to the share. Making a symlink needs
@@ -82,6 +118,10 @@ To update later: `git pull`, then `.\install.ps1`.
 | `mods/` | `~/.claude/mods/` | Claude Code UI mods (see below) |
 | `claude-plugin-marketplace/` | — | A plugin marketplace with the `web-dotnet-toolkit` plugin. See its own README |
 | `docs/lessons/` | — | Write-ups of fixes and what was learned |
+| `docs/share/README.md` | `\\sic2tfs1\Claude\README.md` | The share's README: how team members run `create-symlinks.bat` |
+| `install.ps1` | — | Local copy (`install.ps1`) or links to the share (`install.ps1 -Link`), with backup and rollback |
+| `create-symlinks.bat` | `\\sic2tfs1\Claude\` | Runs `install.ps1 -Link` for one user's accounts, from an administrator Command Prompt |
+| `publish-to-prod.ps1` | — | Publishes this repo to `\\sic2tfs1\Claude\Prod`, with backup and rollback |
 | `settings.template.json` | `~/.claude/settings.json` | Hooks, permissions, plugins, env vars. No secrets |
 
 ### Skills

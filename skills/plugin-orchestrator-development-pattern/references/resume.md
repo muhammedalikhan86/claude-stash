@@ -20,6 +20,8 @@ Integration Output there too (at its saved name, `integration-output-pass<N>.md`
 `integration.outputPaths`) — Previous Issues, a Verification Blocked Reviewer respawn, Integration's
 Retry Context and the Phase 2/3 inputs all read from them. A packet or output missing from both the work dir and run-state is read from the item's `parkedAt` folder; with no `parkedAt` either, re-derive the packet from the item's PMBook row and say so in the resume announcement.
 
+**Task bar first.** Before anything below, send the task list as `SKILL.md`'s **Task bar** says for a resume, so the user sees where the run stands.
+
 **Where a resumed run rejoins.** Phase 0 is not re-run: print Step 0.0a's block, announce any
 `heldForNextRun` items, then take the Platform Profile, waves and queue from the file. Take the first
 match, latest phase first (run-state's `phase`: `closeout`, `phase3`, `phase2`, `phase1`, `ui-iteration`); a step found `started` (not `done`) re-runs from its start:

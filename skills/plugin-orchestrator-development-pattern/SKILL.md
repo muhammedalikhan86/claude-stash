@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.13.1"
+  version: "1.13.2"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -47,6 +47,8 @@ If you have a task-list tool (`mcp__task-bar__set_tasks`, or `TodoWrite`), keep 
 whole list when work starts (one task per phase or work item), again whenever a task starts or finishes
 or the plan changes, all `completed` at the end, then an empty list once the user has seen it. If you
 have neither tool, carry on without; do not mention it.
+
+**On a resume** (after a restart, a park or an escalation pause), send the list first, as soon as run-state is read and before you ask or do anything else: one task per item and phase still in the run, terminal ones `completed`, the rejoin point `in_progress`, everything queued (later waves, `heldForNextRun` items, Phase 2/3) `pending`. The user reads where the run stands from it. With nothing unfinished and nothing queued, send nothing.
 
 **Three work-item types share this pipeline:** planned **Features** from the PMBook's Feature Backlog;
 reactive **Bugs**, which can be taken ad hoc (Step 0.1b); and exploratory **Spikes** (Step 0.1c). Spike

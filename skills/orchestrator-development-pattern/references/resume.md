@@ -5,6 +5,8 @@ the user types "resume" at an escalation pause. A normal run never needs it. Wha
 when it is saved stay in SKILL.md's **Run-State Checkpointing**; this file is the read-back half.
 Phase 2's entry rule, the item statuses and the metrics rows referred to below are defined in SKILL.md.
 
+**Task bar first.** Before anything below, send the task list as `SKILL.md`'s **Task bar** says for a resume, so the user sees where the run stands.
+
 ## Where a resumed run rejoins
 
 On explicit user confirmation, take the latest phase first (run-state's `phase`: `closeout`, `phase3`, `phase2`, `phase1`) and stop at the first match (a `dropped` item is skipped by every rule): run complete → nothing; an item with status `escalated` (or the

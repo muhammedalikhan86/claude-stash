@@ -103,10 +103,15 @@ function ConvertTo-RootPath([string] $path) {
     return $p
 }
 
+# A trailing YAML comment (` # placeholder - no code yet`) is not part of the value.
+function Remove-TrailingComment([string] $text) {
+    return ($text -replace '\s+#.*$', '')
+}
+
 # Every list item on a line: `- "a" - "b"`, `- a`, `["a", "b"]`.
 function Get-Items([string] $text) {
     $items = @()
-    $t = $text.Trim()
+    $t = (Remove-TrailingComment $text).Trim()
     if ($t.StartsWith('[')) {
         foreach ($part in ($t.Trim('[', ']') -split ',')) {
             if ($part.Trim()) { $items += (ConvertTo-RootPath $part) }
@@ -124,7 +129,7 @@ function Get-Items([string] $text) {
 function Get-Binding([string[]] $lines, [string] $key) {
     foreach ($line in $lines) {
         if ($line -match ('^\s*' + [regex]::Escape($key) + ':\s*(.*?)\s*$')) {
-            return $Matches[1].Trim().Trim('"').Trim("'")
+            return (Remove-TrailingComment $Matches[1]).Trim().Trim('"').Trim("'")
         }
     }
     return ''
@@ -135,8 +140,8 @@ function Get-ListBinding([string[]] $lines, [string] $key) {
     for ($i = 0; $i -lt $lines.Count; $i++) {
         if ($lines[$i] -match ('^(\s*)' + [regex]::Escape($key) + ':\s*(.*?)\s*$')) {
             $indent = $Matches[1].Length
-            $rest = $Matches[2]
-            if ($rest -ne '') {
+            $rest = (Remove-TrailingComment $Matches[2]).Trim()
+            if ($rest -ne '' -and -not $rest.StartsWith('#')) {
                 if ($rest.StartsWith('[') -or $rest -match '^-\s') { return @(Get-Items $rest) }
                 return @(ConvertTo-RootPath $rest)
             }
@@ -146,7 +151,7 @@ function Get-ListBinding([string[]] $lines, [string] $key) {
                     if ($Matches[1].Length -lt $indent) { break }
                     $items += @(Get-Items $lines[$j])
                 }
-                elseif ($lines[$j].Trim() -eq '') { continue }
+                elseif ($lines[$j].Trim() -eq '' -or $lines[$j].Trim().StartsWith('#')) { continue }
                 else { break }
             }
             return $items
@@ -161,7 +166,7 @@ function Get-ListBinding([string[]] $lines, [string] $key) {
 #     shell:
 #       code:
 #         - "./apps/shell"
-# Ends at the first blank line or the first line that is neither.
+# Ends at the first blank line or the first line that is neither. Comment lines are skipped.
 function Get-ComponentTable([string[]] $lines) {
     $table = New-Object System.Collections.Specialized.OrderedDictionary
     $start = -1
@@ -176,6 +181,7 @@ function Get-ComponentTable([string[]] $lines) {
     for ($i = $start + 1; $i -lt $lines.Count; $i++) {
         $line = $lines[$i]
         if ($line.Trim() -eq '') { if ($table.Count) { break } else { continue } }
+        if ($line.Trim().StartsWith('#')) { continue }
         if ($line -match '^(\s*)-\s+') {
             if ($current -and $inCode) { $table[$current] += @(Get-Items $line); continue }
             break
@@ -366,6 +372,10 @@ foreach ($name in $targets) {
     $path = (Resolve-Path $report).Path
     $body = [System.IO.File]::ReadAllText($path, $Utf8NoBom) -replace ('^' + [char]0xFEFF), ''
     $body = [regex]::Replace($body, '(?m)\A(> (Component|Built at commit|Code roots):.*\r?\n)+\r?\n?', '')
+    # graphify titles the report after the root it ran last, so a multi-root
+    # graph reads "Graph Report - <last root>". Retitle it after the component.
+    $titleRx = [regex]'(?m)^# Graph Report - [^\r\n]*?(\s+\(\d{4}-\d{2}-\d{2}\))?[ \t]*(?=\r?$)'
+    $body = $titleRx.Replace($body, { param($m) "# Graph Report - $name" + $m.Groups[1].Value }, 1)
     [System.IO.File]::WriteAllText($path, $stamp + $body, $Utf8NoBom)
     Write-Host "[$name] stamped at $($sha.Substring(0, [Math]::Min(8, $sha.Length)))" -ForegroundColor Green
     $built++

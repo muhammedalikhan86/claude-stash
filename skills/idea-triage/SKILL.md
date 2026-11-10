@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code. G
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.9.0"
+  version: "1.10.0"
   domain: product-workflow
   triggers: idea, new feature, new product, new project, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
   role: product-engineer
@@ -18,7 +18,11 @@ metadata:
     project-management-doc,
     handoff-doc,
     archive-directory,
-    adr-directory
+    adr-directory,
+    artboards-directory,
+    design-directory,
+    design-rows-directory,
+    design-rounds-directory
   ]
 
 ---
@@ -212,7 +216,11 @@ technology choice that stays within the bounds of what the PRD already allowed f
    List them explicitly: "PRD section X may need to change because Architecture research
    revealed…"
 3. Ask the user directly: "Should we revisit the [upstream doc] given this finding, or treat it as
-   an accepted trade-off and leave the upstream doc as-is?"
+   an accepted trade-off and leave the upstream doc as-is?" **Skip this question when the user's own
+   answer already settled it** — e.g. the PRD named an AD group that turned out not to exist, and the
+   user picked the real groups while answering an Architecture question. Their answer is the
+   decision: apply the upstream change as step 4, log it `Upward ripple from <Doc> vN`, and say in
+   one line that you did so and why no question was needed.
 4. If the user chooses to update the upstream document, apply that change first, respecting phase
    order (PRD before Architecture before PMBook) — then re-run the normal *downstream* ripple
    review again, since the upstream document itself just changed and may now affect documents
@@ -253,7 +261,8 @@ against PRD v2; PRD is now v4, so Architecture may be stale."
 
 ## Rules
 
-- Every document starts at **v1** on its initial draft.
+- Every document starts at **v1** on its initial draft. Fixes made before that v1 is first shown to
+  the user are part of v1 — no bump. Counting starts at the first presentation.
 - The version increments by exactly 1 on every saved change to that document — a triage edit, a
   gate approval, or a ripple-driven update. Never skip or reuse a version number.
 - Every document's header carries a `> Version: vN` line alongside its Status and Last updated
@@ -387,6 +396,9 @@ Check this at the start of any triage session, not just when the user explicitly
   `ACTIVE` with **every** Phase in its Phases & Milestones table at `Done`.
 - The user explicitly says something like "let's start v2," "new round of features," or "close out
   this release."
+- The user wants to mark vN shipped **with no new ideas yet** ("v1 is done, close it out"). Close out
+  and open vN+1 empty: the procedure below, then stop at step 7 instead of entering Phase 1 — triage
+  starts when the ideas come.
 
 If the PMBook still has any Phase not `Done`, do NOT close out — new ideas either belong in the
 current Tranche's backlog (if in scope) or get flagged as a future-Tranche candidate without triggering
@@ -394,7 +406,15 @@ archiving yet.
 
 ## Closeout Procedure
 
-Run this before opening Phase 1 triage for the new Tranche's ideas:
+Run this before opening Phase 1 triage for the new Tranche's ideas (or on its own, for a closeout with
+no new ideas yet).
+
+**Archived IDs still count.** A work-item ID (F-, B-, S-, PM-, OI-…) that now lives only in
+`archive-directory/*/project-management.md` is still a valid citation. Closeout never rewrites
+citations in `architecture-file`, the PRD, README or CLAUDE.md. If the repo has its own check that
+every cited ID must have a row in the live PMBook (a docs-check script, a drift rule), that check must
+also read the archived PMBooks — tell the user at step 1 if it does not, because a by-the-book closeout
+will otherwise turn it red.
 
 1. Confirm with the user: "All Phases in Tranche vN are Done. Close out vN and start vN+1?" Do not
    archive on an ambiguous or implied answer.
@@ -409,6 +429,9 @@ Run this before opening Phase 1 triage for the new Tranche's ideas:
      linking to its archive file.
    - Carry forward every Open Item that is still unresolved — do not drop these, they're active
      work, not history.
+   - `## Dependencies`: carry forward only the ones still open; closed ones stay in the archive.
+   - `## Resolved Items`, and any other section the PMBook format does not define: archive only —
+     drop it from the live doc and list it in the closeout summary.
    - Reset Phases & Milestones and Feature Backlog to empty, ready for the new Tranche's Phase
      numbering (numbering continues from the closed tranche's highest Phase + 1 — never reused,
      same rule as feature IDs).
@@ -418,16 +441,20 @@ Run this before opening Phase 1 triage for the new Tranche's ideas:
    - Bump `Tranche` to `vN+1`, increment `Version`, add a `Version History` row (`Triggered By: Tranche
      closeout`, with `Approved By` resolved per **Approver Identity**).
 5. Replace the live `handoff-doc`:
-   - Collapse all content into a single line: "Prior tranches: see
-     `archive-directory/<slug>/handoff.md`."
-   - Clear everything else — the new Tranche's handoff content starts fresh at its own first
-     Finalization (`orchestrator-development-pattern` Phase 3, Step 3.3).
+   - A pointer line: "Prior tranches: see `archive-directory/vN-<slug>/handoff.md`."
+   - A short `## Carried forward` section with what the next session needs on day one: the current
+     state (what is live, where), deployment and logging rules, and standing rules that carry over.
+     Keep it short — a summary with pointers, not a copy of the old handoff.
+   - Clear everything else (per-feature narrative, closed-item detail) — it is in the archive. The new
+     Tranche's own handoff content starts at its first Finalization (`orchestrator-development-pattern`
+     Phase 3, Step 3.3).
    - Bump `Tranche` to `vN+1`.
 6. Do NOT archive or reset `prd-file` or `architecture-file`. Non-Goals items in the PRD that are
    graduating into the new Tranche's scope get moved during normal Phase 1 triage (see Document
    Boundaries) — that's a standard triage edit, not part of closeout.
 7. Announce the closeout summary (format below), then proceed into Phase 1 triage for the new
-   Tranche's ideas as normal.
+   Tranche's ideas as normal — or, for a closeout with no new ideas yet, stop: vN+1 is open and
+   empty.
 
 ## Closeout Output Format
 
@@ -439,11 +466,14 @@ Archived:
 - handoff-doc           → archive-directory/vN-<slug>/handoff.md
 
 Carried forward (still-open items): <list, or "none">
+Handoff carried forward: current state, deployment and logging rules, standing rules
+Sections archived only:  <Resolved Items, any section the format does not define — or "none">
+Archived-ID check:       <the repo's citation check reads archived PMBooks / needs updating / none found>
 
 Live docs reset:        project-management-doc, handoff-doc now scoped to Tranche vN+1
 Unchanged (living, in place): prd-file, architecture-file
 
-Proceeding to Phase 1 (PRD) triage for vN+1.
+Proceeding to Phase 1 (PRD) triage for vN+1.   (or: "vN+1 is open and empty — triage starts when the ideas come.")
 ```
 
 ---
@@ -453,7 +483,10 @@ Proceeding to Phase 1 (PRD) triage for vN+1.
 Runs **before** Phase 1, whenever the component automates, replaces or wraps a process that already
 exists in the real world — a manual process, a legacy tool, a spreadsheet someone maintains by hand.
 A genuinely greenfield idea with no incumbent has nothing to discover: say so, record
-`Phase 0: not applicable — no incumbent process`, and start at Phase 1.
+`Phase 0: not applicable — no incumbent process`, and start at Phase 1. The same holds when the
+"incumbent" is only **ad-hoc developer querying** — developers running SQL or scripts by hand when
+asked, with no business process, owner or hand-off around it: record
+`Phase 0: not applicable — incumbent is ad-hoc developer querying`.
 
 ## Why this phase exists
 
@@ -772,8 +805,15 @@ When the user explicitly approves the PRD:
 
 1. Re-read the approved PRD.
 2. Identify the major unknowns that affect architecture (data model shape, integration points, runtime environment).
-3. Ask up to **2 targeted questions** before drafting — only blockers. Do not stall.
-4. Draft the architecture document and write it to `architecture-file` as **v1**, with a
+3. **Read the firm's precedent before drafting hosting, deployment or identity.** Existing standards
+   and sibling repos' ADRs settle most of these rows; a draft that contradicts them gets rewritten.
+   For Shaw & Partners work, load the `shaw-estate` skill and start from its **Standard architecture
+   defaults**, then read the references and documents they point to. Those defaults are settled:
+   don't ask about them again, only about real deviations. Precedent you follow is cited in the row;
+   precedent you depart from needs an ADR saying why.
+4. Ask up to **2 targeted questions** before drafting — only blockers, and none that the precedent
+   or the repo already answers. Do not stall.
+5. Draft the architecture document and write it to `architecture-file` as **v1**, with a
    `## Version History` table whose first row is `v1 | <date> | Initial draft | —`.
 
 ## 2.2 Architecture Document Format
@@ -857,6 +897,23 @@ compliance-sensitive concerns present in Components/NFRs/PRD Constraints. Omit e
 | Data-at-rest / in-transit protection addressed? | Addressed / Unaddressed | ... |
 | Least-privilege boundaries between components? | Addressed / Unaddressed | ... |
 | Applicable compliance regime (or "None") and how it's addressed? | Addressed / Unaddressed | ... |
+
+## 10. UI Surfaces
+
+(Include this section only when §2.8's trigger fires — the system renders a user interface. Omit
+entirely for a backend-only or library project.)
+
+A **surface** is one screen, panel, dialog or distinct region a user sees. Each one has an artboard:
+a design file under `artboards-directory` that states what the surface is supposed to look like. The
+artboard is a **specification, not a record** — it is settled before the code is written, and the
+code is then built to match it. Nothing here describes the current implementation.
+
+| Surface | Artboard | Component (§3) | Purpose | Status |
+|---------|----------|---------------|---------|--------|
+| <Screen name> | artboards-directory/<Surface>.<ext> | <Component Name> | One line | Drafted / Approved / Missing |
+
+`Missing` is a legitimate status — it says the surface is known and its artboard has not been drawn
+yet. It is better than leaving the row out, because a missing row reads as "no UI here".
 
 ## Version History
 | Version | Date | Change | Triggered By | Approved By |
@@ -947,6 +1004,9 @@ What becomes easier or harder as a result. Name any tradeoff accepted knowingly.
   Decision or Consequences section. Instead: write a new ADR, set its `Related → Supersedes` field,
   and set the old ADR's status to `SUPERSEDED BY ADR-MMM`. The old ADR stays on disk, unedited —
   it's still true history of what was decided and why, even after superseding.
+- **A PROPOSED ADR may be rewritten in place** — its text, its title and its file name — while it is
+  still under triage. Keep its number: `ADR-NNN` is never reused or renumbered. Only ACCEPTED makes it
+  immutable.
 - The Technology Decisions table (§7) always cites the *currently active* ADR ID for each row —
   update the citation when a decision is superseded.
 
@@ -979,6 +1039,14 @@ soft gates (surface and ask, never silently block, never silently pass):
   them in."
 - **Security & Compliance Checklist:** if §9 is present (per its own trigger heuristic) and any row is
   `Unaddressed`, ask the same resolve-now-or-accept-and-proceed question as above before approving.
+- **UI surface with no artboard:** if §10 is present (per §2.8's trigger) and any row reads
+  `Status: Missing`, ask: "These surfaces have no artboard yet — draw them now, or approve and settle
+  each one when its feature comes up?" (The orchestrator does not draw boards: at Step 1.1 a surface
+  with no board is built to its Acceptance Criteria when they describe it fully; a new layout with no
+  board halts the item until the board is drawn or the user rules "build to the Acceptance Criteria".
+  Where an outside designer owns the boards, the second answer means: they get design rows in round 001
+  at Phase 3 — §3.5.) Either
+  answer is fine; what is not fine is reaching development with nobody having noticed.
 
 Then:
 1. Update the architecture status to `APPROVED` and the date.
@@ -999,6 +1067,22 @@ these keywords: auth, login, credential, token, PII, personal data, payment, GDP
 compliance. Any hit → include §9's Security & Compliance Checklist table in the document (add it now if
 this is the first time it triggered) and evaluate it as part of the Phase 2 Gate's pre-approval checks.
 No hit → §9 stays entirely absent; most small projects never see this section at all.
+
+## 2.8 UI Surfaces — Trigger
+
+Same shape as §2.7, and run at the same moment: once, automatically, on entering §2.6's Phase 2 Gate.
+
+The system renders a user interface if any of these hold — a frontend application in the repo or in
+§3, a Component in §3 whose Outputs are screens or views rather than data, a PRD user story written
+from the point of view of someone looking at something, or an `artboards-directory` that already
+holds files.
+
+Any hit → include §10's UI Surfaces table, with one row per surface the PRD's user stories imply. Set
+`Status: Missing` for any surface with no artboard yet rather than omitting it. No hit → §10 stays
+entirely absent.
+
+If `artboards-directory` is not bound in `.claude/SKILLS.md`, say so once and write the table with the
+Artboard column left as `— (artboards-directory not bound)`. Do not invent a path.
 
 ---
 
@@ -1053,6 +1137,12 @@ No hit → §9 stays entirely absent; most small projects never see this section
 
 (IDs must be stable — never renumber once assigned)
 
+(A feature that changes what a user sees must name its artboard in its Acceptance Criteria —
+`Matches artboards-directory/<Surface>.<ext>` — citing a row from Architecture §10 — and, once §3.5
+has written them, its design rows: `Design rows: P4, P5`. That is what the orchestrator's Step 1.1
+reads to put the board in the Task Packet's `## Design Reference` before a Developer is spawned. A feature with no visual
+change needs no such criterion.)
+
 ## Dependencies
 
 | Item | Depends On | Blocks | Notes |
@@ -1091,7 +1181,9 @@ When the user is satisfied:
 1. Update PMBook status to `ACTIVE` and the date.
 2. Increment the Version and add a `## Version History` row (`Gate approval`), with `Approved By`
    resolved per **Approver Identity**.
-3. Print a handoff summary:
+3. If any backlog item changes what a user sees, write the design round now (§3.5), and put each
+   item's row IDs in its Acceptance Criteria.
+4. Print a handoff summary:
 
 ```
 ✅ Idea Triage Complete
@@ -1099,16 +1191,48 @@ When the user is satisfied:
 📄 PRD:          prd-file (APPROVED, vN)
 🏛  Architecture: architecture-file (APPROVED, vN)
 📋 PMBook:       project-management-doc (ACTIVE, vN)
+🎨 Design:       design-rounds-directory/round-NNN.md (open, N rows) — or "no screen changes"
 
-Next step: invoke orchestrator-development-pattern and point it at the PMBook.
+Next step: send the design round to the designer (if any), then invoke
+orchestrator-development-pattern and point it at the PMBook. Screen items wait until their rows are
+Done in a synced board; run sync-artboards when the designer is done.
 Start with: <first feature ID and name from the backlog>
 ```
+
+Paste the round's Summary and Detailed prompt after the handoff summary, Summary first.
 
 idea-triage does not author a `test-cases-doc` — that's out of scope here (this skill never writes
 code or test scenarios). If none exists, `orchestrator-development-pattern` drafts one automatically
 from the PMBook's Feature Backlog the first time it runs against this project, rather than asking; no
 action is needed on the idea-triage side to set this up.
 
+
+## 3.5 Design rows and the open round
+
+The design folder, its file formats and its rules are in
+`~/.claude/skills/sync-artboards/references/design-files.md` — read it before writing here; do not
+restate it in the governed docs.
+
+1. **Old layout?** If the artboards folder holds `review-<page>.md` ledgers and there is no
+   `design-rows-directory`, say so once, point to
+   `~/.claude/skills/sync-artboards/references/migrate-design-layout.md`, and ask whether to move
+   first. Never move on your own; if the user says not now, add the rows to the old ledgers and the
+   prompt at the end of each, as that repo already does.
+2. **Bindings.** If `artboards-directory`, `design-directory`, `design-rows-directory` or
+   `design-rounds-directory` is not in `.claude/SKILLS.md`, add it with the default from
+   `design-files.md`, and say so.
+3. **Brief.** If `<design-directory>/brief.md` does not exist, write it from `design-files.md`
+   §brief.md, with the repo's UI library (Shaw work: Angular Material).
+4. **Rows.** For every surface a backlog item changes, add rows to `<design-rows-directory>/<page>.md`:
+   one row per surface and per state the item needs drawn (populated, empty, loading, error, each
+   dialog or menu), Source the feature ID and AC, Round `open`. A surface already drawn and matching
+   the AC needs no row.
+5. **Round.** Add the rows to the open round, or start `round-NNN.md` (next number; `round-001.md` in a
+   new repo) with `Status: open`: the Summary and the Detailed prompt, which includes the change-log
+   instruction from `brief.md`. Do not set it sent — the user says when they have sent it.
+6. **Later design asks** in this or a later triage session — "make the button say X", "add an empty
+   state" — become rows in the open round the same way (a new round file if the last one was sent),
+   and the round's two texts are rewritten and shown again.
 ---
 
 # Workflow Enforcement Rules
@@ -1139,6 +1263,7 @@ action is needed on the idea-triage side to set this up.
 - Never open a pre-existing PRD/Architecture/PMBook missing the `Approved By` or `Likelihood` column and assume the current schema was always there — migrate it in the same edit per **Version History Schema Migration**, and state the migration to the user
 - Never approve an Architecture doc past an unresolved `Impact: High` / `Likelihood: High` risk row, or an `Unaddressed` row in a triggered Security & Compliance Checklist, without explicitly asking the user to resolve it or accept it as a trade-off first (see §2.6)
 - Never add or edit a §8 risk row with only `Impact` set — `Likelihood` must be set too (see §2.5)
+- Never hand a PMBook with screen changes to build without their design rows in the open round (§3.5); never renumber a design row; never mark a round sent until the user says so; never move an old design layout without the user's yes
 
 If the user jumps ahead (e.g. asks for the PMBook before the PRD is approved):
 - Acknowledge the request

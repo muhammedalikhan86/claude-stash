@@ -17,19 +17,23 @@ flowchart TD
     G0C -->|No| PACK
     G0C -->|"Yes - the governed-doc folder\nopens here, not before"| TrancheCheck
     TrancheCheck{"PMBook ACTIVE &\nall Phases Done?"}
-    TrancheCheck -->|Yes| Closeout["Tranche Closeout:\narchive PMBook + handoff,\ncarry forward open items,\nbump Tranche vN+1"]
-    Closeout --> B
+    TrancheCheck -->|Yes| Closeout["Tranche Closeout:\narchive PMBook + handoff,\ncarry forward open items,\nkeep handoff Carried forward,\nbump Tranche vN+1"]
+    Closeout -->|new ideas| B
+    Closeout -->|no new ideas yet| OpenEmpty(["vN+1 open and empty:\nstop until ideas come"])
     TrancheCheck -->|No| B[Phase 1: Draft PRD]
 
     B --> G1{User approves PRD?}
     G1 -->|No| B
     G1 -->|Yes| C["Phase 2: Draft Architecture\n(+ ADR per Technology Decision)"]
-    C --> G2{"User approves Architecture?\n(pre-checks: unresolved High/High\nrisk, Unaddressed Security row)"}
+    C --> G2{"User approves Architecture?\n(pre-checks: unresolved High/High\nrisk, Unaddressed Security row,\nUI surface with no artboard)"}
     G2 -->|"No / unresolved\nissue not accepted"| C
     G2 -->|"Yes, or accepted\nas trade-off"| D[Phase 3: Draft PMBook]
     D --> G3{User approves PMBook?}
     G3 -->|No| D
-    G3 -->|Yes| E([Done — hand off to\norchestrator-development-pattern])
+    G3 -->|Yes| DR{"Any item changes\na screen?"}
+    DR -->|"Yes"| DR2["§3.5: brief.md if missing,\ndesign rows per surface + state,\nopen round-NNN.md\n(Summary + Detailed prompt)"]
+    DR2 --> E
+    DR -->|No| E([Done — hand off to\norchestrator-development-pattern])
 
     C -->|Ripple from PRD change| R1["Review downstream impact\n(+ Decommissioning Rule for\nDone/In-Progress features)"]
     D -->|Ripple from Architecture change| R2["Review downstream impact\n(+ Decommissioning Rule for\nDone/In-Progress features)"]
@@ -63,7 +67,7 @@ flowchart TD
     class G1,G2,G3 gate;
     class B,C,D,R1,R2,U1,U2 phase;
     class E done;
-    class TrancheCheck,Closeout tranche;
+    class TrancheCheck,Closeout,OpenEmpty tranche;
     class UP1,UP2 upward;
 ```
 

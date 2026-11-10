@@ -37,6 +37,7 @@ a skill and *generates* a skill rather than a command.
 | `scripts/graph.ps1` | The standard knowledge-graph build script, copied from this skill's `templates/` |
 | `CLAUDE.md` | Operating guidance, written only from verified facts |
 | `docs/adr/` | ADR home (`.gitkeep`'d) |
+| `docs/design/` | UI repos only: `rows/`, `rounds/`, `artboards/` (`.gitkeep`'d) and a short `README.md` pointer |
 
 It does **not** create a diagram render pipeline — see *Diagram convention* below.
 
@@ -44,8 +45,9 @@ It does **not** create a diagram render pipeline — see *Diagram convention* be
 
 ## Step 0 — Confirm scope
 
-Run `git rev-parse --is-inside-work-tree`. If this is not a git repo, stop and tell the user to run
-it inside one (offer `git init`).
+Run `git rev-parse --is-inside-work-tree`. If this is not a git repo, do not just stop: offer to make it
+one with `git init -b main`, and if the user gives a remote URL, `git remote add origin <url>` as well.
+Run them only on the user's yes, then carry on from Step 1. If they decline, stop.
 
 ## Step 1 — Check existing state
 
@@ -92,7 +94,10 @@ Also settle the **code roots** — the folders that hold source and tests (`src/
 `tests/<Project>.Tests`, `app/`, …), read from the manifests found above. They become
 `graphify-directories` (Step 8), which `scripts/graph.ps1` (Step 3d) builds the knowledge graph from.
 Never the repo root: a graph of `./` pulls `docs/` and every planning document into a code graph. A
-pre-code repo has none to read — ask the user where the code will live.
+pre-code repo has none to read: ask the user where the code will live, or, if they don't know yet,
+bind placeholder roots (e.g. `./src`, `./tests`) with a `# placeholder — no code yet` note on its own
+line above the binding in `SKILLS.md`, and list them in Step 9. That is safe: `scripts/graph.ps1 -DryRun` reports a missing
+root as "would skip" and the build skips it.
 
 ## Step 3 — `.claude/settings.json`
 
@@ -103,21 +108,21 @@ Write, if absent, starting from this base (permissions + identity fields; no `ho
   "permissions": {
     "allow": [
       "Read(*)",
-      "Bash(*ls*)",
-      "Bash(*cat*)",
-      "Bash(*cd*)",
-      "Bash(*mkdir*)",
-      "Bash(*mv*)",
-      "Bash(*cp*)",
-      "Bash(*echo*)",
-      "Bash(*curl * http://127.0.0.1*)",
-      "Bash(*curl * http://localhost*)",
-      "Bash(*git log*)",
-      "Bash(*git status*)",
-      "Bash(*git diff*)",
-      "Bash(*git add*)",
-      "Bash(*git commit*)",
-      "Bash(*git branch*)"
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(cd *)",
+      "Bash(mkdir *)",
+      "Bash(mv *)",
+      "Bash(cp *)",
+      "Bash(echo *)",
+      "Bash(curl * http://127.0.0.1*)",
+      "Bash(curl * http://localhost*)",
+      "Bash(git log *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)"
     ],
     "deny": [
       "Bash(*git push --force*)",
@@ -139,8 +144,11 @@ Write, if absent, starting from this base (permissions + identity fields; no `ho
 ```
 
 Then append allow-patterns **only** for tooling the detected stack actually uses — e.g.
-`Bash(*npm*)`/`Bash(*node*)` for Node, `Bash(*dotnet*)` for .NET, `Bash(*cargo*)` for Rust,
-`Bash(*make*)` for a Makefile-driven repo. Validate the file parses as JSON before moving on.
+`Bash(npm *)`/`Bash(node *)` for Node, `Bash(dotnet *)` for .NET, `Bash(cargo *)` for Rust,
+`Bash(make *)` for a Makefile-driven repo. **Allow rules are prefixes**: the command first, then a
+wildcard. Never wrap an allow rule in `*…*` — `Bash(*cd*)` matches any command that merely contains
+"cd" anywhere. The deny list above keeps its `*…*` forms on purpose: there, matching more is the
+safe direction. Validate the file parses as JSON before moving on.
 
 **`git stash`, `git checkout` and branch-creating `git switch` (`-c`, `-C`, `--create`,
 `--force-create`) are denied, deliberately — do not "fix" this by moving any of them back to
@@ -188,8 +196,11 @@ twice.
 3. **A project that needs a hook of its own** (a script that lives in the repo and only makes sense
    there) is the one case for a project `hooks` block. Point its `command` at the repo's script,
    never at `~/.claude/hooks`.
-4. **Check the global wiring exists.** Read `~/.claude/settings.json`. If it has no `hooks` block, or
-   no entry for a script in `~/.claude/hooks`, do not fix that here: say in the Step 9 summary which
+4. **Check the global wiring exists.** Read `~/.claude/settings.json`. Each hook script
+   says how it is wired: `# <file> — <Event> hook (matcher: <regex>)` on its header line (the first comment after any `source` line), with `(matcher: "")` for one
+   wired with no matcher. A file whose header says `helper (sourced, not a hook)` (e.g. `lib-python.sh`) is sourced by
+   the hooks, not a hook: skip it. If `settings.json` has no `hooks` block, or no entry for a hook
+   script in `~/.claude/hooks`, do not fix that here: say in the Step 9 summary which
    scripts are not wired globally and that re-running the `claude-stash` installer (or merging its
    `settings.stash.json`) wires them.
 5. Validate the resulting `settings.json` still parses as JSON.
@@ -252,6 +263,9 @@ graphify-out/**
 !graphify-out/
 !graphify-out/GRAPH_REPORT.md
 .graphify_root
+
+# Orchestrator run-state: local resume data, rewritten by every run, never committed.
+**/.orchestrator-run-state.json
 ```
 
 The three `graphify-out` lines have to be in that order. `graphify-out/**` excludes everything; git
@@ -335,6 +349,14 @@ ADR is written. idea-triage creates `prd.md`, `architecture.md`, and `project-ma
 the orchestrator creates `handoff.md`. Do not stub those — an empty governed doc reads as "this was
 filled in" and is worse than an absent one.
 
+**A repo with a user interface also gets `docs/design/`** — the design folder described in
+`~/.claude/skills/sync-artboards/references/design-files.md`: `rows/`, `rounds/` and `artboards/`,
+each with a `.gitkeep`, plus a `docs/design/README.md` of a few lines that says what each folder holds
+and points to that file and to the `sync-artboards` skill. Do not write `brief.md`, a rows file or a
+round: idea-triage writes them when a PMBook item first changes a screen. If the repo already has
+boards with `review-<page>.md` ledgers (the old layout), create nothing here; say so in Step 9 and
+point to `~/.claude/skills/sync-artboards/references/migrate-design-layout.md`.
+
 **Do not create `docs/diagrams/`.** See *Diagram convention*.
 
 ## Step 6 — `.claude/skills/run-app/SKILL.md`
@@ -389,6 +411,13 @@ costs more than an absent one: an absent command gets asked about, a wrong one g
 
 If the repo is pre-code, say so plainly and keep the file short. A CLAUDE.md that honestly says
 "no code yet, commands unverifiable" is a correct CLAUDE.md.
+
+### Shaw & Partners repos: link to the knowledge base, don't copy it
+
+If the repo is Shaw & Partners work (a Shaw remote, `Shaw.*` packages, or the user says so), add one
+line to CLAUDE.md: *"For Shaw estate facts — code, `Shaw.*` packages, databases, hosting, identity,
+sign-in, UI standard — load the `shaw-estate` skill."* Don't copy estate facts (servers, feeds,
+connection strings, deployment rules) into CLAUDE.md; they live in that skill and are maintained there.
 
 ### Required prefix
 
@@ -497,15 +526,21 @@ values:
   architecture-doc: "./docs/architecture.md"
   test-cases-doc: "./docs/test-cases.md"
   adr-directory: "./docs/adr"
+  archive-directory: "./docs/archive"
   graphify-directories:
     - "<./src/Project>"
     - "<./tests/Project.Tests>"
   graphify-out: "./graphify-out"
-  # User interface — omit these four when the repo has no UI (see "UI bindings" below the template)
+  # User interface — omit these when the repo has no UI (see "UI bindings" below the template)
+  design-directory: "./docs/design"
+  design-rows-directory: "./docs/design/rows"
+  design-rounds-directory: "./docs/design/rounds"
   artboards-directory: "<./docs/design/artboards>"
   app-url: "<http://localhost:{4200+offset}>"
   artboard-server: "<command and port that serve artboards-directory>"
   parity-viewports: "1440"
+  # parity-command: "<optional — the repo's checked-in parity harness, e.g. npx playwright test business-tests/layout/parity.spec.ts>"
+  # design-source: "<optional — where the designer works, e.g. an Artifact URL and its root folder; sync-artboards asks if unset>"
 
 `graphify-directories` keeps the knowledge graph on the code roots (Step 2); `source-code-directory`
 stays the repo root for platform detection. `scripts/graph.ps1` reads both bindings — change a root
@@ -525,6 +560,33 @@ values:
   project-management-doc: "./docs/project-management.md"
   handoff-doc: "./docs/handoff.md"
   adr-directory: "./docs/adr"
+  archive-directory: "./docs/archive"
+  # User interface — omit when the repo has no UI; same values as the orchestrator block
+  artboards-directory: "<./docs/design/artboards>"
+  design-directory: "./docs/design"
+  design-rows-directory: "./docs/design/rows"
+  design-rounds-directory: "./docs/design/rounds"
+
+---
+
+## Sync Artboards
+
+Skill: `sync-artboards` (located at `~/.claude/skills/sync-artboards/SKILL.md`)
+Trigger: "sync artboards", "sync and validate the artboards", "the designer is done".
+Omit this block when the repo has no UI. Spec: `~/.claude/skills/sync-artboards/references/design-files.md` §Bindings.
+
+values:
+  design-directory: "./docs/design"
+  design-rows-directory: "./docs/design/rows"
+  design-rounds-directory: "./docs/design/rounds"
+  artboards-directory: "<./docs/design/artboards>"
+  artboard-server: "<command and port that serve artboards-directory>"
+  # Optional — unset, sync-artboards asks for design-source once and skips the step of each other one:
+  # design-source: "<where the designer works, e.g. an Artifact URL and its root folder>"
+  # design-validate-command: "<tests run against the boards after a sync>"
+  # design-row-tests: "<how a row is tied to a test: tag, skip marker, known-differences list>"
+  # design-post-sync: "<anything run after a sync, and whether Claude may push it>"
+  # ui-contract: "<the full UI contract, if the repo has one; default brief.md §Build rules>"
 
 ---
 
@@ -564,7 +626,9 @@ Trigger: `/find-skills` or `/find-skills <query>`
 idea-triage's `architecture-file` and the orchestrator's `architecture-doc` are the
 **same physical file** — idea-triage writes it, the orchestrator reads it — but each
 skill names its own variable so either stays usable without the other installed.
-The same applies to `project-management-doc`, `handoff-doc`, and `adr-directory`.
+The same applies to `project-management-doc`, `handoff-doc`, `adr-directory`,
+`archive-directory` (where Tranche Closeout puts each closed version's docs), `artboards-directory`
+and the three `design-*` folders.
 If any of these paths changes, change it in **both** blocks, or the two skills will
 silently disagree about which file is authoritative.
 ~~~
@@ -577,10 +641,13 @@ common offender, and gating on its exit code makes that half of the audit decora
 **UI bindings.** The orchestrator's Board Parity Check needs `app-url` and `artboard-server` for every
 UI packet, and stops to ask when they are unbound. Fill them now from what the repo already says: the
 root `CLAUDE.md`, the run skill, the stack config (dev-server port, port offset per checkout), and the
-README of whatever serves or tests against the boards. Write `app-url` as a pattern with `{offset}` in
+README of whatever serves or tests against the boards. If those name a checked-in parity or layout
+spec, uncomment `parity-command` with the command that runs it; otherwise leave it commented. Write `app-url` as a pattern with `{offset}` in
 it, never one checkout's fixed port. `artboards-directory` is the folder of design boards, if one
-exists. Anything not found stays a `<TODO>` and is listed in Step 9. A repo with no user interface
-drops all four lines.
+exists. The three `design-*` bindings point at the folders Step 5 made; leave their defaults. If the
+repo's design README or `CLAUDE.md` says where the designer works, uncomment `design-source` with it.
+Anything not found stays a `<TODO>` and is listed in Step 9. A repo with no user interface
+drops all the UI lines, in both blocks.
 
 ## Step 9 — Summarize
 
@@ -592,6 +659,9 @@ these are project conventions meant to be committed, not local config. Explicitl
   wired in the user's global `~/.claude/settings.json`.
 - The UI bindings that were filled (and the file each came from), any left as `<TODO>`, or that the
   repo has no user interface and they were left out.
+- The design folder: that `docs/design/` was made (idea-triage writes the brief, rows and first round
+  when a screen change is planned; `sync-artboards` brings the designer's boards back), or that an old
+  layout was found and left alone, with the path to the migration guide.
 - That `.mcp.json` was created with `playwright` and `context7`, and that `CONTEXT7_API_KEY` needs
   to be set in the user's environment before the Context7 server will authenticate.
 - **That `scripts/graph.ps1` builds the knowledge graph** (or why it was not copied), with its

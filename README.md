@@ -106,8 +106,8 @@ To update later: `git pull`, then `.\install.ps1`.
 | Folder | Goes to | What it is |
 |---|---|---|
 | `CLAUDE.md` | `~/.claude/CLAUDE.md` | Global instructions: when to use which skill, mod conventions |
-| `rules/` | `~/.claude/rules/` | Always-on rules: Context7 use, Shaw estate (code, Angular Material, databases), memory index |
-| `memory/` | `~/.claude/memory/` | Lessons learned, one per file (Shaw.DataAccess not EF Core, library review flow, exec briefs …) |
+| `rules/` | `~/.claude/rules/` | Always-on rules: Context7 use, Shaw estate (load the `shaw-estate` skill, the hard rules, your DB credentials), memory index |
+| `memory/` | `~/.claude/memory/` | Lessons learned, one per file (exec briefs, OFA ownership …; Shaw facts live in the `shaw-estate` skill) |
 | `skills/` | `~/.claude/skills/` | Our own skills (see list below) |
 | `agents/` | `~/.claude/agents/` | Developer / Reviewer / Integration / Finalizer agents used by the orchestrator skills |
 | `agent-notes/` | `~/.claude/agent-notes/` | Each agent's standalone rules (read when a human calls it directly, with no orchestrator), plus background and examples it reads when a rule is unclear |
@@ -134,8 +134,8 @@ To update later: `git pull`, then `.\install.ps1`.
 | `graphify` | Build a knowledge graph of a codebase or docs |
 | `llm-council` | Pressure-test a decision with five advisors |
 | `dont-lie` | Strict accuracy / no invented sources |
-| `shaw-dotnet-estate` | How to build against the Shaw .NET estate and `Shaw.*` NuGet packages |
-| `sync-artboards` | Pull designer artboards into `shaw-plugin-dashboard` |
+| `shaw-estate` | The single Shaw & Partners knowledge base: code, `Shaw.*` NuGet packages, databases, IIS hosting, app identity, AD sign-in, UI standard, standard architecture defaults |
+| `sync-artboards` | Pull the designer's boards and change logs into a repo's design folder, check them against the design rows, write the findings into the round file. Owns the design-folder spec (`references/design-files.md`) and the move from the old layout (`references/migrate-design-layout.md`) |
 | `claude-account-switcher` | Switch between team Claude Code accounts on Windows |
 | `pdf-to-markdown` | Convert PDFs to Markdown before Claude reads them |
 | `context7-mcp`, `find-skills`, `developing-with-streamlit` | Helpers |

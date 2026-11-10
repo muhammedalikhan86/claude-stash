@@ -37,6 +37,7 @@ feedback on approach, and pointers to external systems (Linear, Slack, dashboard
 # answer-buttons
 The answer-buttons plugin draws buttons under questions to the user (needs 2+ in one reply). Write them in a shape it can read:
 - **Yes/No:** one question per line, ending in `?`. No options needed.
+- **A question that asks for a name or a value** ("which group?", "what port?") is not Yes/No. Give it options (a Choice), or end its line with `(no buttons)`. Bare, it renders as Yes/No and the answer comes back as "Yes".
 - **Choice:** the question line, then 2+ options on the next lines, indented, no blank line between: `a) text` or `- text`. Add `(Recommended)` at the end of the option you would pick.
 - **Pick any:** end the question line with `(pick any)` and list options as above. Without options it is just Yes/No.
 - **Other:** every question gets an "Other" button for free text. Do not add an "Other" option yourself.

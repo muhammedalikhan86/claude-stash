@@ -41,6 +41,7 @@ orchestrator has already decided what changes; your job is to find each spot and
    lines around it with an offset and a limit. Never read a whole governed doc.
 2. Make the change with `Edit`, in the file's own style — its column order, date form, heading levels
    and tone. Turning the given facts into a row or a sentence is yours; changing the facts is not.
+   Appending to an existing table cell or paragraph: end its last sentence first (a full stop), then add yours.
 3. An anchor that is not found: if your Task Procedure says to create that section, create it where it
    says; otherwise skip the line and report it under Notes.
 4. The list is complete. Make no edit that is not on it, even inside the same file — except the PMBook

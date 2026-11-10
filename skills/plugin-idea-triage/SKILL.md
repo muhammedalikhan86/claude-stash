@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code, i
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.3.1"
+  version: "1.4.0"
   forked-from: "idea-triage@1.8.1 (2026-09-10)"
   domain: product-workflow
   triggers: idea, new feature, new product, new plugin, new component, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
@@ -1276,6 +1276,8 @@ Artboard column left as `— (artboards-directory not bound)`. Do not invent a p
 | F-002 | ... | 1 | Should | Planned | ... |
 
 (IDs must be stable — never renumber once assigned)
+
+(A feature that changes what a user sees must also name where each field it shows comes from — `Data: <field> → <API / database read>` — and when a field has no source yet, add the work item that builds it now (in the component that owns the data, per Cross-Component Impact), with `Depends on:` on this row. Finding the gap at build time costs rulings and idle workers.)
 
 (A feature that changes what a user sees must name its artboard in its Acceptance Criteria —
 `Matches artboards-directory/<Surface>.<ext>` — citing a row from Architecture §10 — and, once §3.5

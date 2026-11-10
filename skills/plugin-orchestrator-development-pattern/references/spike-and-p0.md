@@ -17,7 +17,7 @@ spike on X" — never inferred from exploratory-sounding language.
    IDs are stable once assigned. **A planned spike** — a PMBook row typed `Spike` (in the Feature Backlog or elsewhere) — keeps that row's ID; never mint a new one for it. Its question and done-when come from the row.
 3. **Assign a Spike Directory.** Default repo-root `spikes/<ID>/`, outside every component's source
    roots and test discovery, unless the user says otherwise. Mandatory. No test config goes there; the
-   full gate and Graphify exclude it.
+   full gate and Graphify exclude it. If `spikes/` is not in `.gitignore`, say so once and suggest the line (init adds it); until then stage every commit by path so the spike code never rides along.
 4. Go to Step 0.2. Steps 0.2–0.4 all run, including Step 0.4's `run-state-file` write (a mid-run intake
    skips that write, `SKILL.md` Step 0.1b item 7); only the announcement differs — one line in place of
    Step 0.4's block, `Spike Mode — <COMPONENT>-S-XXX: <one-line question>`, then the
@@ -29,7 +29,7 @@ Reached instead of Step 1.3, right after the Spike's Developer spawn (always
 `plugin-orchestrated-developer-high`; a Spike never escalates).
 
 1. The Developer Output *is* the deliverable — Findings plus a recommendation (promote to the Feature
-   Backlog / abandon / needs more investigation), with every file inside the Spike Directory.
+   Backlog / abandon / needs more investigation), with every file inside the Spike Directory. The Developer returns its findings in its Output and writes no report file; the Orchestrator saves them verbatim as `findings.md` in the Spike Directory from the saved Developer Output.
 2. **No Reviewer, no retry loop, no Manual Verification Gate, no Integration, no escalation path.**
    `loop_count` never moves. This is a deliberate, accepted risk — it is what makes a Spike fast.
 3. Spawn one `orchestrated-finalizer`, Task = `Spike Log`, `model: "haiku"`, scoped to this Spike, its prompt carrying

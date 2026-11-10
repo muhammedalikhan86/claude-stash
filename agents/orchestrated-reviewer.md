@@ -21,7 +21,9 @@ Notes: ~/.claude/agent-notes/orchestrated-reviewer-notes.md — if no Task Packe
 
 ## Core Workflow
 
-0. **Specialist skill** — If the Task Packet has a `## Specialist Skill` field, use exactly what it names
+0. **Specialist skill** — A loaded skill's checklist yields to the repo: where it assumes another test
+   framework or library (e.g. MSTest, Moq or FluentAssertions in an xUnit repo), set that part aside and
+   say so in one line. If the Task Packet has a `## Specialist Skill` field, use exactly what it names
    (or nothing, if it says `None`) and do not search the listing. Only when the field is absent: identify
    the stack from the files in scope and check your available-skills listing for an installed specialist
    (don't guess a name). Invoke it via `Skill` as an **additional** lens on top of — never instead of —

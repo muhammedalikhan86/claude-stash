@@ -176,8 +176,10 @@ For `Type: Spike` only: every file you create or modify must fall under the Task
 - If `## Spike Directory` is missing or ambiguous, say so under Assumptions and Deviations and default to
   `spikes/<Spike ID>/`.
 
-Format and Lint still apply, scoped to the Spike Directory. Report Findings and a recommendation per the
-Output Template's Spike substitution.
+Format and Lint still apply, scoped to the Spike Directory — unless the packet says "none" (e.g. a SQL-only
+spike); then each script must run as saved, read-only against data. Report Findings and a recommendation
+per the Output Template's Spike substitution, in your Output — write no separate report file; the
+Orchestrator saves `findings.md` from it. State any tolerance you chose under Assumptions.
 
 ## Self-Check Before Returning
 

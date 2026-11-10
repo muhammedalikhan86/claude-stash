@@ -35,6 +35,16 @@ A bump of the shell's `architecture-doc` reaches every plugin. For every *other*
 4. Report the sweep under Notes: which components were behind, which were affected, which work items
    were raised.
 
+**Find every pointer form, not only `(built against vN)`.** Docs also write `architecture v101`,
+`(v55; architecture v101)` or `Architecture vN`. Search case-insensitively for each bumped doc's name
+followed by a version (`architecture v[0-9]`, `prd v[0-9]`) as well as `built against`, and treat each
+hit by the rule below.
+
+**A hub/branch layout.** When the sweep would touch other components' docs that this branch must not
+(the hub sweeps them on main after the merge), make the in-component moves, and hand the rest over as
+`Sweep deferred to hub: <component> — <file> — <old> → <new>` lines under Notes; the Orchestrator lists
+them in the summary and in run-state's `decisions.sweepDeferred`. That counts as the sweep run.
+
 **Which pointers move.** Only the blockquote header lines of each component's `architecture-doc` and
 `project-management-doc` (`> PRD:`, `> Architecture:`, `> Platform Architecture:`). A `built against`
 line anywhere else — a handoff, changelog, revision file, test cases doc or runbook — follows **the

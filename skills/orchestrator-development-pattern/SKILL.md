@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.15.0"
+  version: "2.16.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -401,7 +401,7 @@ after the Developer Agent step instead of going to the Reviewer.
 3. **Assign a Spike Directory.** Default to repo-root `spikes/S-XXX/` — outside every source root and test
    discovery path, with no test config of its own — unless the user specifies otherwise. The full gate and
    Graphify exclude it. This is not optional — see the Task Packet's `## Spike Directory` field and
-   `orchestrated-developer`'s **Scoped Confinement for Spike-Type Packets** for why.
+   `orchestrated-developer`'s **Scoped Confinement for Spike-Type Packets** for why. If `spikes/` is not in `.gitignore`, say so once and suggest the line (init adds it); until then stage every commit by path so the spike code never rides along.
 4. Proceed straight to Step 0.2 (Detect Platform) and Phase 1, generating a Spike-type Task Packet — read
    `references/spike-and-p0.md` now for its shape. Skip Step 0.4's feature-list announcement in favor of a one-line equivalent:
    `Spike Mode — S-XXX: <one-line question>`. As for a Bug, still print the `⚠ Deferred Integration
@@ -424,6 +424,8 @@ Developer created or changed. A repo-wide format rewrites files nobody touched (
 and drags them into the diff. The Developer runs the fix form, then the verify form; the verify form is
 the gate — it must exit non-zero on a difference. A fix form alone is not a gate: `dotnet format`
 without `--verify-no-changes` never fails.
+
+**A scoped test command must actually scope.** Before putting one in a packet, check it once with a list-only run (Jest `--listTests`, `dotnet test --list-tests`). Through Nx, the runner's flags go after `--`: `npx nx test <project> -- --testPathPattern=<pattern>`; without the `--`, Nx runs the whole project.
 
 If no marker is found or multiple platforms are detected, **stop and ask the user to confirm the primary platform** before proceeding.
 
@@ -452,6 +454,9 @@ reuse its old run's saved baseline when there is one. Otherwise, if that code is
 baseline in a temporary `git worktree` of the last commit before it (removed afterwards); if it is not
 committed, run on the tree as it is and print `Baseline: includes <ID>'s uncommitted change`. Never
 stash, reset or check out over the user's tree to get a baseline.
+6. **A suite that needs the running stack** (business or e2e tests) and can't be brought up for the
+baseline may take the repo's documented baseline (root `CLAUDE.md`'s figure) instead: print
+`Baseline: <suite> — documented figure from <file>, not run`. Every other suite runs fresh.
 
 The baseline is evidence, not a ruling. Step 2.1 passes `baseline.reds` to Integration as
 `## Known Reds at Baseline`; what happens to each is in **Known-reds**.
@@ -492,7 +497,8 @@ draws the boards. A `Depends on:` item being done is not proof the data exists: 
 
 1. **List what the board shows.** For each UI item still in the queue, list every data field its board
    (or, with no board, its Acceptance Criteria) displays on the surfaces it touches: each column, value,
-   count, badge, filter option and default.
+   count, badge, filter option and default. Also the base it stands on: the app's theme and shell
+   must already match the boards' design layer; a missing base is a gap, ruled as in 4.
 2. **Name where each comes from:** the API endpoint and response field the screen reads, and behind it
    the database read (view, procedure or column). Read the code, and for a database query the server
    itself — never a schema copy; record the query in the packet (Shaw work:
@@ -921,7 +927,7 @@ Output is the last entry without `-sub`) and save run-state. Reviewer-Integratio
 retry's Retry Context get that path, never a summary. The only edit ever made to the file is the
 **Known-reds** rewrite of an `— untracked` line, made in the file as well as in the Output you hold. A
 background spawn's task output file is a transcript of the whole spawn, not its Output: write the
-agent's final reply, and never pass or cite the transcript.
+agent's final reply, and never pass or cite the transcript. If the task output file reads empty, save the final reply from the completion notification verbatim instead; never re-spawn the agent to get it again.
 
 ### Documentation Drift Check
 
@@ -1288,6 +1294,8 @@ Standing acceptance criterion (every UI packet): The built screen matches the bo
   state; the Parity Table (Step 1.3b) shows no unruled mismatch.
 
 ## Constraints
+- Edge decisions: <each choice the criteria rest on — which exceptions are caught, ordering and
+  collation, null and empty handling, time zones — or "Developer decides; state each under Assumptions">
 <constraints from PRD or Architecture that apply>
 
 ## Test Expectations
@@ -1358,6 +1366,8 @@ See: architecture-doc — <relevant section IDs or component names, if applicabl
 <Omit this whole section when the bug touches no user interface. Same shape as the Feature packet's.>
 
 ## Constraints
+- Edge decisions: <each choice the criteria rest on — which exceptions are caught, ordering and
+  collation, null and empty handling, time zones — or "Developer decides; state each under Assumptions">
 <constraints from PRD or Architecture that apply>
 
 ## Expected Output (for Reviewer)
@@ -1803,7 +1813,7 @@ verification`; at every terminal state and escalation; and at close-out, marked 
 At that close-out, delete the `.orchestrator-work/<ID>/` park folder of every item that ended this run;
 keep one whose item is still non-terminal (its `parkedAt` carries it to the next run). The delete applies only to the gitignored `.orchestrator-work/` under the run-state folder — never a tracked folder, even one a run used to park files, and never a folder a governed doc links to. Delete this run's
 `runs/`, `gate-logs/` and `parity/` folders in the work dir too, unless an item of the run is still
-non-terminal (a Bug `awaiting verification` keeps its gate logs for the `verified` reply).
+non-terminal (a Bug `awaiting verification` keeps its gate logs for the `verified` reply). Delete with the file tools or a command the session's permissions allow; if the delete is refused, leave the folders, list them in the summary, and the next run's Phase 0 removes any work-dir run folder whose run-state is complete.
 
 **Repeat-safe writes.** A step re-run after a crash may repeat a write, so every governed-doc write
 checks for an entry for the same item ID (and run id and scope, where the doc carries them) and updates it instead
@@ -1853,7 +1863,7 @@ appends a second `RUN` row, `Complete`.
 **Cells:**
 - `Run ID` — run-state's run id (format in **Run-State Checkpointing**).
   `Timestamp`, `Started`, `Finished` — ISO 8601 with offset (`2026-11-10T14:05:00+11:00`), read from the
-  clock, never estimated; `Timestamp` is the saved event time.
+  clock, never estimated; `Timestamp` is the saved event time. Before appending any metrics row, read the clock: no Timestamp, Started or Finished may be later than now — one that is was guessed, so write `(not recorded)` in its place.
 - `Wave` — `—`: this skill runs one item at a time.
 - `Final loop_count` — this leg's count, on every row (an Escalated row included): `loop_count` minus
   run-state's `loopCountAtEscalation` (0 when never escalated), read before an escalation overwrites it;

@@ -4,7 +4,7 @@ description: Initialise a PLUGIN-BASED repo for the ADLC (AI Development Life Cy
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.2.1"
+  version: "1.3.0"
   forked-from: "init-adlc-repo@1.0.0 (2026-09-10)"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project, add component, add plugin, new plugin
@@ -331,6 +331,9 @@ graphify-out/**
 # Orchestrator run-state: local resume data, rewritten by every run, never committed.
 **/.orchestrator-run-state.json
 **/.orchestrator-work/
+
+# Spike Directories: throwaway spike code, never committed (findings go to the PMBook).
+spikes/
 ```
 
 The four lines have to be in that order and all four are needed. `graphify-out/**` excludes

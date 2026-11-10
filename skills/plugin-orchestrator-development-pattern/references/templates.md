@@ -86,6 +86,8 @@ Standing acceptance criterion (every UI packet): The built screen matches the bo
   state; the Parity Table (Step 1.3b) shows no unruled mismatch.
 
 ## Constraints
+- Edge decisions: <each choice the criteria rest on — which exceptions are caught, ordering and
+  collation, null and empty handling, time zones — or "Developer decides; state each under Assumptions">
 <constraints from PRD or Architecture that apply>
 
 ## Test Expectations
@@ -162,6 +164,8 @@ touches a cross-cutting contract. Read it; do not change it.
 <Omit this whole section when the bug touches no user interface. Same shape as the Feature packet's.>
 
 ## Constraints
+- Edge decisions: <each choice the criteria rest on — which exceptions are caught, ordering and
+  collation, null and empty handling, time zones — or "Developer decides; state each under Assumptions">
 <constraints from PRD or Architecture that apply>
 
 ## Expected Output (for Reviewer)
@@ -182,7 +186,9 @@ Spike
 <COMPONENT>-S-XXX
 
 ## Question
-<one paragraph: what we're trying to learn or decide, and why it matters right now>
+<one paragraph: what we're trying to learn or decide, and why it matters right now — and any
+tolerance or threshold that decides the answer (e.g. "within 0.5%"). With none named, the Developer
+states its own under Assumptions.>
 
 ## Spike Directory
 <mandatory — default repo-root spikes/<ID>/, outside every source root and test discovery>
@@ -197,8 +203,9 @@ Spike
 <skill name from Step 0.3b, or "None">
 
 ## Developer Quality Gate
-- Format: <command, scoped to Spike Directory>
-- Lint:   <command, scoped to Spike Directory>
+- Format: <command, scoped to Spike Directory — or "none" when its files have no formatter, e.g. SQL only>
+- Lint:   <command, scoped to Spike Directory — or "none">
+- Run:    <with no formatter or linter: each script runs as saved, read-only for a data spike>
 
 ## Constraints
 - Do not run the test suite. Format and Lint only, scoped to the Spike Directory.

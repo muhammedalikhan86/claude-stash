@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.12.0"
+  version: "1.13.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -131,7 +131,7 @@ Edit this table to change a model; nothing else needs to change. Values are tier
 | Finalizer — PMBook Update | `haiku`; `sonnet` when it also runs the Version Pointer Sweep | — |
 | Finalizer — Handoff Update | `haiku` | — |
 | Finalizer — Revision + Changelog, Test Runbook (bundle) | `haiku` | — |
-| Finalizer — Spike Log | `haiku` | — |
+| Finalizer — Spike Log | `haiku`; `sonnet` when it also runs the Version Pointer Sweep or writes a governed doc beyond the Spike Log row | — |
 
 - **The Developer escalates by effort (`subagent_type`), not model.** Still pass `model: "opus"`.
   `xhigh` needs extended thinking on; without it, it runs as `high`.
@@ -320,6 +320,8 @@ check mode, the gate is that mode — it fails on unformatted code, where a plai
 .NET `--verify-no-changes`, as in the table; for the others, `prettier --check`, `ruff format --check`,
 `gofmt -l`, `cargo fmt --check`. The Developer runs the fix form, then the gate form.
 
+**A scoped test command must actually scope.** Before putting one in a packet, check it once with a list-only run (Jest `--listTests`, `dotnet test --list-tests`). Through Nx, the runner's flags go after `--`: `npx nx test <project> -- --testPathPattern=<pattern>`; without the `--`, Nx runs the whole project.
+
 **Component test command.** Also record how to run *only this component's* tests — derived from what
 the repo actually has, e.g. `npx nx run-many -t test -p <projects under the component's roots>`, or
 `dotnet test <the component's test projects>`. Record it in the Platform Profile as
@@ -419,6 +421,10 @@ reuse its old run's saved baseline when there is one. Otherwise, if that code is
 baseline in a temporary `git worktree` of the last commit before it (removed afterwards); if it is not
 committed, run on the tree as it is and print `Baseline: includes <ID>'s uncommitted change`. Never
 stash, reset or check out over the user's tree to get a baseline.
+
+**A suite that needs the running stack** (business or e2e tests) and can't be brought up for the
+baseline may take the repo's documented baseline (root `CLAUDE.md`'s figure) instead: print
+`Baseline: <suite> — documented figure from <file>, not run`. Every other suite runs fresh.
 
 A baseline red is not this run's regression, but it is not waved through either: it still follows the
 known-red rule (Step 2.2 — an owner, and a tracking ID or the user's acceptance) and is listed in the
@@ -756,7 +762,7 @@ Output is the last entry without `-sub`) and save run-state. Reviewer-Integratio
 retry's Retry Context get that path, never a summary. The only edit ever made to the file is Step 2.2's
 rewrite of an `— untracked` known-red line, made in the file as well as in the Output you hold. A
 background spawn's task output file is a transcript of the whole spawn, not its Output: write the
-agent's final reply, and never pass or cite the transcript.
+agent's final reply, and never pass or cite the transcript. If the task output file reads empty, save the final reply from the completion notification verbatim instead; never re-spawn the agent to get it again.
 
 ### Step 2.2 — Invoke Reviewer-Integration Agent (skipped on a clean first pass)
 
@@ -1061,7 +1067,7 @@ saved but not complete.
    `.orchestrator-work/<ID>/` park folder of every item that ended this run; keep one whose item is still
    non-terminal (its `parkedAt` carries it to the next run). The delete applies only to the gitignored `.orchestrator-work/` under the run-state folder — never a tracked folder, even one a run used to park files, and never a folder a governed doc links to. Delete this run's `runs/`, `gate-logs/` and
    `parity/` folders in the work dir too, unless an item of the run is still non-terminal (a Bug
-   `awaiting verification` keeps its gate logs for the `verified` reply).
+   `awaiting verification` keeps its gate logs for the `verified` reply). Delete with the file tools or a command the session's permissions allow; if the delete is refused, leave the folders, list them in the summary, and the next run's Phase 0 removes any work-dir run folder whose run-state is complete.
 3. Surface every Finalizer `Notes` entry in the summary.
 4. List any `## Deferred Integration` row still `Pending`, any `heldForNextRun` item, and every item's
    `outsideItem` entries (Steps 1.3 and 1.3b), with what `decisions.outsideItemLog` says of each
@@ -1084,7 +1090,8 @@ saved but not complete.
 - NEVER let a diff touch another component's roots or `platform-architecture-file` (Diff Guard, Step 2.1).
 - NEVER widen the Drift Check beyond this component's docs plus a read-only pass over the platform file.
 - NEVER let a Finalizer write a history row into a live doc, or bump a `> Version:` header without the
-  Version Pointer Sweep in the same run.
+  Version Pointer Sweep in the same run (a hub/branch layout may defer the other components' moves to
+  the hub, `references/version-pointer-sweep.md`).
 - NEVER derive a component's version from another component's changelog or a repo-wide number.
 - NEVER perform a Tranche Closeout here — flag it to the user.
 
@@ -1218,7 +1225,7 @@ persisted in full.
 
 **Timestamps are ISO date-times with the zone** (`2026-11-03T14:05:00+11:00`), never bare dates —
 telemetry's wall-clock columns are computed from them. Read the clock (`Get-Date -Format o`, `date -Iseconds`)
-at each transition; never estimate (a metrics event time already saved is reused, **Pipeline Telemetry**).
+at each transition; never estimate (a metrics event time already saved is reused, **Pipeline Telemetry**). Before appending any metrics row, read the clock: no Timestamp, Started or Finished may be later than now — one that is was guessed, so write `(not recorded)` in its place.
 
 **Written at every step edge:** after Step 0.4 (which a Bug or Spike intake also runs); when each step
 starts and when it ends (a Developer, a gate, a Divide-and-Conquer stage, a Finalizer batch, a commit);

@@ -21,7 +21,9 @@ Spike
 S-XXX
 
 ## Question
-<one paragraph: what we're trying to learn or decide, and why it matters right now>
+<one paragraph: what we're trying to learn or decide, and why it matters right now — and any
+tolerance or threshold that decides the answer (e.g. "within 0.5%"). With none named, the Developer
+states its own under Assumptions.>
 
 ## Spike Directory
 <mandatory — default repo-root spikes/S-XXX/, outside every source root and test discovery path. Every
@@ -35,8 +37,9 @@ Confinement for Spike-Type Packets. The full gate and Graphify exclude it.>
 <platform name>
 
 ## Developer Quality Gate
-- Format: <command, scoped to Spike Directory>
-- Lint:   <command, scoped to Spike Directory>
+- Format: <command, scoped to Spike Directory — or "none" when its files have no formatter, e.g. SQL only>
+- Lint:   <command, scoped to Spike Directory — or "none">
+- Run:    <with no formatter or linter: each script runs as saved, read-only for a data spike>
 
 ## Constraints
 - Never create or modify a file outside `## Spike Directory`.
@@ -60,7 +63,7 @@ the Feature/Bug loop:
 
 1. The Developer Output *is* the deliverable — Findings (what was learned, a recommendation: promote to
    the Feature Backlog / abandon / needs more investigation), plus Files Created scoped to the Task
-   Packet's Spike Directory (see `orchestrated-developer`'s **Scoped Confinement for Spike-Type Packets**).
+   Packet's Spike Directory (see `orchestrated-developer`'s **Scoped Confinement for Spike-Type Packets**). The Developer returns its findings in its Output and writes no report file; the Orchestrator saves them verbatim as `findings.md` in the Spike Directory from the saved Developer Output.
 2. **No Reviewer spawn.** A Spike has no Acceptance Criteria for a Reviewer to check against — inventing a
    verdict for open-ended exploration would defeat the point of the pathway.
 3. **No retry loop, no Manual Verification Gate, no Integration, no escalation path.** `loop_count` never

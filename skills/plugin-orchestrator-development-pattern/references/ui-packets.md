@@ -62,7 +62,8 @@ draws the boards. A `Depends on:` item being done is not proof the data exists: 
 
 1. **List what the board shows.** For each UI item still in the queue, list every data field its board
    (or, with no board, its Acceptance Criteria) displays on the surfaces it touches: each column, value,
-   count, badge, filter option and default.
+   count, badge, filter option and default. Also the base it stands on: the app's theme and shell
+   must already match the boards' design layer; a missing base is a gap, ruled as in 4.
 2. **Name where each comes from:** the API endpoint and response field the screen reads, and behind it
    the database read (view, procedure or column). Read the code, and for a database query the server
    itself — never a schema copy; record the query in the packet (Shaw work:

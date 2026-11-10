@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code. G
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.11.0"
+  version: "1.12.0"
   domain: product-workflow
   triggers: idea, new feature, new product, new project, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
   role: product-engineer
@@ -1136,6 +1136,8 @@ Artboard column left as `— (artboards-directory not bound)`. Do not invent a p
 | F-002 | ... | 1 | Should | Planned | ... |
 
 (IDs must be stable — never renumber once assigned)
+
+(A feature that changes what a user sees must also name where each field it shows comes from — `Data: <field> → <API / database read>` — and when a field has no source yet, add the work item that builds it now, with `Depends on:` on this row. Finding the gap at build time costs rulings and idle workers.)
 
 (A feature that changes what a user sees must name its artboard in its Acceptance Criteria —
 `Matches artboards-directory/<Surface>.<ext>` — citing a row from Architecture §10 — and, once §3.5

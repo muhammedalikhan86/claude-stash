@@ -4,7 +4,7 @@ description: Initialise a repo for the ADLC (AI Development Life Cycle) workflow
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.2.0"
+  version: "1.3.0"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project
   role: platform-engineer
@@ -267,6 +267,9 @@ graphify-out/**
 # Orchestrator run-state: local resume data, rewritten by every run, never committed.
 **/.orchestrator-run-state.json
 **/.orchestrator-work/
+
+# Spike Directories: throwaway spike code, never committed (findings go to the PMBook).
+spikes/
 ```
 
 The three `graphify-out` lines have to be in that order. `graphify-out/**` excludes everything; git

@@ -102,7 +102,7 @@ On "done", "I'm happy" or "that's it", record `doneAt` (ISO date-time with the z
 4. **Take the work-item ID.** If the user named an existing item, use it. Otherwise take the next
    `<COMPONENT>-F-NNN` from the PMBook: its "next ID" line wins, else the highest plus one. Type
    `Feature`, with the mode recorded as `UI Iteration`. The run id stays the one written at opening;
-   its scratchpad folders follow it, as Step 0.4 says.
+   its work-dir folders follow it, as Step 0.4 says.
 5. **Settle the design (the Design Gate, run once, after).** The user approved each tweak on the live
    screen, so here the artboard catches up with the code. This is the one case where the gate runs after
    the code.
@@ -126,7 +126,7 @@ On "done", "I'm happy" or "that's it", record `doneAt` (ISO date-time with the z
    Save it as Step 1.1 says.
 8. **One Reviewer** (`orchestrated-reviewer`, `sonnet`) over the whole change. There is no Developer
    Output: write the tweak log (number, ask, files), the artboard edits from 5 and the assertion files
-   from 6 to `<scratchpad>/runs/<run id>/devout-<ID>[-legN][-retryN].md` and pass that path in its
+   from 6 to `<work dir>/runs/<run id>/devout-<ID>[-legN][-retryN].md` and pass that path in its
    place. Add these to the Reviewer prompt, with step 3's `not this run's` list:
    - "This change was made in UI Iteration mode: the Orchestrator edited the code directly, and the
      user approved each tweak on screen. Check every Acceptance Criterion in the diff."

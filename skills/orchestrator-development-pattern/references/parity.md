@@ -21,12 +21,12 @@ spawned with the Parity Prompt: you may run or extend the repo's parity harness,
 measuring script, and you write only into the parity folder below (or the one spec the packet allows).
 
 ## Inputs
-Task Packet: <INSERT <scratchpad>/runs/<run id>/packet-<ID>.md> — read its `## Design Reference`: States to compare, Ruled deviations.
+Task Packet: <INSERT <work dir>/runs/<run id>/packet-<ID>.md> — read its `## Design Reference`: States to compare, Ruled deviations.
 App URL: <INSERT app-url, filled with this checkout's port offset>
 Board URL: <INSERT the board's URL from artboard-server>
 Compared against: <"Board <file>" | "Acceptance Criteria — <surface> not drawn">
 Widths: <INSERT parity-viewports, at least 1440>
-Parity folder: <INSERT <scratchpad>/parity/<run id>/<ID>[-legN][-retryN]/>
+Parity folder: <INSERT <work dir>/parity/<run id>/<ID>[-legN][-retryN]/>
 Repo root: <INSERT>
 Parity command: <INSERT parity-command, or "None">
 

@@ -4,7 +4,7 @@ description: Initialise a PLUGIN-BASED repo for the ADLC (AI Development Life Cy
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.2.0"
+  version: "1.2.1"
   forked-from: "init-adlc-repo@1.0.0 (2026-09-10)"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project, add component, add plugin, new plugin
@@ -711,6 +711,9 @@ against this table.
 components:
   <shell>:   code: - "<./apps/shell>"   - "<./services/Shell.Api>"
   <plugin1>: code: - "<./apps/plugin1>" - "<./services/Plugin1.Api>"
+  # A row may override any templated binding for that component only, e.g. boards kept in a shared folder:
+  # <plugin2>: code: - "<./apps/plugin2>"
+  #            artboards-directory: "./docs/design/artboards/<plugin1>"
 
 There is deliberately **no `default-component`.** A skill that cannot resolve the component asks;
 guessing wrong writes a feature into the wrong PMBook, changelog, handoff and graph.

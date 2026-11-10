@@ -100,7 +100,7 @@ check, the files to open, and the change-log instruction from brief.md, restated
 | Binding | Default | What it is |
 |---|---|---|
 | `design-directory` | `./docs/design` | the folder above |
-| `artboards-directory` | `./docs/design/artboards` (plugin: `/{component}`) | where boards land |
+| `artboards-directory` | `./docs/design/artboards` (plugin: `/{component}`, unless the component's `components:` row sets its own) | where boards land |
 | `design-rows-directory` | `./docs/design/rows` (plugin: `/{component}`) | the ledgers |
 | `design-rounds-directory` | `./docs/design/rounds` | the round files |
 | `design-source` | — | where the designer works: an Artifact URL plus its root (`project/`), or a design project id |

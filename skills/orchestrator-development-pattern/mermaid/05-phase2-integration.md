@@ -54,7 +54,7 @@ written by the PMBook Finalizer (Step 3.2). Its Output lists `### Known-Reds` (e
 user`, or `untracked`) and `### Work Items Covered` (this run's Features and Bugs only; Deferred IDs go
 under `Deferred Integration Re-Validated`).
 
-Every Integration Output is saved verbatim to `<scratchpad>/runs/<run id>/integration-output-pass<N>.md`
+Every Integration Output is saved verbatim to `<work dir>/runs/<run id>/integration-output-pass<N>.md`
 (a Divide-and-Conquer sub-problem's with `-sub<K>`), its path kept in run-state's
 `integration.outputPaths`; a background spawn's task output file is a transcript, never the Output.
 The Reviewer-Integration gets the Integration Output's file path (never a summary), condensed packets of the Features Completed and

@@ -55,7 +55,8 @@ layout. Never move anything without the user's yes.
    may widen or narrow it.
    **Plugin repo** (bindings with `{component}`): resolve the component from the round's rows (each
    row file sits under `rows/<component>/`), or ask once, before filling `{component}`; a round that
-   spans components is synced one component at a time.
+   spans components is synced one component at a time. A binding set on the component's own
+   `components:` row (e.g. `artboards-directory`) wins over the template.
 2. **Read what the round claims.** List the design source's files (Artifact: `action:"list"`,
    `scope:"files"` on the `design-source` URL), then read the designer's change logs
    (`<root>/docs/<page>-changes.md`, as `brief.md` tells the designer to keep them). They say which

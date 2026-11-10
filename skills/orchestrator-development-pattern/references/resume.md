@@ -24,10 +24,11 @@ step re-checks `git status` and obeys `decisions.commit` (`ask` → ask again). 
 their Task Packet from the current PMBook, with the saved coding-conventions summary; persisted packets
 are used as stored. `blockedGate` is read by the escalation resume, the gate it names respawned, and
 only then cleared. Announce any `heldForNextRun` items. In a fresh
-session, every scratchpad path in the file (saved packets, parity folders) is treated as gone: re-write
-each packet to `<scratchpad>/runs/<run id>/packet-<ID>.md` before the next spawn, and re-run a Parity
-Check rather than citing an old folder. A packet or output missing from both the scratchpad and run-state is read from the item's `parkedAt` folder; with no `parkedAt` either, re-derive the packet from the item's PMBook row and say so in the resume announcement. Before any respawn, also re-write the saved Developer Output,
-Issues list, Unable to Verify report and Integration Output to the scratchpad (the Output at its saved
+session, check every saved path in the file: work-dir paths survive a restart and are used as they are;
+a scratchpad path (a run-state written before the work dir existed) is treated as gone. Re-write each
+missing packet to `<work dir>/runs/<run id>/packet-<ID>.md` before the next spawn, and re-run a Parity
+Check whose folder is gone rather than citing it. A packet or output missing from both the work dir and run-state is read from the item's `parkedAt` folder; with no `parkedAt` either, re-derive the packet from the item's PMBook row and say so in the resume announcement. Before any respawn, also re-write the saved Developer Output,
+Issues list, Unable to Verify report and Integration Output to the work dir if missing (the Output at its saved
 name, `integration-output-pass<N>.md`, the last of `integration.outputPaths`), so Previous Issues, a Report 2
 Reviewer respawn, Integration's Retry Context and the Phase 2/3 inputs all have their source. Never
 respawn the Developer just to regenerate an output that run-state holds. The saved `baseline` (Step

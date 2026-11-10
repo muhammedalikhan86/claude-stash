@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code, i
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.3.0"
+  version: "1.3.1"
   forked-from: "idea-triage@1.8.1 (2026-09-10)"
   domain: product-workflow
   triggers: idea, new feature, new product, new plugin, new component, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
@@ -56,6 +56,7 @@ components:
 Every path variable below is a template resolved against the chosen component, e.g.
 `prd-file: "./docs/{component}/prd.md"`. `adr-directory` and `platform-architecture-file` are the
 two exceptions — they are shared and never templated.
+**Per-component override:** a component's row in the `components:` table may set any templated binding by name, and that value wins over the `{component}` template for that component only — e.g. `artboards-directory: "./docs/design/artboards/ofa"` on a component whose boards live in another component's folder. Read the row before filling a template. Shared bindings (`adr-directory`, `platform-architecture-file`) are never overridden.
 
 ## Step 0 — Resolve the Component
 

@@ -393,7 +393,7 @@ operating in **orchestrated mode**.
  "Test scope: full — <reason>"  or  "Test scope: component — <component test command> — <reason>">
 
 ## Gate Log Directory
-<INSERT <scratchpad>/gate-logs/<run id>/>
+<INSERT <work dir>/gate-logs/<run id>/>
 Use it as the log directory in your **Keeping Gate Output Out of Context** section.
 
 ## Stack Order
@@ -525,7 +525,7 @@ it otherwise)
 loop_count: <INSERT N>
 Retry kind: <INSERT "Doc-only retry" or "Normal retry"; a resume after escalation is "Normal retry">
 Previous Issues: <INSERT REVIEWER-INTEGRATION'S ISSUES LIST>
-Previous Integration Output: <INSERT the prior pass's saved file path, `<scratchpad>/runs/<run id>/integration-output-pass<N>.md` — read it yourself>
+Previous Integration Output: <INSERT the prior pass's saved file path, `<work dir>/runs/<run id>/integration-output-pass<N>.md` — read it yourself>
 Address only the issues listed. Treat drift sections your prior pass already cleared as still clear
 unless a Previous Issue reopens one. A doc-only retry follows your Core Workflow's `Doc-only retry`
 rule (same log paths); if an issue turns out to need a code or test change after all, stop and say so under
@@ -610,7 +610,7 @@ Expected/Actual behavior only.>
 Use exactly your own Output Template.
 
 ## Integration Output
-<INSERT the saved file path, `<scratchpad>/runs/<run id>/integration-output-pass<N>.md` (Step 2.1) — never a
+<INSERT the saved file path, `<work dir>/runs/<run id>/integration-output-pass<N>.md` (Step 2.1) — never a
 summary. Read that file: it is the Output verbatim.>
 
 ## Retry Context

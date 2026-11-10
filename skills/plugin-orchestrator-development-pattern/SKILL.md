@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.11.0"
+  version: "1.11.1"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -213,6 +213,7 @@ Then resolve every templated variable (`project-management-doc`, `architecture-d
 `graphify-directories`, `graphify-out`). Three are shared and never templated: `adr-directory` (one folder; new IDs are
 component-prefixed), `platform-architecture-file` (the shell's architecture doc — read-only for every
 other component), and `source-code-directory` (the repo root, for platform detection).
+**Per-component override:** a component's row in the `components:` table may set any templated binding by name, and that value wins over the `{component}` template for that component only — e.g. `artboards-directory: "./docs/design/artboards/ofa"` on a component whose boards live in another component's folder. Read the row before filling a template. Shared bindings (`adr-directory`, `platform-architecture-file`, `source-code-directory`) are never overridden.
 
 **One component per work item.** Work that spans two is split into one work item per component, linked
 by `Depends on:`. Enforced by the Cross-Component Diff Guard. When linked items must land together — one
@@ -391,9 +392,10 @@ spawns) + 2 × 4 (Integration) + 4 (Finalizers), plus Divide-and-Conquer.
 **A planned packet touches a user interface** → read `references/ui-packets.md` now, and check its UI
 bindings before Phase 1.
 
-Fix the run id (see **Run-State Checkpointing**) and, from it, two scratchpad folders used for the rest
-of the run: `<scratchpad>/runs/<run id>/` for packets and Developer Outputs, and the **gate log
-directory** `<scratchpad>/gate-logs/<run id>/` for the Parity Check (Step 1.3b) and Integration logs.
+Fix the run id (see **Run-State Checkpointing**) and, from it, two work-dir folders used for the rest
+of the run: `<work dir>/runs/<run id>/` for packets, Developer Outputs and Integration Outputs, and the
+**gate log directory** `<work dir>/gate-logs/<run id>/` for the Parity Check (Step 1.3b) and Integration
+logs. **The work dir** is `<folder of run-state-file>/.orchestrator-work/` — gitignored beside run-state, and it survives a session restart, which the scratchpad does not. Every file the run must keep goes under it: `runs/<run id>/` (packets, Developer Outputs, Integration Outputs), `gate-logs/<run id>/` (gate and Integration logs, raw before/after outputs) and `parity/<run id>/` (Parity Check folders), beside the `<ID>/` park folders. The scratchpad is only for throwaway files, such as a before-side worktree.
 Write `run-state-file` now (held intakes: Step 0.0). A mid-run intake
 skips both (Step 0.1b, item 7).
 
@@ -468,7 +470,7 @@ FullyQualifiedName~<Class>`). It lets the Developer catch its own wrong expectat
 wave of two or more, write `None` — parallel test runs lock each other's build output. The Reviewer still
 runs the tests itself either way.
 
-Save it to `<scratchpad>/runs/<run id>/packet-<ID>.md` — the path the Reviewer and Parity prompts take.
+Save it to `<work dir>/runs/<run id>/packet-<ID>.md` — the path the Reviewer and Parity prompts take.
 Re-save it whenever you add to it (e.g. the Design Reference at Step 1.1b), and keep the full packet in
 `run-state-file` (see **Run-State Checkpointing**).
 
@@ -492,9 +494,9 @@ against the item, or the user's list), a one-paragraph summary of what the code 
 not run by a Developer` — and save it where the Developer Output would go (`devout-<ID>.md`). Go to
 Step 1.3: the Reviewer reviews it like any Developer Output.
 
-**Save it verbatim** to `<scratchpad>/runs/<run id>/devout-<ID>[-legN][-retryN].md` before anything else (`-legN` from the
+**Save it verbatim** to `<work dir>/runs/<run id>/devout-<ID>[-legN][-retryN].md` before anything else (`-legN` from the
 second leg on — a resume after escalation starts a new leg; the same suffix goes on every per-loop
-scratchpad name, e.g. the parity folder). The
+work-dir name, e.g. the parity folder). The
 Reviewer gets that path, never a summary. Combine a resumed spawn's hand-backs into the same file.
 
 **An open question inside the packet's scope.** If the Developer Output asks the Orchestrator to decide
@@ -746,7 +748,7 @@ files go to a linked item in the owning component, and Step 2.1 re-runs once tha
 
 **Save each Integration Output to a file, verbatim.** As soon as an Integration spawn returns, write
 its final reply — exactly as returned, never a summary or an excerpt — to
-`<scratchpad>/runs/<run id>/integration-output-pass<N>.md`. N counts Integration passes from 1: the
+`<work dir>/runs/<run id>/integration-output-pass<N>.md`. N counts Integration passes from 1: the
 first pass, each retry, a crash re-run, a resume, Divide-and-Conquer's aggregate pass. A
 Divide-and-Conquer sub-problem spawn K writes `integration-output-pass<N>-sub<K>.md`, N being the
 aggregate pass it feeds. Append the path to run-state's `integration.outputPaths` (in order; the latest
@@ -1052,7 +1054,9 @@ saved but not complete.
    Linked Runs: the RUN row goes into each linked component's `metrics-log-file`.
 2. Mark `run-state-file` complete — Linked Runs: every run-state file with this run id. Delete the
    `.orchestrator-work/<ID>/` park folder of every item that ended this run; keep one whose item is still
-   non-terminal (its `parkedAt` carries it to the next run).
+   non-terminal (its `parkedAt` carries it to the next run). Delete this run's `runs/`, `gate-logs/` and
+   `parity/` folders in the work dir too, unless an item of the run is still non-terminal (a Bug
+   `awaiting verification` keeps its gate logs for the `verified` reply).
 3. Surface every Finalizer `Notes` entry in the summary.
 4. List any `## Deferred Integration` row still `Pending`, any `heldForNextRun` item, and every item's
    `outsideItem` entries (Steps 1.3 and 1.3b), with what `decisions.outsideItemLog` says of each
@@ -1144,7 +1148,7 @@ the named hub — read `references/push-and-pull.md` and follow it exactly.
 ## Run-State Checkpointing
 
 `run-state-file` (default `docs/<component>/.orchestrator-run-state.json`) lets a fresh session resume.
-It is **local and gitignored — never committed**, like the `.orchestrator-work/` park folders beside it: it holds scratchpad paths and mid-run state that mean
+It is **local and gitignored — never committed**, like the `.orchestrator-work/` park folders beside it: it holds work-dir paths and mid-run state that mean
 nothing in another checkout.
 The Orchestrator writes it directly — bookkeeping, not code.
 

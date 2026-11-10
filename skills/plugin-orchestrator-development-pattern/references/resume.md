@@ -11,13 +11,14 @@ reaches Phase 1's "read once, now" line. If a UI packet is unfinished and run-st
 `artboard-server`, look in the repo again, then ask, before Step 1.3b. Then rebuild the position from the file — PMBook items persisted by ID
 re-derive their packets from the current PMBook and run-state's conventions summary; the rest use the
 persisted packet. In a fresh session,
-treat every scratchpad path in the file as gone: re-write each packet to
-`<scratchpad>/runs/<run id>/packet-<ID>.md` from run-state before any spawn, and re-write each item's
+check every saved path in the file: work-dir paths survive a restart and are used as they are; a
+scratchpad path (a run-state written before the work dir existed) is treated as gone. Re-write each
+missing packet to `<work dir>/runs/<run id>/packet-<ID>.md` from run-state before any spawn, and each item's missing
 latest Developer Output (`devout-<ID>[-legN][-retryN].md`), its last Issues list and its last Unable to
 Verify report, and the latest
 Integration Output there too (at its saved name, `integration-output-pass<N>.md`, the last of
 `integration.outputPaths`) — Previous Issues, a Verification Blocked Reviewer respawn, Integration's
-Retry Context and the Phase 2/3 inputs all read from them. A packet or output missing from both the scratchpad and run-state is read from the item's `parkedAt` folder; with no `parkedAt` either, re-derive the packet from the item's PMBook row and say so in the resume announcement.
+Retry Context and the Phase 2/3 inputs all read from them. A packet or output missing from both the work dir and run-state is read from the item's `parkedAt` folder; with no `parkedAt` either, re-derive the packet from the item's PMBook row and say so in the resume announcement.
 
 **Where a resumed run rejoins.** Phase 0 is not re-run: print Step 0.0a's block, announce any
 `heldForNextRun` items, then take the Platform Profile, waves and queue from the file. Take the first

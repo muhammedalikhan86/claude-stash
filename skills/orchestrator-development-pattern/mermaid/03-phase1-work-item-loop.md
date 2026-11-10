@@ -101,7 +101,7 @@ flowchart TD
 A Parity FAIL retry goes Developer → code Reviewer → Step 1.3b again, under the same 3-strike rule; in
 that retry's Reviewer Retry Context each parity issue is marked `verified by Step 1.3b, not by you`.
 The Parity Check uses `sonnet` at every `loop_count`, and writes into
-`<scratchpad>/parity/<run id>/<ID>[-legN][-retryN]/` (`-legN` from leg 2 on).
+`<work dir>/parity/<run id>/<ID>[-legN][-retryN]/` (`-legN` from leg 2 on).
 
 ## Who sends what
 

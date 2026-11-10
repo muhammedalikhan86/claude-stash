@@ -12,7 +12,7 @@ flowchart TD
     AskDeps["Stop and ask user<br/>for path or to create"]
     Resume{"run-state-file exists<br/>and not complete?"}
     AskResume["Ask: resume<br/>or start fresh?"]
-    Rebuild["Rebuild queue position;<br/>re-write saved packets to the<br/>scratchpad; saved conventions<br/>for re-derived packets"]
+    Rebuild["Rebuild queue position;<br/>re-write saved packets missing<br/>from the work dir; saved conventions<br/>for re-derived packets"]
     Order{"Latest phase first:<br/>which matches?"}
     RunP3(["Phase 3 at its recorded<br/>step, see 06"])
     RunP2(["Phase 2, at its recorded<br/>step if started, see 05"])

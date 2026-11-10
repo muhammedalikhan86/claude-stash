@@ -107,7 +107,7 @@ for a packet with no `## Design Reference`.
 2. **Spawn** `subagent_type: "orchestrated-reviewer"`, `model: "sonnet"`, with the **Parity Prompt**
    (`references/templates.md`): the packet path (Step 1.1), the app URL, the board URL,
    `parity-viewports`, `parity-command` (or `None`), and the folder `<gate log directory>/parity/<ID>[-legN][-retryN]/` (`-legN` from the second leg on) — the gate log
-   directory is `<scratchpad>/gate-logs/<run id>/`, fixed at Step 0.4. A separate spawn: the code
+   directory is `<work dir>/gate-logs/<run id>/`, fixed at Step 0.4. A separate spawn: the code
    Reviewer stays narrow.
 3. **It measures** the elements this item changes, in every state in the packet's `States to compare`
    at every width in `parity-viewports`, running or extending the repo's parity harness when there is

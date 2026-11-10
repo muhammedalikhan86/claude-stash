@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.14.0"
+  version: "2.14.1"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -549,7 +549,7 @@ work item exits this loop immediately after Step 1.2 — see **Spike Flow**, rea
 
 Produce a Task Packet for the feature (see **Task Packet Format** below). This is the single source of truth for both the Developer and Reviewer.
 
-Save it to `<scratchpad>/runs/<run id>/packet-<ID>.md` (the path the Parity Prompt is given). If the
+Save it to `<work dir>/runs/<run id>/packet-<ID>.md` (the path the Parity Prompt is given). If the
 Orchestrator added anything to a PMBook-sourced packet (a Design Reference, a ruling), also store the full
 packet in `run-state-file` — see **Run-State Checkpointing**.
 
@@ -628,7 +628,7 @@ and why the check is measured on the rendered screen.
    (`artboard-server`), and check both answer. Fill `app-url` with this checkout's port offset.
 2. **Spawn** `subagent_type: "orchestrated-reviewer"`, `model: "sonnet"` (see **Model Assignment**), with
    the **Parity Prompt** (`references/parity.md`): the packet's saved path (Step 1.1), the app URL, the board URL, `parity-viewports`, `parity-command` (or `None`), and the folder
-   `<scratchpad>/parity/<run id>/<ID>[-legN][-retryN]/` (`-legN` when run-state's `leg` > 1). A separate
+   `<work dir>/parity/<run id>/<ID>[-legN][-retryN]/` (`-legN` when run-state's `leg` > 1). A separate
    spawn: the code Reviewer stays narrow.
 3. **It measures** the elements this item changes, in every state in `States to compare` at every width,
    running or extending the repo's parity harness when there is one, plus a quick pass that lists
@@ -891,7 +891,7 @@ Spawn an Integration sub-agent via the Agent tool with `subagent_type: "orchestr
 
 **Save each Integration Output to a file, verbatim.** As soon as an Integration spawn returns, write
 its final reply — exactly as returned, never a summary or an excerpt — to
-`<scratchpad>/runs/<run id>/integration-output-pass<N>.md`. N counts Integration passes from 1: the
+`<work dir>/runs/<run id>/integration-output-pass<N>.md`. N counts Integration passes from 1: the
 first pass, each retry, a crash re-run, a resume, Divide-and-Conquer's aggregate pass. A
 Divide-and-Conquer sub-problem spawn K writes `integration-output-pass<N>-sub<K>.md`, N being the
 aggregate pass it feeds. Append the path to run-state's `integration.outputPaths` (in order; the latest
@@ -1524,7 +1524,7 @@ this pipeline.
 ## Retry Context (present whenever Previous Issues exist — a retry, or a resume after escalation; omit otherwise)
 loop_count: <INSERT N>
 Previous Issues: <INSERT REVIEWER-INTEGRATION'S ISSUES LIST, or the escalation's issues on a resume>
-Previous Integration Output: <INSERT the prior pass's saved file path, `<scratchpad>/runs/<run id>/integration-output-pass<N>.md` — read it yourself>
+Previous Integration Output: <INSERT the prior pass's saved file path, `<work dir>/runs/<run id>/integration-output-pass<N>.md` — read it yourself>
 Re-run the quality gate for real (code may have changed), but treat drift sections your prior pass
 already cleared as still clear unless a Previous Issue reopens one.
 
@@ -1577,7 +1577,7 @@ one, write `not tracked`.
 Use exactly your own Output Template.
 
 ## Integration Output
-<INSERT the saved file path, `<scratchpad>/runs/<run id>/integration-output-pass<N>.md` (Step 2.1) — never a
+<INSERT the saved file path, `<work dir>/runs/<run id>/integration-output-pass<N>.md` (Step 2.1) — never a
 summary. Read that file: it is the Output verbatim.>
 
 ## Retry Context
@@ -1709,6 +1709,8 @@ directly** (`Write`/`Edit`, no sub-agent); this is bookkeeping, not code. **It i
 never committed** — `init-adlc-repo` puts it, and the `.orchestrator-work/` park folders beside it, in `.gitignore`; if it shows up untracked, it is missing
 from there, and no commit step ever stages it.
 
+**The work dir** is `<folder of run-state-file>/.orchestrator-work/` — gitignored beside run-state, and it survives a session restart, which the scratchpad does not. Every file the run must keep goes under it: `runs/<run id>/` (packets, Developer Outputs, Integration Outputs), `gate-logs/<run id>/` (gate and Integration logs, raw before/after outputs) and `parity/<run id>/` (Parity Check folders, Step 1.3b), beside the `<ID>/` park folders. The scratchpad is only for throwaway files, such as a before-side worktree. Fix it with the run id at Phase 0.
+
 **Units and steps.** A unit is a work-item attempt, a P0 lane, Phase 2, or Phase 3. Each unit records
 only its current `step` and `state: started | done`. A P0 lane's and Phase 3's steps are Finalizers →
 commit (Step 3.6: messages drafted, then the commit) → done; Divide-and-Conquer's stages are Phase 2 steps.
@@ -1770,7 +1772,9 @@ verdict (so every `loop_count` change); at every user decision; when a Bug enter
 verification`; at every terminal state and escalation; and at close-out, marked complete with the
 "🏁 Orchestrator Complete" summary. A file marked complete never triggers the Step 0.0 resume check.
 At that close-out, delete the `.orchestrator-work/<ID>/` park folder of every item that ended this run;
-keep one whose item is still non-terminal (its `parkedAt` carries it to the next run).
+keep one whose item is still non-terminal (its `parkedAt` carries it to the next run). Delete this run's
+`runs/`, `gate-logs/` and `parity/` folders in the work dir too, unless an item of the run is still
+non-terminal (a Bug `awaiting verification` keeps its gate logs for the `verified` reply).
 
 **Repeat-safe writes.** A step re-run after a crash may repeat a write, so every governed-doc write
 checks for an entry for the same item ID (and run id and scope, where the doc carries them) and updates it instead

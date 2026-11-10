@@ -41,7 +41,7 @@ flowchart TD
     D("User says done:<br/>record doneAt") --> Read["1 Read back<br/>the tweak list"]
     Read --> Ph0["2 Finish Phase 0: test<br/>command, Stack line,<br/>0.3b skill, test-cases check"]
     Ph0 --> Files["3 File set: tweak log files,<br/>+ artboard edits, + assertion<br/>files, + fix files; out-of-root:<br/>1-line justification; others:<br/>not this run's"]
-    Files --> ID["4 Work-item ID: named, or<br/>next COMPONENT-F; keep the<br/>opening run id, scratchpad<br/>folders follow it"]
+    Files --> ID["4 Work-item ID: named, or<br/>next COMPONENT-F; keep the<br/>opening run id, work-dir<br/>folders follow it"]
     ID --> Own{"5 Design Gate, after<br/>the code: designer-owned?"}
     Own -->|"yes"| DAsk["One designer ask for<br/>every tweak, owed"]
     Own -->|"no"| Agent{{"Artboard Edit Prompt,<br/>orchestrated-developer,<br/>sonnet, Target: tweak list;<br/>its edits join the file set"}}

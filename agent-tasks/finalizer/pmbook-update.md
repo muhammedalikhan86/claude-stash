@@ -4,7 +4,10 @@ Read by `orchestrated-finalizer` when it is given this Task. Every rule in the a
 Parallel-Safety, Git Restrictions, Output Template) still applies.
 
 Given the Features Completed list and the PMBook path:
-- Set each completed feature's status to `Done` (in the plugin orchestrator this is the only place a feature becomes Done; elsewhere, confirm it).
+- Set each completed feature's Status to `Done`. This is the only place a feature becomes `Done` (the
+  Orchestrator writes nothing to the PMBook before Integration has passed), and it is written once. Take
+  each item's final status from the prompt's `## Final Status per Item` section, never a guess from other
+  docs, then fill the row's other fields (phase, provenance, Fixed In).
 - Mark the current phase `Done` if every feature in it is now `Done`.
 - Resolve any open items the completed features addressed.
 - **Tranche-boundary check**: if marking this phase `Done` means *every* phase in the PMBook's Phases &

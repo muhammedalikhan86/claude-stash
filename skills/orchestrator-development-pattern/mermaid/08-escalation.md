@@ -6,7 +6,7 @@ never reach any of them.
 ```mermaid
 flowchart TD
     T1["A real FAIL takes loop_count<br/>past 3 (it stays 3): any item,<br/>or Integration"]
-    T2["Reviewer, Parity Check or<br/>Reviewer-Integration<br/>UNVERIFIED a 3rd time"]
+    T2["Reviewer, Parity Check or<br/>Reviewer-Integration<br/>UNVERIFIED a 3rd time, or<br/>any spawn's Output missing<br/>twice in a row"]
     T3["Divide-and-Conquer<br/>confirmation still FAILs"]
     IntQ{"Integration?"}
     Ran{"Divide-and-Conquer<br/>already run this batch?"}
@@ -14,13 +14,13 @@ flowchart TD
     Save["First save run-state, not complete:<br/>event time, status escalated<br/>(integration block escalated: true),<br/>escalationFinalLoopCount,<br/>loopCountAtEscalation,<br/>blockedGate on Report 2"]
     Rec["Then append metrics row Escalated<br/>(Final loop_count as saved)<br/>and RUN row Paused (escalation)"]
     R1["Report 1: Implementation —<br/>last issues verbatim,<br/>Escalated Model tried"]
-    R2["Report 2: Verification Blocked —<br/>last Unable to Verify verbatim"]
+    R2["Report 2: Verification Blocked —<br/>last Unable to Verify verbatim,<br/>or Missing Outputs: 2 and<br/>what the spawn last said"]
     R3["Report 3: Integration after<br/>Divide-and-Conquer —<br/>still-failing only"]
     Pause["⏸ Orchestrator is PAUSED.<br/>Waiting for instruction."]
     Wait{"User types resume or<br/>gives explicit instruction?"}
     Kind{"Report 2?"}
     Unp["Status back to in progress<br/>(clear the block's flag);<br/>save run-state at once"]
-    Again(["Read blockedGate, respawn that gate:<br/>Reviewer, Parity Check or<br/>Reviewer-Integration; unverified_count 0;<br/>then clear blockedGate"])
+    Again(["Read blockedGate, respawn that gate:<br/>Reviewer, Parity Check or<br/>Reviewer-Integration (or, for missing<br/>Outputs, that role); unverified_count 0;<br/>then clear blockedGate"])
     Reset["loop_count 0 and<br/>loopCountAtEscalation 0,<br/>escalation's issues as<br/>Previous Issues, priorLoops += 3"]
     Go(["Respawn Developer, or<br/>Integration for Phase 2"])
     Drop(["Status dropped, saved at once<br/>with the event time: terminal, out of<br/>Phase 2's entry rule and the resume rules;<br/>one metrics row, Verdict Dropped;<br/>in 🏁 summary"])
@@ -35,7 +35,7 @@ flowchart TD
     T3 --> Save
     Save --> Rec
     Rec -->|"real FAIL"| R1
-    Rec -->|"3rd UNVERIFIED"| R2
+    Rec -->|"3rd UNVERIFIED or<br/>2nd missing Output"| R2
     Rec -->|"after Divide-and-Conquer"| R3
     R1 --> Pause
     R2 --> Pause

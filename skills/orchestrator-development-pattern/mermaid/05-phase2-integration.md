@@ -33,7 +33,7 @@ flowchart TD
     V -->|UNVERIFIED| UV --> UVMax
     Max -->|"yes: stays 3"| DC
     Max -->|no| LC --> Model
-    Model -->|"loop_count, issues,<br/>prior Integration Output"| Int
+    Model -->|"loop_count, issues,<br/>prior Output's file path"| Int
     UVMax -->|yes| Esc
     UVMax -->|no| Fix --> RI
 ```
@@ -43,15 +43,22 @@ The Integration Agent gets paths, never file contents: Platform Profile, complet
 holding the test), `test-cases-doc`, `architecture-doc`, PMBook, `test-runbook-location`,
 `adr-directory`, Pending Deferred Integration IDs with their regression test paths (re-read from the
 PMBook at Step 2.1, so this run's fast-laned P0s are among them), and the
-`## Accepted Known-Reds` lines (also on every retry and Divide-and-Conquer spawn). It runs the full
+`## Accepted Known-Reds` and `## Known Reds at Baseline` lines (Step 0.3b; both on every retry and
+Divide-and-Conquer spawn). A test red at baseline and still red goes under Known-Reds, not into flaky
+triage as new; a test green at baseline and red now is this run's. It runs the full
 suite, fixes failures, runs the security audit and E2E/smoke tests, and checks Documentation Drift, which
-is a FAIL-worthy defect. Its Output lists `### Known-Reds` (each `tracked by <ID>`, `accepted by the
+is a FAIL-worthy defect. It fixes code, never the test-cases doc: each gap there is handed to the Test
+Runbook Finalizer (Step 3.5) as a `— handed to Test Runbook` drift line. Its Output lists `### Known-Reds` (each `tracked by <ID>`, `accepted by the
 user`, or `untracked`) and `### Work Items Covered` (this run's Features and Bugs only; Deferred IDs go
 under `Deferred Integration Re-Validated`).
 
-The Reviewer-Integration gets the Integration Output, condensed packets of the Features Completed and
+Every Integration Output is saved verbatim to `<scratchpad>/runs/<run id>/integration-output-pass<N>.md`
+(a Divide-and-Conquer sub-problem's with `-sub<K>`), its path kept in run-state's
+`integration.outputPaths`; a background spawn's task output file is a transcript, never the Output.
+The Reviewer-Integration gets the Integration Output's file path (never a summary), condensed packets of the Features Completed and
 Bugs Fixed only, the Platform Profile with Test
-scope `full`, the same doc paths, the Deferred Integration IDs and the same `## Accepted Known-Reds` lines. Every
+scope `full`, the same doc paths, the Deferred Integration IDs and the same `## Accepted Known-Reds` and
+`## Known Reds at Baseline` lines, and checks no still-red baseline test was dropped. Every
 known-red is listed, as its line reads, in the 🏁 summary and the Integration metrics row (09).
 
 ## Integration Agent — triaging a failing test

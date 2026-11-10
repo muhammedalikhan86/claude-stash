@@ -15,7 +15,8 @@ treat every scratchpad path in the file as gone: re-write each packet to
 `<scratchpad>/runs/<run id>/packet-<ID>.md` from run-state before any spawn, and re-write each item's
 latest Developer Output (`devout-<ID>[-legN][-retryN].md`), its last Issues list and its last Unable to
 Verify report, and the latest
-Integration Output there too — Previous Issues, a Verification Blocked Reviewer respawn, Integration's
+Integration Output there too (at its saved name, `integration-output-pass<N>.md`, the last of
+`integration.outputPaths`) — Previous Issues, a Verification Blocked Reviewer respawn, Integration's
 Retry Context and the Phase 2/3 inputs all read from them.
 
 **Where a resumed run rejoins.** Phase 0 is not re-run: print Step 0.0a's block, announce any
@@ -49,6 +50,9 @@ match, latest phase first; a step found `started` (not `done`) re-runs from its 
   run-state (re-written as above) or its file still exists; only when neither holds it, respawn its
   Developer (no `loop_count` change; the files already in the tree are its Previous Attempt);
 - a code PASS on a UI packet with no Parity verdict → Step 1.3b.
+A review-only item whose latest Developer Output is still its Build Record rejoins at its review (never
+respawn a Developer for it); its first FAIL still costs no iteration. The saved `baseline.reds` (Step
+0.4b) is reused, never re-run.
 A re-run commit step obeys `decisions.commit` (`ask` or unset → ask again) and commits as Step 3.5
 says: whatever of its saved file list `git status` still shows uncommitted. Other items already terminal stay as they are;
 a `dropped` item is never rejoined (rules 2 and 10 skip it).
@@ -57,10 +61,12 @@ a `dropped` item is never rejoined (rules 2 and 10 skip it).
 clear the `integration` block's `escalated` flag) and save run-state at once. The item restarts at `loop_count` 0 and `loopCountAtEscalation` 0
 with the escalation's issues as Previous Issues (keeping any `verified by Step 1.3b, not by you` marks),
 and `priorLoops` += its old `loop_count`; respawn its Developer (for an Integration escalation, the Integration Agent at Step 2.1).
-**Verification Blocked** (template 2, the UNVERIFIED limit) is different: respawn the gate run-state's
-`blockedGate` names (`reviewer`, `parity` or `reviewer-integration`) with the Developer (or
-Integration) Output from run-state, `unverified_count` reset to 0, and `loop_count` and `priorLoops`
-unchanged — no Developer respawn. Blocked during the `confirmation pass`, it resumes that pass's
+**Verification Blocked** (template 2: the UNVERIFIED limit, or two missing Outputs) is different: respawn
+the role run-state's `blockedGate` names, with its saved inputs, `unverified_count` reset to 0, and
+`loop_count` and `priorLoops` unchanged. For `reviewer`, `parity` or `reviewer-integration`, that gate
+runs on the Developer (or Integration) Output from run-state — no Developer respawn. For `developer`,
+`integration` or `finalizer` (missing Outputs), that same spawn runs again with the same inputs — not a
+retry, no `loop_count` change. Blocked during the `confirmation pass`, it resumes that pass's
 Reviewer-Integration. Final loop_count follows `SKILL.md`'s **Pipeline Telemetry**, so no loop is
 counted twice. A UI
 Iteration resumes at its step 9 (the Orchestrator fixes, then the Reviewer; never a Developer) only

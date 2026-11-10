@@ -25,18 +25,23 @@ only then cleared. Announce any `heldForNextRun` items. In a fresh
 session, every scratchpad path in the file (saved packets, parity folders) is treated as gone: re-write
 each packet to `<scratchpad>/runs/<run id>/packet-<ID>.md` before the next spawn, and re-run a Parity
 Check rather than citing an old folder. Before any respawn, also re-write the saved Developer Output,
-Issues list, Unable to Verify report and Integration Output to the scratchpad, so Previous Issues, a Report 2
+Issues list, Unable to Verify report and Integration Output to the scratchpad (the Output at its saved
+name, `integration-output-pass<N>.md`, the last of `integration.outputPaths`), so Previous Issues, a Report 2
 Reviewer respawn, Integration's Retry Context and the Phase 2/3 inputs all have their source. Never
-respawn the Developer just to regenerate an output that run-state holds.
+respawn the Developer just to regenerate an output that run-state holds. The saved `baseline` (Step
+0.3b) is reused, never re-run. A review-only item whose latest Developer Output is still the Build
+Record rejoins at its review; its first FAIL still does not count toward `loop_count`.
 
 ## Resuming after an escalation
 
 **Resuming after an escalation:** first set the item's status back to `in progress` (or clear the
 `integration` block's `escalated` flag) and save run-state at once. A **Verification Blocked** escalation
-(Report 2, the UNVERIFIED limit) reads run-state's `blockedGate` and respawns the gate it names — the
-Reviewer, the Parity Check, or the Reviewer-Integration (during Divide-and-Conquer's confirmation pass,
-that pass again) — then clears `blockedGate`; only `unverified_count` is reset to 0; `loop_count`, `priorLoops` and Previous
-Issues stay as they were, and the Developer (or Integration agent) is NOT respawned. Every other escalation restarts the
+(Report 2: the UNVERIFIED limit, or two missing Outputs) reads run-state's `blockedGate` and respawns
+the role it names, with its saved inputs — `reviewer`, `parity` or `reviewer-integration` (during
+Divide-and-Conquer's confirmation pass, that pass again); or, for missing Outputs, `developer`,
+`integration` or `finalizer` (that same spawn again, not a retry) — then clears `blockedGate`; only
+`unverified_count` is reset to 0; `loop_count`, `priorLoops` and Previous Issues stay as they were. For
+the three gate values the Developer (or Integration agent) is NOT respawned. Every other escalation restarts the
 item at `loop_count` 0 with the escalation's issues as Previous Issues (keeping any `verified by Step
 1.3b, not by you` marks), and `priorLoops += 3`; respawn the Developer (for an
 Integration escalation, the Integration agent). An Integration resume reads the `integration` block:

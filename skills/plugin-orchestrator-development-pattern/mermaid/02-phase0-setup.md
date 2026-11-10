@@ -47,13 +47,16 @@ flowchart TD
     Def --> TC{"test-cases-doc<br/>exists?"}
     TC -->|"no"| Draft["Draft it from the<br/>phase's features, register"]
     TC -->|"yes"| Thin{"Covers every feature<br/>in scope?"}
-    Thin -->|"no"| AskGap["Tell user the gaps:<br/>proceed, draft, or pause"]
+    Thin -->|"no"| Own{"Writing them is a<br/>work item's own job<br/>this run?"}
+    Own -->|"yes"| Note["Note the gap in<br/>decisions, no question"]
+    Own -->|"no"| AskGap["Tell user the gaps:<br/>proceed, draft, or pause"]
+    Note --> Entry
     Thin -->|"yes"| Entry
     Draft --> Entry("Entry point<br/>0.1, 0.1b, 0.1c, 0.1d")
     AskGap --> Entry
 ```
 
-Nodes: 14. Soft dependencies (handoff, changelog, revision, runbook, audit command, ADR folder,
+Nodes: 16. Soft dependencies (handoff, changelog, revision, runbook, audit command, ADR folder,
 graphify directories, run-state, metrics) are created or skipped later and never stop the run.
 
 ## Steps 0.1–0.4 — platform, skill, waves, announce
@@ -67,16 +70,18 @@ flowchart TD
     Prof --> Stack["Record Stack line:<br/>up, down, check,<br/>static servers"]
     Stack --> Conv["0.3 Coding conventions"]
     Conv --> Skill["0.3b Specialist skill,<br/>chosen once, may be None"]
-    Skill --> Waves["0.4 Build waves<br/>Step 1.0 rules, below"]
+    Skill --> Hold["Design rows hold: UI item<br/>whose rows are not Done waits;<br/>no rows + new layout → write<br/>them in the open round;<br/>old layout → migration guide"]
+    Hold --> Waves["0.4 Build waves<br/>Step 1.0 rules, below"]
     Waves --> Ann["Announce: full block, or<br/>one line for Bug or Spike<br/>mode, + Deferred line"]
     Ann --> UIq{"A planned packet<br/>touches a UI?"}
-    UIq -->|"yes"| UIB["Read ui-packets.md,<br/>check UI bindings,<br/>ask once if missing<br/>04"]
+    UIq -->|"yes"| UIB["Read ui-packets.md,<br/>check UI bindings,<br/>look in repo, then ask<br/>once if missing<br/>04"]
     UIq -->|"no"| RS
     UIB --> RS["Fix run id, runs/ and<br/>gate-logs/ folders,<br/>write run-state-file"]
-    RS --> P1("Phase 1<br/>03")
+    RS --> Base["0.4b Baseline test run<br/>on the untouched tree,<br/>save baseline.reds;<br/>skipped for P0, Spike,<br/>UI Iteration, mid-run intake"]
+    Base --> P1("Phase 1<br/>03")
 ```
 
-Nodes: 13. The UI bindings are checked after the announcement and before Phase 1, in the order Step
+Nodes: 14. The UI bindings are checked after the announcement and before Phase 1, in the order Step
 0.4 lists them.
 
 ## Step 1.0 — may an item join this wave?

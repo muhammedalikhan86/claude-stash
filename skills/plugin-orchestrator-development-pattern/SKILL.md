@@ -1,6 +1,6 @@
 ---
 name: plugin-orchestrator-development-pattern
-description: Multi-agent development orchestrator for a PLUGIN-BASED repository — one whose `.claude/SKILLS.md` declares a `components:` table, where a platform shell and its plugins are developed independently, each with its own governed documents and its own tranche line. Resolves which component the work belongs to, then runs the same Developer→Reviewer→Integration→Finalization pipeline as `orchestrator-development-pattern`, scoped to that component's docs, source roots and knowledge graph. Invoke only when the user explicitly wants the full pipeline run end-to-end (e.g. "orchestrate a fix for X", "run the orchestrator on this bug", "build this from the PMBook", "spike this", "this is a P0", "hotfix this") — not for a plain "debug X" / "fix this" question. A Spike work item skips the Reviewer/Integration gates entirely; a P0 Bug fast-lanes straight to its own Finalization. A UI Iteration (e.g. "let me iterate on the UI", "tweak mode", or a look-and-feel ask once the skill is in use) lets the user make a run of small look-and-feel tweaks with no gates, then runs the gates once when they say "done". Language and platform agnostic. For a single-component repo use `orchestrator-development-pattern` instead.
+description: Multi-agent development orchestrator for a PLUGIN-BASED repository — one whose `.claude/SKILLS.md` declares a `components:` table. Resolves which component the work belongs to, then runs the same Developer→Reviewer→Integration→Finalization pipeline as `orchestrator-development-pattern`, scoped to that component's docs, source roots and knowledge graph. Invoke only when the user explicitly wants the full pipeline run end-to-end (e.g. "orchestrate a fix for X", "run the orchestrator on this bug", "build this from the PMBook", "spike this", "this is a P0", "hotfix this") — not for a plain "debug X" / "fix this" question. A Spike skips the Reviewer/Integration gates; a P0 Bug fast-lanes to its own Finalization. A UI Iteration ("let me iterate on the UI", "tweak mode", or a look-and-feel ask once the skill is in use) runs tweaks ungated, gates once at "done". Language and platform agnostic. For a single-component repo use `orchestrator-development-pattern`.
 license: MIT
 metadata:
   author: https://github.com/mak100186
@@ -30,6 +30,9 @@ metadata:
     archive-directory,
     adr-directory,
     artboards-directory,
+    design-directory,
+    design-rows-directory,
+    design-rounds-directory,
     run-state-file,
     metrics-log-file
   ]
@@ -62,7 +65,7 @@ Read each only when its trigger occurs. They are part of this skill.
 | `references/escalation.md` | A work item or Integration is about to escalate, or Divide-and-Conquer triggers |
 | `references/resume.md` | A resume is confirmed at Step 0.0's Resume check, or the user types "resume" at an escalation pause — what to read first, where the run rejoins, resuming after an escalation |
 | `references/ui-iteration.md` | A UI Iteration is opened (Step 0.1d) or found open on resume |
-| `references/ui-packets.md` | A planned packet touches a user interface (Step 0.4) — UI bindings, Design Gate (Step 1.1b), Board Parity Check (Step 1.3b) |
+| `references/ui-packets.md` | A planned packet touches a user interface (Step 0.4) — UI bindings, Design rows hold (Step 0.4), Design Gate (Step 1.1b), Board Parity Check (Step 1.3b) |
 | `references/linked-runs.md` | Work items in two components must land together (Step 0.0a), or a FAIL lies in another component's files (Step 1.4) |
 | `references/push-and-pull.md` | Before any push or pull — a go arrives from the user or a hub session, or this session is the hub |
 | `references/version-pointer-sweep.md` | Never by you — its path is handed to the PMBook Update Finalizer when a `> Version:` header moved |
@@ -81,8 +84,9 @@ instead; it is never a bug. A new conversation starts back at the high bar.
 
 ## Key design principles
 
-- **Developers write tests but do not run the suite.** Several Developers may be working at once against
-  an incomplete codebase; the Integration Agent owns test execution and build health.
+- **Developers write tests and may run only their packet's `Tests you may run`, never the suite.**
+  Several Developers may be working at once against an incomplete codebase; the Integration Agent owns
+  test execution and build health.
 - **Parallel where it cannot collide, serial where it can.** Independent work items run as waves
   (Step 1.0). Anything sharing a file, a build unit or a root manifest runs one after another.
 - **Cold spawns, paths not contents.** Every sub-agent is a fresh single-purpose spawn. Retries spawn
@@ -204,8 +208,8 @@ Graph:       graphify-out/ofa/
 
 Then resolve every templated variable (`project-management-doc`, `architecture-doc`, `handoff-doc`,
 `test-cases-doc`, `test-runbook-location`, `changelog-file`, `revision-file`, `history-directory`,
-`archive-directory`, `artboards-directory`, `run-state-file`, `metrics-log-file`, `graphify-directories`,
-`graphify-out`). Three are shared and never templated: `adr-directory` (one folder; new IDs are
+`archive-directory`, `artboards-directory`, `design-rows-directory`, `run-state-file`, `metrics-log-file`,
+`graphify-directories`, `graphify-out`). Three are shared and never templated: `adr-directory` (one folder; new IDs are
 component-prefixed), `platform-architecture-file` (the shell's architecture doc — read-only for every
 other component), and `source-code-directory` (the repo root, for platform detection).
 
@@ -225,7 +229,7 @@ row.
 `adr-directory` (else skip the ADR check and say so); `graphify-directories` (else the component's `code`
 roots); `run-state-file` and `metrics-log-file` (auto-created).
 
-**For UI packets:** `app-url`, `artboard-server`, `parity-viewports` — checked at Step 0.4 per
+**For UI packets:** `app-url`, `artboard-server`, `parity-viewports`, and the optional `parity-command` — checked at Step 0.4 per
 `references/ui-packets.md` §UI bindings.
 
 **Resume check:** if `run-state-file` exists and is not complete, ask: "Found an incomplete run from
@@ -244,13 +248,20 @@ hold them for Step 0.4's announcement (or the Bug/Spike intake one-liner). Never
 **Test Cases Doc:** if absent, draft it now from the current phase's features (at least one concrete E2E
 or smoke scenario per feature, covering edge cases and regression-sensitive flows), save it, and register
 the path. If present, check it covers every feature in scope with concrete scenarios; if it is thin, tell
-the user what is missing and ask whether to proceed, have you draft the gaps, or pause. A drafted or
+the user what is missing and ask whether to proceed, have you draft the gaps, or pause. **Do not ask when
+writing or extending those test cases is a work item's own job in this run:** note the gap and that item
+in run-state's `decisions` (`testCasesDoc`) and go on. A drafted or
 extended doc's path is appended to run-state's `orchestratorFiles` once Step 0.4 writes it.
 
 ### Step 0.1 — Read the PMBook
 
 Identify the current phase and every feature `Planned` or `In Progress` in it, with acceptance criteria
 and dependencies.
+
+**Review-only items.** An item the user says was already built outside the loop joins the run as
+**review-only** — never on the Orchestrator's own judgement that its code looks present: its packet carries `Mode: review-only`, and
+Step 1.2 writes a Build Record in place of the first Developer spawn. Include any item the user names as
+review-only, whatever its PMBook status. Save `mode: review-only` on the item in run-state.
 
 ### Step 0.1b — Bug Fix Intake (alternate entry point)
 
@@ -296,9 +307,15 @@ Probe `source-code-directory` for markers and set the **Platform Profile**, inje
 | `pyproject.toml` / `requirements.txt` | Python | `ruff format <files>` | `ruff check <files>` | `pytest` | `snyk-command` |
 | `go.mod` | Go | `gofmt -w <files>` | `golangci-lint run <pkgs>` | `go test ./...` | `govulncheck ./...` |
 | `Cargo.toml` | Rust | `cargo fmt` | `cargo clippy` | `cargo test` | `cargo audit` |
-| `*.csproj` / `*.sln` | .NET | `dotnet format <project> --include <files>` | `dotnet build <project>` | `dotnet test` | `dotnet list package --vulnerable` |
+| `*.csproj` / `*.sln` | .NET | fix: `dotnet format <project> --include <files>` · gate: `dotnet format <project> --verify-no-changes --include <files>` | `dotnet build <project>` | `dotnet test` | `dotnet list package --vulnerable` |
 
 No marker, or several platforms with no clear primary → ask. `snyk-command` overrides the audit.
+
+**Format is scoped to the item's changed files, never repo-wide.** A repo-wide format rewrites files the
+item never touched (line endings, old style drift) and drags them into its diff. Where the tool has a
+check mode, the gate is that mode — it fails on unformatted code, where a plain format run never fails:
+.NET `--verify-no-changes`, as in the table; for the others, `prettier --check`, `ruff format --check`,
+`gofmt -l`, `cargo fmt --check`. The Developer runs the fix form, then the gate form.
 
 **Component test command.** Also record how to run *only this component's* tests — derived from what
 the repo actually has, e.g. `npx nx run-many -t test -p <projects under the component's roots>`, or
@@ -334,7 +351,9 @@ and Reviewer-Integration prompts. Sub-agents use exactly what is named and skip 
 
 ### Step 0.4 — Plan Waves and Announce
 
-Build the waves (Step 1.0), then print:
+If a planned item changes what a user sees and `artboards-directory` is set, first follow
+`references/ui-packets.md` §Design rows hold: a held item is in no wave. Then build the waves (Step 1.0),
+and print:
 
 ```
 🎯 Orchestrator Initialized — <component>
@@ -346,6 +365,7 @@ Work items (<N>), in waves:
   Wave 1: <ID> — <name> | <ID> — <name>
   Wave 2: <ID> — <name>   (depends on <ID>; shares <file/build unit> with <ID>)
   ...
+Held for design: <ID> — waits on <row IDs> (round <NNN>, open | sent <date>)   (or omit)
 
 Developer Quality Gate (per item):  Format: <command>  Lint: <command>
 Integration Quality Gate:           Test (full): <command>  Test (component): <command or none>
@@ -359,7 +379,7 @@ Estimated spawns: best <B> · typical ~<T> · worst <W>
 Type STOP at any time to pause the orchestrator.
 ```
 
-**Estimated spawns:** N items. Best = N × 2 (Developer + Reviewer) + 1 (Integration; Reviewer-Integration
+**Estimated spawns:** N items (a review-only item counts 1, a Reviewer only, in Best). Best = N × 2 (Developer + Reviewer) + 1 (Integration; Reviewer-Integration
 is skipped on a clean first pass, Step 2.2) + 4 (Finalizers), plus one Design Gate spawn per UI item whose artboard needs an edit. Typical = Best ×
 1.3, or the observed retry rate from `metrics-log-file` if it has rows. Worst = N × 8 (+ Design Gate
 spawns) + 2 × 4 (Integration) + 4 (Finalizers), plus Divide-and-Conquer.
@@ -372,6 +392,25 @@ of the run: `<scratchpad>/runs/<run id>/` for packets and Developer Outputs, and
 directory** `<scratchpad>/gate-logs/<run id>/` for the Parity Check (Step 1.3b) and Integration logs.
 Write `run-state-file` now (held intakes: Step 0.0). A mid-run intake
 skips both (Step 0.1b, item 7).
+
+### Step 0.4b — Baseline Test Run
+
+Before any spawn, run the tests once on the untouched tree, so a test that was already red is never
+mistaken for this run's regression. Bring the stack to the state the tests need (Step 0.2's `Stack`
+line). Run `Test (component)` — or `Test (full)` when the component is the shell or `Test (component)` is
+`none` — writing the output to the gate log directory, not into context. Save every failing or flaky test
+in run-state as `baseline.reds` (the test, how it failed, the command that ran it), and print
+`Baseline: <N> red at start (<command>)`. Step 2.0 may later choose `full` after a component baseline:
+then reds outside the component were not measured — say so in the Integration prompt.
+
+**Skip it** for a P0-only or Spike-only run, a UI Iteration, and a mid-run intake (the run's baseline
+already exists), and print `Baseline: skipped — <why>`. **A resume reuses the saved `baseline.reds`,
+never re-runs it** (`references/resume.md`): the tree now holds this run's changes, so a fresh run would
+count them as baseline.
+
+A baseline red is not this run's regression, but it is not waved through either: it still follows the
+known-red rule (Step 2.2 — an owner, and a tracking ID or the user's acceptance) and is listed in the
+final summary. A baseline red that ends the run green is noted as fixed.
 
 ---
 
@@ -413,6 +452,12 @@ then pause.
 Fill the matching shape from `references/templates.md`, including `## Specialist Skill` and the scoped
 Format/Lint commands. This is the single source of truth for Developer and Reviewer.
 
+**`Tests you may run:`** — set it in `## Note on Tests` only when the item is **alone in its wave**: the
+filter that runs just the item's own new or changed test classes (e.g. `dotnet test <proj> --filter
+FullyQualifiedName~<Class>`). It lets the Developer catch its own wrong expectations before review. In a
+wave of two or more, write `None` — parallel test runs lock each other's build output. The Reviewer still
+runs the tests itself either way.
+
 Save it to `<scratchpad>/runs/<run id>/packet-<ID>.md` — the path the Reviewer and Parity prompts take.
 Re-save it whenever you add to it (e.g. the Design Reference at Step 1.1b), and keep the full packet in
 `run-state-file` (see **Run-State Checkpointing**).
@@ -428,8 +473,14 @@ you have not), **before spawning the Developer**. Skip for packets that touch no
 full packet. At loop_count 3, `plugin-orchestrated-developer-xhigh` instead — that swap is the
 escalation.
 
-Returns a **Developer Output**: files touched, implementation summary, test files written (not run),
-Format and Lint PASS, assumptions and deviations.
+Returns a **Developer Output**: files touched, implementation summary, test files written (not run,
+except the packet's `Tests you may run:` filter when set), Format and Lint PASS, assumptions and deviations.
+
+**Review-only item** (`Mode: review-only`, Step 0.1): spawn no Developer. Write a **Build Record** in the
+Developer Output's shape — `Source: built outside the loop`, the files (from `git diff` / `git status`
+against the item, or the user's list), a one-paragraph summary of what the code does, and `Format/Lint:
+not run by a Developer` — and save it where the Developer Output would go (`devout-<ID>.md`). Go to
+Step 1.3: the Reviewer reviews it like any Developer Output.
 
 **Save it verbatim** to `<scratchpad>/runs/<run id>/devout-<ID>[-legN][-retryN].md` before anything else (`-legN` from the
 second leg on — a resume after escalation starts a new leg; the same suffix goes on every per-loop
@@ -450,6 +501,9 @@ changes what the user sees beyond the board's intent. A ruling that accepts the 
 full packet in `run-state-file`, and save the ruling in run-state's `decisions.rulings` (item, the
 difference, the ruling, its source). The Reviewer and the Parity Check then read it from the packet.
 Resume the Developer only when the ruling needs a code change; otherwise go straight to Step 1.3.
+When an outside designer owns the boards and the ruling leaves the board wrong (it now draws something
+the product will not have), the board change is owed: add it to `decisions.designRowsOwed` (item, surface,
+the change, the ruling's source) — Phase 3's **Design rows owed** writes it.
 
 **`Type: Spike`** → Spike Flow in `references/spike-and-p0.md`, not Step 1.3.
 
@@ -458,6 +512,13 @@ Resume the Developer only when the ruling needs a code change; otherwise go stra
 `subagent_type: "orchestrated-reviewer"`, `model: "sonnet"`, Reviewer Agent Prompt with the packet path and
 the path of the verbatim Developer Output file (Step 1.2), plus any Orchestrator ruling. Returns `PASS`, `FAIL` (numbered, actionable issues tied to criteria) or `UNVERIFIED`
 (what couldn't be checked and why).
+
+**Outside this item.** The Reviewer lists real defects it found outside the packet's scope under
+`Outside this item` (e.g. a config value too long for its field, in code the item did not touch). They
+are not part of the verdict and no retry fixes them. Check each is really outside — one in a file the
+item changed is an issue of this item — then save the rest in the item's `outsideItem` list in run-state
+(merged across reviews, one entry per file + defect). Phase 3 offers to log them before its Finalizers
+run (**Outside items — asked before the Finalizers**); the final summary lists what was logged or declined.
 
 ### Step 1.3b — Board Parity Check (UI packets only)
 
@@ -480,10 +541,20 @@ WHILE verdict == UNVERIFIED:
   otherwise respawn unchanged — same inputs, same model.
 ```
 
+**A spawn that returns no Output.** Any spawn (Developer, Reviewer, Parity, Integration,
+Reviewer-Integration, Finalizer) that ends without an Output in its role's template — or says it could
+not hand back — is not a verdict. Send it one `SendMessage` asking for the Output in its template. If none
+comes, respawn the same role with the same inputs and model. It never touches `loop_count`; it counts
+toward `unverified_count` and `unverifiedTotal` as an UNVERIFIED does. Two missing Outputs in a row from
+the same step → escalate "Verification Blocked" (`references/escalation.md`).
+
 ### Step 1.4 — Review Loop
 
 ```
 WHILE verdict == FAIL:
+  Apply the three rules below first. A free FAIL (rule 1, 3) skips the escalation check and the
+  increment; a FAIL with every issue overruled (rule 2) leaves the loop as PASS by ruling.
+
   IF loop_count == 3 → escalate (references/escalation.md), pause until "resume"
                        # the FAIL that takes loop_count past 3; loop_count is recorded as 3
   loop_count += 1
@@ -496,6 +567,27 @@ WHILE verdict == FAIL:
     Modified ("Previous Attempt"). Fix only the listed issues.
   Spawn Reviewer: packet + new Developer Output + loop_count + previous issues ("Retry Context").
 ```
+
+Three rules may change what a FAIL costs; the loop applies them before its escalation check. Each is
+saved in run-state before the spawn it affects.
+
+1. **Review-only item's first FAIL.** The FAIL on a Build Record (Step 1.2) is no Developer's failure:
+   it does **not** increment `loop_count`. The first Developer spawn uses the normal Developer prompt —
+   not the retry shape: no `Previous Attempt` — with the Reviewer's issues as `## Review Findings to Fix`.
+   The Developer then has the full three attempts.
+2. **Overrule a weak issue.** The Orchestrator may rule one Reviewer issue **not an issue**, with a
+   written reason anyone can check (e.g. "the same account number appears in 8 existing test files"),
+   **only when the issue cites no acceptance criterion, constraint, convention, failing test or failing
+   gate**. Never overrule a failing test, a failing gate, or a Parity mismatch (those take a `Ruled
+   deviations` line, Step 1.2). Save it in `decisions.rulings` (item, issue, reason) and list it on the
+   final summary's `Overruled:` line. If every issue in a FAIL is overruled, the item goes on as PASS —
+   printed `PASS by ruling` — with no `loop_count` change. Otherwise only the remaining issues go to the
+   retry. In doubt, do not overrule; a product question goes to the user.
+3. **The Reviewer's own miss.** An issue raised in review N+1 about code the Developer did not change
+   since review N — one the Reviewer could have raised the first time — must still be fixed, but the
+   retry it alone causes does **not** increment `loop_count`. At most once per item (`reviewerMissRetry: used`
+   in run-state); a second such retry counts as usual. If the FAIL also has issues on changed code, it
+   counts as usual.
 
 **FAIL — cross-component dependency.** Any FAIL issue tagged `[cross-component: …]` or lying in another
 component's roots (a file outside every component's roots is not this route: it is a deviation the
@@ -566,13 +658,21 @@ Deferred ID. Spikes never reach Phase 2. **If the run has no Feature and no non-
 
 ### Step 2.0 — Decide the Test Scope
 
-Run `git status --porcelain` and ignore paths under `docs-directory` and `graphify-out` (docs don't change
-test outcomes). Then:
+Decide from **the run's own file set** — the same set the Diff Guard reads: every item's run-state
+`files` (every attempt; a UI Iteration's file set), the Pending Deferred IDs' files, and on a later pass
+the `integration` block's `files`. Ignore paths under `docs-directory` and `graphify-out` (docs don't
+change test outcomes). Then:
 
 - **`full`** if any of these is true: the component is the **shell** (every plugin builds against it);
-  any changed path lies outside this component's `code` roots (root manifest, lockfile, shared `libs/`,
-  CI config); `Test (component)` is `none`; a `## Deferred Integration` row is being re-validated; or the
-  user asked for a full run.
+  any path in the run's file set lies outside this component's `code` roots (root manifest, lockfile,
+  shared `libs/`, CI config); `Test (component)` is `none`; a `## Deferred Integration` row is being
+  re-validated; or the user asked for a full run.
+
+**`git status --porcelain` is only a cross-check.** A path changed in the tree but in no file set of
+this run belongs to another session or the user: list it as **foreign** (`<path> — foreign (another
+session or the user)`) in run-state's `foreignPaths`, in the Integration prompt's `## Foreign Paths`
+section, and in the final summary. A foreign path never forces `full`, and the Integration Agent neither
+fixes nor reverts it.
 - **`component`** otherwise — use `Test (component)` from Step 0.2, plus this component's scenarios in
   `test-cases-doc`, plus any contract or conformance tests `platform-architecture-file` names.
 
@@ -601,9 +701,10 @@ Bug's `files` plus its lane Finalizers' files) and commit ids from
 earlier run's ID, both from `git log --grep "<ID>" --name-only` (an older commit may lack the
 `Run-Id:` trailer; the ID in its message is enough) — stated as
 "these count as this run's changes" for known-red evidence, the
-gate log directory (Step 0.4), and `## Accepted Known-Reds` from the run's ruled list (Step 2.2; `None`
-on a first pass). Pass the same section on every Integration retry (resumed or fresh), to every
-Divide-and-Conquer spawn, and to Reviewer-Integration.
+gate log directory (Step 0.4), `## Accepted Known-Reds` from the run's ruled list (Step 2.2; `None`
+on a first pass), and `## Known Reds at Baseline` from run-state's `baseline.reds` (Step 0.4b; with the
+command that ran, or `Baseline: skipped — <why>`), and `## Foreign Paths` from Step 2.0 (or `None`). Pass the same sections on every Integration retry
+(resumed or fresh), to every Divide-and-Conquer spawn, and to Reviewer-Integration.
 
 **Before spawning, snapshot the tree:** save `git status --porcelain` and `git diff --stat` (Step 2.2
 compares against them) in run-state when Phase 2 starts. An Integration step re-run after a crash
@@ -615,6 +716,18 @@ never a cross-border edit or a quiet revert: the Orchestrator takes it as Step 1
 (`references/linked-runs.md`): no Integration retry, no `loop_count` change; with the user's OK the
 files go to a linked item in the owning component, and Step 2.1 re-runs once that item passes Review.
 
+**Save each Integration Output to a file, verbatim.** As soon as an Integration spawn returns, write
+its final reply — exactly as returned, never a summary or an excerpt — to
+`<scratchpad>/runs/<run id>/integration-output-pass<N>.md`. N counts Integration passes from 1: the
+first pass, each retry, a crash re-run, a resume, Divide-and-Conquer's aggregate pass. A
+Divide-and-Conquer sub-problem spawn K writes `integration-output-pass<N>-sub<K>.md`, N being the
+aggregate pass it feeds. Append the path to run-state's `integration.outputPaths` (in order; the latest
+Output is the last entry without `-sub`) and save run-state. Reviewer-Integration and an Integration
+retry's Retry Context get that path, never a summary. The only edit ever made to the file is Step 2.2's
+rewrite of an `— untracked` known-red line, made in the file as well as in the Output you hold. A
+background spawn's task output file is a transcript of the whole spawn, not its Output: write the
+agent's final reply, and never pass or cite the transcript.
+
 ### Step 2.2 — Invoke Reviewer-Integration Agent (skipped on a clean first pass)
 
 **Untracked known-reds first.** If any `### Known-Reds` line in the Integration Output ends
@@ -625,7 +738,7 @@ A raised item is written into the owning component's PMBook `## Open Items` now,
 Reviewer-Integration spawn, with ID `<COMPONENT>-OI-NNN` (the next free number in that PMBook) at the
 start of the row's Item cell — or reuses an Open Items row already naming that test — and that PMBook's
 path is appended to run-state's `orchestratorFiles`. Rewrite that line in the Output you hold as `— tracked by <new ID>` or
-`— accepted by the user`, and keep every ruled line as the run's **accepted known-red list** (in
+`— accepted by the user` (in the saved Output file too), and keep every ruled line as the run's **accepted known-red list** (in
 `run-state-file`) — the `## Accepted Known-Reds` section passed to every later Integration and
 Reviewer-Integration spawn. Never send Reviewer-Integration an `untracked` line.
 
@@ -640,7 +753,8 @@ can read in seconds):
    crash), and the Integration Output's Overall Status is `PASS`.
 2. `Fixes Applied` is `None`, and the tree matches the Step 2.1 snapshot: `git status --porcelain` and
    `git diff --stat` are unchanged (apart from a tracking item you raised at the pause above). Any file
-   the agent changed, even a doc, means a spawn.
+   the agent changed, even a doc, means a spawn. Drift handed to a Finalizer (`— handed to <Finalizer>`,
+   the test cases doc's always) is not a fix: it does not block the skip.
 3. The gate ran in this pass at the Test scope that was set (not narrowed, nothing carried forward), the
    counts in the Tests line match each gate log's summary line, and every failure in the log is listed
    under `Known-Reds` or `Flaky Tests Detected`.
@@ -658,10 +772,10 @@ first pass, no fixes, tree unchanged` and go to Phase 3.
 If any condition fails, or you are unsure, spawn it.
 
 **Otherwise spawn it:** `subagent_type: "orchestrated-reviewer-integration"`, `model: "sonnet"`, with the
-Integration Output, the condensed packets of only the Features and Bugs passed as this run's at Step
+Integration Output's file path (Step 2.1), the condensed packets of only the Features and Bugs passed as this run's at Step
 2.1 (never a P0's: it is a Deferred ID), the Test scope line, the doc paths that were given to the
 Integration Agent, the gate log directory, the accepted known-red list with the owning component's
-PMBook path for each `tracked by` line, and `## Deferred Integration` —
+PMBook path for each `tracked by` line, `## Known Reds at Baseline` and `## Foreign Paths` (as given to Integration), and `## Deferred Integration` —
 the entries given at Step 2.1, or `None`. Returns `PASS` / `FAIL` /
 `UNVERIFIED` (UNVERIFIED handled as in Phase 1).
 
@@ -703,6 +817,28 @@ from **Model Assignment** and the Finalizer Agent Prompt. They write disjoint fi
 component's docs, except the Version
 Pointer Sweep's permitted header edits; none touches `platform-architecture-file`.
 
+**Outside items — asked before the Finalizers.** When any item's run-state `outsideItem` list
+(Steps 1.3 and 1.3b) is not empty, ask the user once, now, before spawning a Finalizer, so a yes lands
+in this run's PMBook. List every entry, and offer to log them as new Bugs: **one Bug per surface** (a
+screen, or a file) **or one Bug grouping them all** — say which you propose and why. A board
+difference where the board itself may be wrong is still a Bug, with `board may be wrong — needs a design
+ruling` in its description. Save the answer in run-state's `decisions` as `outsideItemLog` (the grouping,
+then each entry: `logged as <new ID>` or `declined`) before any Finalizer runs; a resume reuses it and
+never asks again. On a yes, give each new Bug the next free ID and put it on Step 3.2's Edit List as a new
+`## Bug Log` row: Status `Open`, `Fixed In` blank. Nothing is logged without the user's yes. A P0 fast lane does
+not ask; a run that never reaches Phase 3 lists the entries at close-out as `not logged — no
+Finalization this run`.
+
+**Design rows owed — written before the Finalizers.** When `decisions.designRowsOwed` has an entry not
+yet written (a drawing a design ruling, a "build to the Acceptance Criteria" ruling or a not-drawn surface
+left owing — Steps 1.1–1.2 and the Design rows hold), the Orchestrator writes each as an `Open` row in the
+open round per `~/.claude/skills/sync-artboards/references/design-files.md`: next ID for the screen's letter, Source the item and the ruling (who, date), Round
+`open`; a new round file if the last one was sent. Then it rewrites the round's Summary and Detailed
+prompt, marks each entry `written as <row ID>` in run-state, and adds the rows and round files to
+the files Step 3.5 commits. Old layout → the old ledger, as the Design rows hold says. No design folder at all → the
+entry stays `not written — no design folder`. A P0 fast lane writes its own entries the same way. The
+final summary shows the round's two texts when any row was written. Never mark the round sent.
+
 Each component has its own semver; version history rows go to `history-directory`, never into a live doc.
 
 **Edit Lists — the Orchestrator says what changes where.** Hand each doc Finalizer (all but Graphify)
@@ -724,7 +860,10 @@ P0 lane's as `lane:<ID>`); a resume reuses only its own scope's.**
 Before spawning, read `changelog-file`: if it keeps an `[Unreleased]` section, the label is
 `Unreleased` and entries go there; otherwise take the newest released version and bump it (minor for any
 Feature, patch for Bugs only). Pass the same label to both Finalizers as `Release label:`, and print it. Every Finalizer prompt also
-carries `Scope: phase3` (a P0 lane's: `Scope: lane:<ID>`) next to its `Run ID:`.
+carries `Scope: phase3` (a P0 lane's: `Scope: lane:<ID>`) next to its `Run ID:`, and a
+`## Final Status per Item` section — every item in the run with its final status from run-state (e.g.
+`OFA-F-013 — passed review → Done`, `OFA-B-007 — verified`, `OFA-S-002 — findings recorded`,
+`OFA-F-014 — dropped`), so no Finalizer has to guess an item's state from the docs.
 
 ### Step 3.1 — Graphify (Finalizer, `haiku`)
 
@@ -741,7 +880,10 @@ close-out summary. Otherwise keep the list of roots that did change: the routes 
 Graphify procedure holds the mechanics):
 
 1. **Repo graph script** — `scripts/graph.ps1` exists at the repo root. Command:
-   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1 -Component <component>`.
+   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1 -Component <component> -Root <changed roots, comma-separated>`.
+   `-Root` rebuilds only those roots when the component's `graph.json` exists (the script builds every
+   root when it does not), and rejects a root that is not one of the component's. Drop `-Root` when every
+   root changed.
 2. **No script, several roots** — the `graphify update` command line per changed root (every root when
    `graph.json` does not exist yet). Never the `/graphify` skill once per root.
 3. **No script, one root** — the `/graphify` skill, scoped to that root.
@@ -765,13 +907,20 @@ Graphify procedure holds the mechanics):
 `Regression test: <path>` from its Developer Output's Test Files Written; the
 `Release label: <label>`; on a P0 fast lane, `P0 fast lane: <B-ID>, Hotfixed On <date>`; the
 Integration Output's Flaky Tests Detected; the Integration Output's `Deferred
-Integration Re-Validated` list; and, **only when this run
+Integration Re-Validated` list; the new Bugs from `decisions.outsideItemLog` (as Edit List lines); and, **only when this run
 bumped a `> Version:` header**, the instruction to run the Version Pointer Sweep with the path
 `~/.claude/skills/plugin-orchestrator-development-pattern/references/version-pointer-sweep.md` and which
 headers moved.
 
-A Tranche boundary comes back under **Notes**; tell the user that `plugin-idea-triage`'s Tranche Closeout
-is available. Never archive from this pipeline.
+**PMBook status is written once, here.** Step 1.4 writes nothing to the PMBook; this Finalizer sets
+each item's Status (`Status → Done`, a Bug row's `Fixed`). The Edit List names every other field that
+changes for each item — the phase's own status when its last item lands, and the release or provenance
+cells the PMBook keeps (Release label, run id) — so nothing is left to the Finalizer's guess, and no
+later step writes Status again.
+
+A Tranche boundary (every phase `Done`) comes back under **Notes**. Put the `Tranche:` line in the final
+summary telling the user to run `plugin-idea-triage`'s Tranche Closeout. Never archive from this
+pipeline.
 
 ### Step 3.3 — Handoff Update (Finalizer, `haiku`)
 
@@ -784,7 +933,9 @@ One spawn, bundled Task `Revision + Changelog, Test Runbook` — three disjoint 
 cold starts.
 
 **Task-Specific Inputs:** the Edit List for each of the three files; features completed with their Test Expectations; bugs fixed with their repro
-steps; `revision-file`, `changelog-file` and `test-runbook-location` paths; the `Release label: <label>`.
+steps; `revision-file`, `changelog-file` and `test-runbook-location` paths; the `Release label: <label>`;
+and, when Integration handed test-cases drift off, the `test-cases-doc` path with one Edit List line per
+gap (Integration fixes code, never that doc).
 
 ### Step 3.5 — Commit (Orchestrator; push only on a go)
 
@@ -797,7 +948,13 @@ and run-state's `orchestratorFiles`; in a P0 lane, that Bug's `files` plus its l
 
 One commit per logical change group, Conventional Commits `type(scope): description` — `feat` for
 Features, `fix` for Bugs, plus `chore` / `docs` / `refactor` / `test` as fitting — ending with the
-session's attribution lines. Linked Runs: one group per component, the depended-on one first.
+session's attribution lines. **Copy the attribution lines verbatim from your own context** (the
+session's attribution instruction); never write them from memory or change a model name. Linked Runs:
+one group per component, the depended-on one first.
+
+**Trailers — one rule for every commit, here and in a fast lane:** `Run-Id: <run id>` on every commit;
+`Items:` lists only the item IDs whose changes are in that commit; a commit holding only Integration
+fixes says `Items: integration`.
 `GRAPH_REPORT.md` goes with the group it was rebuilt for.
 
 1. **Check first.** `git status --porcelain` and `git diff --cached --name-only`. Staged paths that are
@@ -822,9 +979,10 @@ answer to `decisions` before committing; on `no`, draft the messages instead. A 
 after a commit step chose `no` first sets `decisions.commit: yes` (saved), then runs **one** commit pass
 over the union of every commit step's saved file list in this run, grouped as Phase 3 groups are: each
 item (Feature, Bug, P0) gets its own code group from its own `files`, its `Items:` naming only that
-item; every other file in the union — governed docs, a file shared by more than one item, and any file
-in no item's code group (e.g. an Integration fix outside every item, the graph report) — goes in one
-docs/chore group whose `Items:` lists every item. The Orchestrator drafts the regrouped groups'
+item; Integration fixes outside any item's files go in their own group with `Items: integration`;
+governed docs, any file shared by more than one item, and every other file in no item's code group go in
+one docs/chore group whose `Items:` lists every item whose changes it holds (the graph report goes with the item it was rebuilt for; one rebuilt for the whole run goes here,
+and `Items:` then lists every item in the run). The Orchestrator drafts the regrouped groups'
 messages first, as above, with the trailers. Then it refreshes this
 run's RUN row's commit ids from git (**Pipeline Telemetry**). Every message this run commits, here or in a fast lane, ends with the trailers
 `Run-Id: <run id>` and `Items: <ids>` — git is the run's commit record (**Run-State Checkpointing**).
@@ -843,10 +1001,15 @@ saved but not complete.
 2. Mark `run-state-file` complete — Linked Runs: every run-state file with this run id.
 3. Surface every Finalizer `Notes` entry in the summary.
 4. List any `## Deferred Integration` row still `Pending`, any `heldForNextRun` item, and every item's
-   `outsideItem` entries (Step 1.3b), with the offer to log them (`references/ui-packets.md` point 7).
-5. List every known-red, with its tracking ID or `accepted by the user`.
-6. Leave the stack in the state it was found in (or say which state it is in).
-7. Set every task-bar task `completed`.
+   `outsideItem` entries (Steps 1.3 and 1.3b), with what `decisions.outsideItemLog` says of each
+   (Phase 3's **Outside items — asked before the Finalizers**), every `decisions.designHolds` item with the
+   rows it waits on, and every `decisions.designRowsOwed` entry with its row ID or why it was not written.
+5. List every known-red, with its tracking ID or `accepted by the user`, and every `baseline.reds` test
+   (Step 0.4b) — still red, or now green.
+6. List every overruled issue (`decisions.rulings`, Step 1.4) and, on a Tranche boundary, the `Tranche:`
+   line (Step 3.2).
+7. Leave the stack in the state it was found in (or say which state it is in).
+8. Set every task-bar task `completed`.
 
 ---
 
@@ -872,11 +1035,25 @@ saved but not complete.
 - NEVER skip a phase for a Feature or non-P0 Bug; the only exceptions are Spike, P0 and UI Iteration
   (`references/spike-and-p0.md`, `references/ui-iteration.md`).
 - ALWAYS run the Design Gate before a UI packet's Developer; NEVER let a Developer set the design (Step 1.1b, `references/ui-packets.md`).
+- NEVER start a UI item whose design rows are not Done in a synced board when an outside designer owns the boards (`references/ui-packets.md` §Design rows hold); NEVER mark a design round sent, renumber a design row, or move an old design layout without the user's yes.
 
 **Gates**
-- NEVER advance past a FAIL without a retry, or exceed 3 iterations without escalating (Step 1.4).
+- NEVER advance past a FAIL without a retry, or exceed 3 iterations without escalating (Step 1.4) — the
+  only FAILs that cost no iteration are Step 1.4's three rules (review-only first FAIL, an all-overruled
+  FAIL, the Reviewer's own miss once per item).
+- NEVER overrule a failing test, a failing gate, a Parity mismatch, or an issue that cites a criterion,
+  constraint or convention (Step 1.4).
 - At loop_count 3, ALWAYS use the Escalated setting (Model Assignment, Steps 1.4, 2.3).
 - NEVER let UNVERIFIED touch `loop_count`, or treat it as PASS or FAIL (Handling an UNVERIFIED Verdict).
+  A missing Output never touches `loop_count` either: the spawn is re-run, and a second miss escalates
+  (`references/escalation.md`).
+- NEVER run a repo-wide format — Format is scoped to the item's files, and its gate is the check
+  (verify) form (Step 0.2).
+- NEVER let a Developer run tests beyond its packet's `Tests you may run` (Step 1.1, Task Packet).
+- NEVER skip Step 0.4b's baseline, except for a P0/Spike-only run, a UI Iteration, a mid-run intake or
+  a resume (Step 0.4b).
+- NEVER write commit attribution lines from memory — copy them verbatim from the session's attribution
+  instruction (Step 3.5).
 - NEVER accept a Bug's regression test on the Developer's word — the Reviewer runs it (Step 1.3).
 - NEVER let a Bug past Step 1.5 without the user's "verified" (Step 1.5).
 - NEVER narrow `Test scope: full`; `full` means every command in `Test (full)`, and no agent may narrow
@@ -913,6 +1090,8 @@ the named hub — read `references/push-and-pull.md` and follow it exactly.
 ## Run-State Checkpointing
 
 `run-state-file` (default `docs/<component>/.orchestrator-run-state.json`) lets a fresh session resume.
+It is **local and gitignored — never committed**: it holds scratchpad paths and mid-run state that mean
+nothing in another checkout.
 The Orchestrator writes it directly — bookkeeping, not code.
 
 **Content:** run id (`<YYYY-MM-DD>-<component>-<first item id, lowercased>-<HHmm>`, the start time,
@@ -941,8 +1120,9 @@ Edit Output (if any), its **`files`** — the union of the files in all its Deve
 attempt, read wherever an item's "files changed" is (Step 2.1, Deferred entries, Step 3.5) — its latest
 Developer Output (files changed, summary, deviations, Test Files Written) and both its last Issues list and its last Unable to Verify report, `loopCountAtEscalation` (saved at
 every escalation), `blockedGate` (`reviewer | parity |
-reviewer-integration`, saved at any Verification Blocked escalation, cleared once the resume has respawned the gate it names), the latest
-Integration Output, an `integration` block (Step 2.1's tree snapshot, its **`files`** — the union of
+reviewer-integration | developer | integration | finalizer`, saved at any Verification Blocked escalation, cleared once the resume has respawned the role it names), the latest
+Integration Output, an `integration` block (Step 2.1's tree snapshot, `outputPaths` — every saved
+Integration Output file, in order (Step 2.1) — its **`files`** — the union of
 changed files across every Integration pass and every Divide-and-Conquer sub-problem spawn — `loop_count`, `unverifiedTotal`, `priorLoops`,
 `loopCountAtEscalation`, its own `blockedGate`, and `divideAndConquer: not run |
 running | confirmation pass | done` — the confirmation pass is Divide-and-Conquer's aggregate pass and
@@ -957,7 +1137,13 @@ files, time), `doneAt` once the user says "done", and its file set (`references/
 `commit: yes | no | ask`; the Release label per scope (`lane:<ID>`, `phase3`), each scope reusing only
 its own; the accepted known-red list, with each tracking ruling and its assigned OI id (saved before
 the PMBook write); `heldForNextRun` (Step 0.1b item 7); the `app-url` and `artboard-server` answers; `rulings` (Step 1.2's
-design rulings).
+design rulings, and Step 1.4's overruled issues: item, issue, reason); `testCasesDoc` (Step 0.0); `outsideItemLog` (Phase 3's offer);
+`designHolds` (`references/ui-packets.md` §Design rows hold: item, open rows, round); `designRowsOwed`
+(Step 1.2, the Design Gate and the hold: item, surface, change, source, then `written as <row ID>` or
+`not written — <why>`).
+**Also per item:** `mode` (`review-only` when set, Step 0.1), `outsideItem` (Steps 1.3 and 1.3b),
+`reviewerMissRetry: used` (Step 1.4). **Run-level:** `baseline` — `reds` (test, how it failed), the command
+that ran, or `skipped — <why>` (Step 0.4b); `foreignPaths` (Step 2.0).
 
 **One file per component, replaced by each new run.** Step 0.4 writes a new run over the last one's
 file once that run is complete. That is intended: the file exists for resume, and a complete run has
@@ -1111,13 +1297,19 @@ Bugs fixed:       <IDs> (or "None this run")
 P0 hotfixes:      <ID> — <its status as it stands after Step 3.2: Hotfixed — Integration Pending, or Fixed> (one per line; or "None this run")
 Spikes run:       <IDs> (or "None this run")
 Dropped:          <ID> — dropped/deferred by the user (one per line; or "None")
-Outside items:    <ID> — <state, element: board vs built> — log as Bug / design row? (one per line; or "None")
+Outside items:    <ID> — <what, where> — logged as <new ID> | declined | not logged — no Finalization this run (one per line; or "None")
+Overruled:        <ID> — <issue> — not an issue: <reason> (one per line; or "None")
+Held for design:  <ID> — waits on <row IDs> (round <NNN>, open | sent <date>) (one per line; or "None")
+Design rows owed: <ID> — <surface: change> — written as <row ID> in round <NNN> | not written — <why> (one per line; or "None")
+Baseline reds:    <test> — still red / now green (one per line; "None"; or "skipped — <why>")
+Foreign paths:    <path> — foreign (another session or the user) (one per line; or "None")
 Quality gate:     ✅  (test scope: <full|component>)
 Integration:      ✅ (or "Not run — <why: only P0 fast lanes / Spikes / escalated items>")
 Known-reds:       <test> — owner <component> — tracked by <ID> / accepted by the user (one per line; or "None")
 Retries this run: <N1>/<N2> items needed a retry, <N3> escalations
 Time:             P0 <t> · P1 <t> · MV <t> · P2 <t> · P3 <t>   (the RUN row's Phase times)
 Finalization:     ✅ (<N> parallel Finalizers + Orchestrator commits)
+Tranche:          every phase Done — run /plugin-idea-triage's Tranche Closeout (only on a Tranche boundary; omit otherwise)
 
 📝 Commits (pushed: yes/no)
 <short hash + subject, one per logical group — including each P0 fast lane's>

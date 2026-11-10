@@ -10,7 +10,7 @@ flowchart TD
     E1("Step 0.4, which Bug and<br/>Spike intakes also run") --> W
     E2("A step starts, a step ends:<br/>Developer, gate, D-and-C stage,<br/>Finalizer batch, commit") --> W
     E3("Every verdict") --> W
-    E4("Every user decision,<br/>before acting on it") --> D["decisions: commit, Release<br/>label per scope, known-red<br/>rulings, heldForNextRun,<br/>app-url, artboard-server"]
+    E4("Every user decision,<br/>before acting on it") --> D["decisions: commit, Release<br/>label per scope, known-red<br/>rulings, heldForNextRun,<br/>app-url, artboard-server,<br/>rulings: design + overruled"]
     D --> W
     E5("Each status change: in progress<br/>(start, FAIL, rejection, resume);<br/>Feature PASS: passed review;<br/>Bug PASS: awaiting verification,<br/>then verified; Spike: findings<br/>recorded; escalated; dropped") --> W
     E6("UI Iteration: opened, each<br/>tweak, doneAt, file set") --> W
@@ -47,7 +47,7 @@ flowchart TD
     Done -->|"yes"| Nothing("Nothing to resume")
     Done -->|"no"| Esc{"An item with status<br/>escalated, or integration<br/>escalated: true?"}
     Esc -->|"yes"| Un["Status back to in progress<br/>(integration: flag cleared);<br/>save at once"]
-    Un -->|"Verification<br/>Blocked"| ResV("Read blockedGate, respawn<br/>it: Reviewer, Parity or R-I;<br/>unverified 0, loop_count<br/>kept, no Developer; then<br/>clear blockedGate")
+    Un -->|"Verification<br/>Blocked"| ResV("Read blockedGate, respawn<br/>it: Reviewer, Parity or R-I<br/>(missing Outputs: that role);<br/>unverified 0, loop_count<br/>kept; then clear blockedGate")
     Un -->|"other"| UIk{"UI Iteration, code-Reviewer<br/>FAIL or rejected Parity?"}
     UIk -->|"yes"| Step9("Its step 9: Orchestrator<br/>fixes, then the Reviewer, 10")
     UIk -->|"no"| Restart("loop_count and<br/>loopCountAtEscalation 0,<br/>priorLoops += old, issues as Previous Issues;<br/>Developer, or Integration 2.1")

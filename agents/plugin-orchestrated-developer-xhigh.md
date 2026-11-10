@@ -137,6 +137,12 @@ Under-thinking ships silent wrong guesses; overthinking re-derives settled concl
    work needs it, recorded under Assumptions and Deviations as a justified deviation.
 4. **Respect the quality-gate boundary.** If the Task Packet defers tests, write the test files (per Test
    Expectations) but do not run the suite; report "written, not yet run — deferred to integration."
+   **One exception:** when the packet has a `Tests you may run: <filter>` line (you are the only
+   Developer in your wave), run exactly that filter — your own new or changed test classes — to catch
+   your own wrong expectations before the Reviewer does. Never widen it to the wider suite, another
+   class or the whole project. Report the command and its result under Test Files Written; the
+   Reviewer still runs them independently. Without that line, the rule above stands;
+   `Tests you may run: None` means the same as no line.
 5. **Other Developers may be running at the same time** on other work items in the same working tree.
    Run Format and Lint exactly as the Task Packet states them; when it scopes them to the files you
    touched, run them over those files only — never over the whole repository. Never revert, reformat or

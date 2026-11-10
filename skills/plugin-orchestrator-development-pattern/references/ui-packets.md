@@ -1,4 +1,4 @@
-# UI Packets — Bindings, Design Gate, Board Parity Check
+# UI Packets — Bindings, Design Rows Hold, Design Gate, Board Parity Check
 
 Read by `plugin-orchestrator-development-pattern` when a planned packet touches a user interface (see the
 trigger lines in `SKILL.md` at Step 0.4, Step 1.1b and Step 1.3b). Step numbers are `SKILL.md`'s.
@@ -10,14 +10,48 @@ trigger lines in `SKILL.md` at Step 0.4, Step 1.1b and Step 1.3b). Step numbers 
 `app-url` — the app's address as a pattern with the port offset in it, e.g.
 `http://localhost:{4200+offset}`, filled with **this checkout's** offset (from its stack config; never
 assume 0); `artboard-server` — how the board is served; `parity-viewports` — layout widths to compare at
-(default `1440`). If `app-url` or `artboard-server` is missing when a UI packet is planned, **look in
+(default `1440`); `parity-command` — optional, the repo's checked-in parity harness, e.g.
+`npx playwright test business-tests/layout/parity.spec.ts`; set, the Parity Check runs or extends it
+instead of writing a script; unset, it looks for an existing parity or layout spec first. If `app-url` or `artboard-server` is missing when a UI packet is planned, **look in
 the repo before asking**: the root `CLAUDE.md`, the project's run skill (`.claude/skills/run/`), the
 stack config, and the README of whatever serves or tests against the boards (e.g.
-`business-tests/README.md`). If both are found there, use them, say where each came from in the Step 0.4
+`business-tests/README.md`). Read the same sources for a parity harness when `parity-command` is unset (a
+parity or layout spec they name), and use one found the same way. If both are found there, use them, say where each came from in the Step 0.4
 announcement, and offer once (in the end-of-run summary, not mid-run) to write them into
 `.claude/SKILLS.md` so later runs read them directly. Only what the repo does not say is asked of the
 user — once, before Phase 1. The Parity Check is never skipped for want of a URL. Keep the values in
 `run-state-file`; a resume that finds them missing looks again, then asks, before Step 1.3b.
+
+---
+
+## Design rows hold (Step 0.4)
+
+Runs before the plan is announced, when `artboards-directory` is set and a planned item changes what
+a user sees. The design folder, its rows and rounds, and their rules are in `~/.claude/skills/sync-artboards/references/design-files.md` — read it first.
+Only for boards an outside designer owns (the design README says so, or `design-source` is
+bound); when the repo draws its own boards, skip this — the Design Gate settles them.
+
+1. **Old layout.** If the artboards folder holds `review-<page>.md` ledgers and `design-rows-directory`
+   is unset or empty, say so once, point to `~/.claude/skills/sync-artboards/references/migrate-design-layout.md`, and suggest the move — never make it. For this run,
+   read the rows from those ledgers (same IDs; `Done, checked <date>` counts as Done) and write any new
+   row into them, with the prompt at the end, as that repo already does.
+2. **Find each UI item's rows:** the IDs its Acceptance Criteria name (`Design rows: …`), plus any row
+   whose Source names the item.
+3. **Any of them not `Done` → hold the item.** It leaves this run's queue, with every item that depends
+   on it; the other items go on. Save it in run-state's `decisions.designHolds` (item, its open rows,
+   their round and that round's status), and list it in the announcement under `Held for design:`. A held
+   item is not escalated or dropped, and its PMBook row is not touched. The next run (or a resume after
+   the user says the round is synced) checks it again.
+4. **No rows, and the item needs a new or changed layout no board draws → write them.** Add the rows to
+   the open round per `~/.claude/skills/sync-artboards/references/design-files.md` (next IDs for the screen's letter, Source the item and its criterion, Round
+   `open`; a new round file if the last one was sent), rewrite the round's Summary and Detailed prompt,
+   and hold the item as in 3. Show both texts, Summary first, and tell the user: send the round to the
+   designer, then run `sync-artboards` when the designer is done. Do not mark the round sent.
+5. **A change the Acceptance Criteria fully describe** (a label, a tooltip, a state of an existing
+   control) does not hold: it goes on with the criteria as its spec (the Design Gate), and the drawing is owed —
+   add it to `decisions.designRowsOwed` (Phase 3 **Design rows owed**).
+
+Rows are read from this component's `design-rows-directory`; the round is the repo's shared open round.
 
 ---
 
@@ -26,7 +60,7 @@ user — once, before Phase 1. The Parity Check is never skipped for want of a U
 **Before the Developer is spawned, never after** — except a UI Iteration, where it runs once at "done"
 (`references/ui-iteration.md`). Skip for packets that touch no user interface.
 
-1. **Resolve the artboard** in `artboards-directory` (per component). If the binding is absent, say so and
+1. **Resolve the artboard** in `artboards-directory` (per component, as synced — never a copy elsewhere). If the binding is absent, say so and
    skip steps 1–4 only (there is no artboard to compare, update or author); steps 5–8 still run, and
    Step 1.3b compares against the Acceptance Criteria, its Parity Table header saying
    `Compared against: Acceptance Criteria — no artboards binding`.
@@ -41,11 +75,13 @@ user — once, before Phase 1. The Parity Check is never skipped for want of a U
    down from a design tool, so a repo edit is overwritten on the next sync — **never edit or author one**.
    Instead: if the surface is drawn and agrees, go on; if it is not drawn, or disagrees, and the change is
    small and fully described by the Acceptance Criteria (a label, a tooltip, a state of an existing
-   control), print `Design Gate: <surface> not drawn — designer-owned; Acceptance Criteria are the spec`,
-   tell the user a designer ask is owed, and go on. Step 1.3b then compares that surface against the
+   control), print `Design Gate: <surface> not drawn — designer-owned; Acceptance Criteria are the spec`
+   and go on. Step 1.3b then compares that surface against the
    Acceptance Criteria instead of a board, and its Parity Table header says
-   `Compared against: Acceptance Criteria — <surface> not drawn`. A **new or changed layout** with no
-   drawing halts the item until the designer has drawn it.
+   `Compared against: Acceptance Criteria — <surface> not drawn`. The designer ask is owed: add it to
+   run-state's `decisions.designRowsOwed` (`SKILL.md` Phase 3 **Design rows owed** writes it). A **new or
+   changed layout** with no drawing halts the item until the designer has drawn it — the Design rows hold
+   (Step 0.4) normally catches it first; one that slips through gets its rows written the same way.
 5. **Name the component behind every surface** — each interactive or structural region as the Angular
    Material or CDK component that renders it (`mat-card`, `mat-table`, `matButton`, `cdkDropList`) — in
    the packet's `## Design Reference`.
@@ -68,11 +104,12 @@ for a packet with no `## Design Reference`.
    (`artboard-server`), and check both answer. Fill `app-url` with this checkout's port offset.
 2. **Spawn** `subagent_type: "orchestrated-reviewer"`, `model: "sonnet"`, with the **Parity Prompt**
    (`references/templates.md`): the packet path (Step 1.1), the app URL, the board URL,
-   `parity-viewports`, and the folder `<gate log directory>/parity/<ID>[-legN][-retryN]/` (`-legN` from the second leg on) — the gate log
+   `parity-viewports`, `parity-command` (or `None`), and the folder `<gate log directory>/parity/<ID>[-legN][-retryN]/` (`-legN` from the second leg on) — the gate log
    directory is `<scratchpad>/gate-logs/<run id>/`, fixed at Step 0.4. A separate spawn: the code
    Reviewer stays narrow.
-3. **It measures** every state in the packet's `States to compare` at every width in
-   `parity-viewports`, per the Parity Prompt.
+3. **It measures** the elements this item changes, in every state in the packet's `States to compare`
+   at every width in `parity-viewports`, running or extending the repo's parity harness when there is
+   one, plus a quick pass that lists differences outside the item — per the Parity Prompt.
 4. **It returns a Parity Table**, one row per element: `element | board | built | match | ruling`.
    Screenshots and measurements stay in the parity folder.
 5. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. The mismatches go
@@ -90,6 +127,6 @@ for a packet with no `## Design Reference`.
    retry fixes them. Check its sorting — a row whose element is rendered or styled by a file in the
    packet's `Files to Create or Modify` is this item's, and counts as an unruled mismatch. Save the rest
    in `run-state-file` under the item's `outsideItem` list, merged across retries (one entry per
-   state + element). The final summary lists them, and offers once to log each as a new Bug in this
-   component's PMBook, or as a design row when the board itself may be what is wrong. Nothing is
-   logged without the user's yes.
+   state + element). Phase 3 offers once, before its Finalizers run, to log them as new Bugs in this
+   component's PMBook (`SKILL.md` **Outside items — asked before the Finalizers**); nothing is logged
+   without the user's yes.

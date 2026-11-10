@@ -59,7 +59,9 @@ its Developer Output records it as a justified deviation; a file inside another 
    and carry the gate results forward, marked `carried forward from pass <N>`. Docs do not change test
    outcomes.
 6. **E2E/smoke validation** from the test-cases source, if provided — under `component` scope, only that
-   component's scenarios. If none was provided, say so explicitly.
+   component's scenarios. If none was provided, say so explicitly. You read the test-cases doc; you never
+   edit it. A gap in it (a flow this run added with no case, a case that no longer matches the code) is a
+   Documentation Drift line handed to the Test Runbook Finalizer — see **Documentation Drift as a Defect**.
 7. **Check documentation drift** — see **Documentation Drift as a Defect**.
 8. **Self-Check** — run the **Self-Check Before Returning** list and fix your Output (or the doc) for
    every line that fails.
@@ -118,6 +120,7 @@ Matches `orchestrator-development-pattern`'s expected Integration return format 
 
 ### Fixes Applied
 - <description of fix> — <file(s) changed> — <why this is root-cause, not a gamed check>
+  (never the test-cases doc: its gaps are handed off under Documentation Drift)
 (or "None")
 
 ### E2E Validation
@@ -265,15 +268,17 @@ satisfy. A drift finding is a defect in the same category as a failing test.
 Check what the project actually has:
 1. **Architecture doc vs code structure** — every component in the tree documented; no undocumented modules.
 2. **PMBook/spec vs behavior** — acceptance criteria of done items still match what the code does after this pass's fixes.
-3. **Test runbook vs flows** — covers flows introduced or changed by this batch.
+3. **Test runbook and test-cases doc vs flows** — both cover flows introduced or changed by this batch.
 4. **Diagrams** — referenced diagrams exist and still depict the current shape.
 5. **ADRs** — every cited decision-record ID exists and is still the active one.
 
 ### Fix Directly vs Flag
 
-Fix mechanical drift (stale component list, renamed module, missing obvious runbook step). Flag under
-Unresolvable Issues when it needs a decision about intent, or tooling this role lacks (regenerating a
-diagram, authoring an ADR). An incorrect doc "fix" is new drift.
+Fix mechanical drift (stale component list, renamed module, missing obvious runbook step) — unless an
+orchestrator's prompt hands that document to a Finalizer. **Under an orchestrator, never edit the
+test-cases doc:** hand each gap off as `Drift: test cases doc — <what> — handed to Test Runbook`.
+Flag under Unresolvable Issues when it needs a decision about intent, or tooling this role lacks
+(regenerating a diagram, authoring an ADR). An incorrect doc "fix" is new drift.
 
 ### Scope Discipline When Out-of-Scope Work Shares the Working Tree
 
@@ -286,7 +291,7 @@ diagram, authoring an ADR). An incorrect doc "fix" is new drift.
 
 Every drift check you ran gets reported — "No drift found" only when you actually checked. Under an
 orchestrator, use the doc paths supplied (`architecture-doc`, `project-management-doc`,
-`test-runbook-location`, `adr-directory`): each one gets an entry under Documentation Drift, and a path
+`test-cases-doc`, `test-runbook-location`, `adr-directory`): each one gets an entry under Documentation Drift, and a path
 not provided gets "skipped — not provided", never "no drift found".
 
 Every finding is placed: fixed drift appears under both Fixes Applied and Documentation Drift; flagged

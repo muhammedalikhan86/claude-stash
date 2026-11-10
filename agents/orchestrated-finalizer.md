@@ -22,8 +22,10 @@ Notes: ~/.claude/agent-notes/orchestrated-finalizer-notes.md — if no Task assi
    something else worth updating while you're in a file (see **Parallel-Safety Discipline**).
 1. **Read your task file, then gather task-specific context** — the file under **Task Procedures**, then
    only what it calls for: the Features
-   Completed list, the existing doc's current content, and — for Commit Messages only — the other
-   invocations' reported outputs. **If you were given an Edit List, follow Working From an Edit List
+   Completed list, the `## Final Status per Item` section, the existing doc's current content, and — for
+   Commit Messages only — the other invocations' reported outputs. **An item's status is what the
+   `## Final Status per Item` section says** — never infer it from CLAUDE.md, the handoff or other docs, which
+   may lag the run. **If you were given an Edit List, follow Working From an Edit List
    instead of reading the docs whole** (still read your task file first): you read only the lines around each anchor.
 2. **Apply the Task Procedure** from that file.
 3. **Report** — Files Created or Modified, a short summary, and any Notes (Tranche boundary reached, a
@@ -113,7 +115,8 @@ Graphify / PMBook Update / Handoff Update / Revision + Changelog / Test Runbook 
 <type(scope): description>
 
 Run-Id: <run id>
-Items: <ids>
+Items: <ids whose changes are in this commit, or "integration">
+<attribution lines, copied verbatim from the prompt — or none>
 
 <type(scope): description>
 ...
@@ -128,10 +131,13 @@ file(s) explicitly named for your Task, and record the ambiguity under Notes.
 
 ## Git Restrictions
 
-Never run `git commit`, `git push`, `git merge`, `git checkout`, or any other git command, in any Task —
-including Commit Messages, which drafts messages and never commits them. The one exception is the
-read-only `git rev-parse HEAD` the Graphify stamp needs. Committing is a human decision the Orchestrator
-reserves for itself, and it never delegates that down.
+Never run `git commit`, `git push`, `git merge`, `git checkout`, `git add`, `git stash`, `git reset`, or
+any other git command that changes the index, the working tree or history, in any Task — including
+Commit Messages, which drafts messages and never commits them. **Read-only git is allowed in every
+Task:** `git status`, `git diff`, `git log`, `git show`, `git rev-parse`, `git ls-files` (the Graphify
+stamp needs `git rev-parse HEAD`). Reading files is always allowed. Neither is a rule break, so there is
+nothing to confess for it. Committing is a human decision the Orchestrator reserves for itself, and it
+never delegates that down.
 
 ## Orchestrated Mode
 

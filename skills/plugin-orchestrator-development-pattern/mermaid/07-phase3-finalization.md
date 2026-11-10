@@ -5,13 +5,15 @@
 ```mermaid
 flowchart TD
     S0("Reviewer-Integration PASS,<br/>a clean skip, or a<br/>P0 fast lane") --> Label["Release label, once, saved<br/>in decisions per scope:<br/>Unreleased, or bump<br/>minor feat, patch fix"]
-    Label --> Lists["Edit List per doc Finalizer:<br/>file, anchor, change;<br/>no edit off the list"]
+    Label --> Out["Outside items? Ask once:<br/>one Bug per surface or grouped;<br/>save decisions.outsideItemLog"]
+    Out --> Owed["Design rows owed: write<br/>decisions.designRowsOwed as<br/>Open rows in the open round"]
+    Owed --> Lists["Edit List per doc Finalizer:<br/>file, anchor, change;<br/>no edit off the list;<br/>yes adds Open Bug rows"]
     Lists --> G{"Roots changed: uncommitted,<br/>or in git log for<br/>this Run-Id?<br/>P0 lane: single-item run,<br/>or only Spikes remain"}
     G -->|"no"| GS["Print Graphify skipped,<br/>tell Handoff + summary"]
     G -->|"yes"| GF{{"3.1 Graphify<br/>haiku, route below"}}
     Lists --> PM{{"3.2 PMBook Update<br/>haiku, sonnet with<br/>the sweep"}}
     Lists --> HO{{"3.3 Handoff Update<br/>haiku"}}
-    Lists --> RC{{"3.4 Revision + Changelog,<br/>Test Runbook, haiku"}}
+    Lists --> RC{{"3.4 Revision + Changelog,<br/>Test Runbook (+ test cases<br/>doc handoffs), haiku"}}
     GF --> Wait
     GS --> Wait
     PM --> Wait
@@ -32,7 +34,7 @@ becomes `Done`. A Spike gets only its Spike Log (`08`).
 ```mermaid
 flowchart TD
     S0("Some root changed") --> Script{"scripts/graph.ps1<br/>at repo root?"}
-    Script -->|"yes"| R1["Route 1: graph.ps1<br/>-Component name"]
+    Script -->|"yes"| R1["Route 1: graph.ps1<br/>-Component name<br/>-Root changed roots"]
     Script -->|"no"| Roots{"Several roots?"}
     Roots -->|"yes"| R2["Route 2: graphify update<br/>per changed root, every<br/>root if no graph.json"]
     Roots -->|"no"| R3["Route 3: /graphify skill<br/>scoped to that root"]
@@ -68,7 +70,7 @@ flowchart TD
     NoC -->|"no"| Staged{"A staged path outside<br/>the saved file list?"}
     Staged -->|"yes"| AskS("Stop and ask:<br/>someone else's work")
     Staged -->|"no: none, or all<br/>this run's own"| Stage["Stage exact paths still<br/>uncommitted: items' files,<br/>integration files, Artboard Edit,<br/>Finalizer, Orchestrator files; one group<br/>at a time, empty ones skipped"]
-    Stage --> Cm["Commit on current branch<br/>type scope: description,<br/>Run-Id and Items trailers<br/>+ attribution"]
+    Stage --> Cm["Commit on current branch<br/>type scope: description,<br/>Run-Id; Items: only that<br/>commit's IDs, or integration;<br/>attribution copied verbatim"]
     Cm --> Hook{"Hook failed?"}
     Hook -->|"yes"| AskH("Report output, leave<br/>rest unstaged, ask")
     Hook -->|"no, more groups"| Stage
@@ -101,15 +103,17 @@ flowchart TD
     L1 --> L2["2 Mark run-state complete;<br/>Linked: every file<br/>with this run id"]
     L2 --> L37["3–7 Finalizer Notes, Pending<br/>Deferred rows, known-reds,<br/>stack state, task bar done"]
     L37 --> Sum("Final summary")
-    Sum -.->|"user later<br/>says commit"| Late["Save decisions.commit yes;<br/>ONE commit pass over the<br/>union of every commit step's<br/>file list: a code group per item,<br/>Items: that item; one docs/chore<br/>group for every other file,<br/>Items: all; draft messages<br/>first, trailers; refresh RUN<br/>row commit ids from git"]
+    Sum -.->|"user later<br/>says commit"| Late["Save decisions.commit yes;<br/>ONE commit pass over the<br/>union of every commit step's<br/>file list: a code group per item,<br/>Items: that item; Integration<br/>fixes: Items: integration;<br/>one docs/chore group for<br/>the rest, Items: the IDs it holds; draft messages<br/>first, trailers; refresh RUN<br/>row commit ids from git"]
 ```
 
 Nodes: 8. A "commit" said after a commit step chose `no` first saves `decisions.commit: yes`, then runs
 one commit pass over the union of every commit step's saved file list in the run, grouped as Phase 3
 groups are: each item (Feature, Bug, P0) gets its own code group from its own `files`, `Items:` naming
-only that item; every other file — governed docs, a file shared by more than one item, and any file in
-no item's code group (an Integration fix outside every item, the graph report) — goes in one docs/chore
-group whose `Items:` lists every item. The Orchestrator drafts the regrouped messages first, with the trailers. Refreshing the
+only that item; Integration fixes outside any item's files go in their own group, `Items: integration`;
+every other file — governed docs, a file shared by more than one item, and any file in no item's code
+group — goes in one docs/chore group whose `Items:` lists every item whose changes it
+holds (the graph report goes with the item it was rebuilt for; one rebuilt for the whole run goes here,
+and `Items:` then lists every item in the run). The Orchestrator drafts the regrouped messages first, with the trailers. Refreshing the
 commit ids is the second edit an old metrics row may take.
 Line 4 also lists any `heldForNextRun` item; the next run's Step 0.0 queues it. The close-out runs once, at the end of the run — a
 Spike-only or P0-only run, and one that skipped Phases 2–3, included. A P0 fast lane inside a

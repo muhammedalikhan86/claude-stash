@@ -5,7 +5,7 @@ Parallel-Safety, Git Restrictions, Output Template) still applies.
 
 **Follow the route your Task-Specific Inputs name.** Some orchestrators name one of three:
 
-1. **A repo graph script** (e.g. `scripts/graph.ps1 -Component <name>`): run exactly the command given,
+1. **A repo graph script** (e.g. `scripts/graph.ps1 -Component <name> -Root <changed roots>`): run exactly the command given,
    from the repo root. It builds and stamps the report itself; do not run graphify or stamp separately.
    Check it exited 0 and that the report's first lines carry the stamp, then report the files.
 2. **The graphify command line, per root:** for each root in order, run `graphify update <root>` with

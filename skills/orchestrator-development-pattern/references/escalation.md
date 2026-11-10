@@ -31,12 +31,14 @@ IF the Reviewer-Integration FAIL takes loop_count past 3 (loop_count == 3, stays
      with the Integration Agent Prompt (its `## Accepted Known-Reds` included) plus its `## Sub-problem`
      section filled: the failing tests in scope, the files it may touch, and "self-verify only this
      sub-problem; do not run the full suite".
-     Each reports Resolved / Still Failing for its sub-problem.
+     Each reports Resolved / Still Failing for its sub-problem. Save each Output verbatim as
+     `integration-output-pass<N>-sub<K>.md` (`SKILL.md` Step 2.1; N is the aggregate pass's number).
 
   3. Aggregate: when every sub-problem spawn has returned, spawn ONE `orchestrated-integration`
      (`model: "opus"`) with the normal Integration Agent Prompt (its `## Accepted Known-Reds` included)
      plus its `## Aggregate pass` section — it
-     re-runs the full gate at the run's Test scope and writes a complete Integration Output. Sub-problems
+     re-runs the full gate at the run's Test scope and writes a complete Integration Output, saved as
+     its own `integration-output-pass<N>.md`. Sub-problems
      still failing there stay "Still Failing," carried into the escalation report if step 5 is reached;
      the rest are "Resolved (Divide-and-Conquer)". Settle any `— untracked` known-red first (see
      **Known-reds** in SKILL.md).
@@ -100,7 +102,8 @@ Unresolved issues (from last Reviewer or Reviewer-Integration):
 <copy the last Issues list verbatim>
 
 Last attempt summary:
-<Developer / Integration Output summary from last loop>
+<Developer / Integration Output summary from last loop; for Integration, also its saved file path
+(`integration-output-pass<N>.md`)>
 
 Recommended actions:
 - Review the issues above and make the required changes manually, OR
@@ -109,9 +112,13 @@ Recommended actions:
 ⏸ Orchestrator is PAUSED. Waiting for instruction.
 ```
 
-**2. A Reviewer or Reviewer-Integration spawn returns `UNVERIFIED` more than twice in a row** (see
-**Handling an UNVERIFIED Verdict** in SKILL.md, under Step 1.4) — this means verification itself is blocked, not that
-the implementation is wrong:
+**2. A Reviewer or Reviewer-Integration spawn returns `UNVERIFIED` more than twice in a row, or any
+spawn returns no Output twice in a row** (see **Handling an UNVERIFIED Verdict** and **A spawn that
+returns no Output** in SKILL.md, under Step 1.3b) — this means verification itself is blocked, not that
+the implementation is wrong. For missing Outputs, replace the `Consecutive UNVERIFIED` and `Unable to
+Verify` lines with `Missing Outputs: 2 (<role>)` and what the spawn last said, and save `blockedGate` as
+that role (`developer`, `integration` or `finalizer` besides the three below); resume respawns that role
+with the same inputs:
 
 ```
 🚨 Human Intervention Required — Verification Blocked
@@ -131,11 +138,12 @@ all. Recommended actions:
 ⏸ Orchestrator is PAUSED. Waiting for instruction.
 ```
 
-On "resume", this one respawns the blocked Reviewer (or Parity Check, or Reviewer-Integration) with
-`unverified_count` reset to 0 — never the Developer or Integration agent; `blockedGate` is cleared only
-after that respawn. Before posting it, save `blockedGate: reviewer | parity | reviewer-integration` in
-run-state (see **Resuming after an
-escalation** in `references/resume.md`).
+On "resume", this one respawns the role `blockedGate` names, with the same saved inputs and
+`unverified_count` reset to 0: for UNVERIFIED, the blocked Reviewer, Parity Check or Reviewer-Integration
+— never the Developer or Integration agent; for missing Outputs, that role itself (Developer, Integration
+agent or Finalizer). `blockedGate` is cleared only after that respawn. Before posting it, save
+`blockedGate: reviewer | parity | reviewer-integration | developer | integration | finalizer` in
+run-state (see **Resuming after an escalation** in `references/resume.md`).
 
 **3. Divide-and-Conquer's confirmation pass still fails** (see **Divide-and-Conquer** above) — scope the
 report to only what's still broken; resolved sub-problems are context, not part of the ask:

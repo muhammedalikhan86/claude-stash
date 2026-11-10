@@ -55,7 +55,7 @@ flowchart TD
     Pause -->|"resume"| Un["Status back to in progress<br/>(integration: flag cleared);<br/>save at once"]
     Un -->|"Template 1 or 3"| Res("loop_count and loopCountAtEscalation<br/>0, priorLoops += old, issues as<br/>Previous Issues; respawn<br/>Developer, or Integration at 2.1;<br/>UI Iteration code-Reviewer or<br/>Parity FAIL: its step 9, 13")
     Pause -->|"drop or defer"| Drop("Status dropped, saved<br/>at once with event time;<br/>one Dropped metrics row;<br/>terminal, out of Phase 2's<br/>entry rule, in the summary")
-    Un -->|"Template 2"| ResV("Read blockedGate, respawn<br/>that gate: Reviewer, Parity<br/>or R-I, on the saved Output;<br/>unverified 0, loop_count kept;<br/>then clear blockedGate")
+    Un -->|"Template 2"| ResV("Read blockedGate, respawn<br/>that gate: Reviewer, Parity<br/>or R-I, on the saved Output<br/>(missing Outputs: that role);<br/>unverified 0, loop_count kept;<br/>then clear blockedGate")
 ```
 
 Nodes: 19. Integration has no wave, so its escalations take the "no" edge. A Verification Blocked

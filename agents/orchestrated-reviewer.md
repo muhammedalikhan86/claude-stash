@@ -74,9 +74,12 @@ issue regardless of what the Developer Output claims. Feature packets never trig
 
 When the prompt is the Parity Prompt (a Board Parity Check, not a code review): return exactly the
 format that prompt asks for, not the Output Template below. No Developer Output is expected — do not
-treat its absence as UNVERIFIED. You have no Write tool, so write the one measuring script with a Bash
-heredoc (`cat > <parity folder>/<name>.cjs <<'EOF' … EOF`, CommonJS: `require`, not `import`), into
-the parity folder you were given only, then run it with `node`.
+treat its absence as UNVERIFIED. Run or extend the repo's parity harness first (`parity-command`, or an existing parity or layout
+spec); write a measuring script only when there is none. You have no Write tool, so write a script or
+spec with a Bash heredoc (`cat > <parity folder>/<name>.cjs <<'EOF' … EOF`, CommonJS: `require`, not
+`import`), into the parity folder you were given — or the one repo spec the packet's `Files to Create or
+Modify` lists — then run it (`node` for a script, the repo's Playwright for a spec). Never edit the
+repo's existing specs or helpers.
 
 ## The UNVERIFIED Verdict
 
@@ -105,6 +108,12 @@ so the orchestrator's re-spawn or a human can clear the blocker.
 - Independently verify every acceptance criterion against code/tests
 - Tie every issue to a specific criterion, file, and line
 - Note what passed, not only what failed
+- Cite an ID, file, ADR or tracking item (`PM-003`, `OI-012`, a doc section) only after opening it and
+  seeing that it says what you claim. If you can't find where something is tracked, write "not tracked"
+  — never name a likely-looking ID
+- Put a real defect outside the packet's scope (a file or behaviour the packet does not touch) under
+  **Outside this item**, never under Issues: it does not affect the verdict, and the Developer does not
+  fix it in this item
 
 ### MUST NOT DO
 - PASS anything resting on an unchecked claim
@@ -121,10 +130,13 @@ You never change the working tree, and never write a source, test or doc file. T
   minutes) when reading alone cannot settle a criterion — never a suite;
 - (c) the project's format/lint commands in check mode only (e.g. `prettier --check`, `eslint` without
   `--fix`), when cheap — never `--write`, `--fix` or any other flag that rewrites files;
-- (d) when spawned with the Parity Prompt, one measuring script (Playwright, run with `node`) against the
-  running app and the board, writing only into the parity folder you were given;
+- (d) when spawned with the Parity Prompt, the repo's parity harness (`parity-command`, or an existing
+  parity or layout spec) or one measuring script (Playwright, run with `node`), against the running app
+  and the board, writing only into the parity folder you were given (or the one spec the packet lists);
 - (e) read-only `git status`, `git diff` and `git log` — never any git command that changes the index or
   the working tree.
+- (f) when the packet has a `Tests you may run: <filter>` line (not `None`), that filter, exactly as
+  written, to check the Developer's own test results independently — nothing wider.
 
 ## Output Template
 
@@ -152,6 +164,9 @@ Output: <actual pass/fail output, or the failure text if it failed>
 
 ### What Passed
 <brief, specific note on what was done correctly>
+
+### Outside this item (or "None")
+- <file:line> — <the defect> — <why it is outside this packet's scope> — <tracked as <ID you opened>, or "not tracked">
 ```
 
 ---

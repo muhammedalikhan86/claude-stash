@@ -28,8 +28,11 @@ flowchart TD
     TP --> SaveP["Save packet-ID.md,<br/>full packet in run-state<br/>if added to"]
     SaveP --> UIq{"Touches a UI?"}
     UIq -->|"yes"| DG("1.1b Design Gate,<br/>re-save packet<br/>04")
-    UIq -->|"no"| Dev
-    DG --> Dev{{"1.2 Developer<br/>developer-high, opus<br/>xhigh at loop 3"}}
+    UIq -->|"no"| RO
+    DG --> RO{"Mode<br/>review-only?"}
+    RO -->|"yes"| BR["Build Record in place of<br/>Developer Output:<br/>files, summary"]
+    BR --> Save
+    RO -->|"no"| Dev{{"1.2 Developer<br/>developer-high, opus<br/>xhigh at loop 3"}}
     Dev --> Save["Save output verbatim<br/>devout-ID-legN-retryN.md,<br/>run-state"]
     Save --> Q{"Open question<br/>inside packet scope?"}
     Q -->|"yes"| Rule["Orchestrator rules,<br/>scope change: user rules"]
@@ -41,7 +44,7 @@ flowchart TD
     Rev --> Out("Verdict<br/>next diagram")
 ```
 
-Nodes: 14. The Reviewer gets the packet path, the verbatim Developer Output path and any ruling,
+Nodes: 16. The Reviewer gets the packet path, the verbatim Developer Output path and any ruling,
 marked binding. On a Bug it runs the one named regression test.
 
 ## Handling the verdict (Steps 1.3, 1.3b, 1.4)
@@ -54,7 +57,11 @@ flowchart TD
     Fix --> V
     V -->|"FAIL"| Where{"Issues in another<br/>component's files?"}
     Where -->|"all of them, or<br/>a linked sibling's"| XC("No retry here,<br/>loop_count unchanged<br/>11")
-    Where -->|"none, or some:<br/>ask to raise linked item"| Over{"loop_count<br/>already 3?"}
+    Where -->|"none, or some:<br/>ask to raise linked item"| Free{"Free FAIL? review-only<br/>first FAIL, all issues<br/>overruled, or Reviewer's<br/>own miss once"}
+    Free -->|"all overruled:<br/>PASS by ruling"| DR
+    Free -->|"review-only first FAIL"| First("First Developer: packet,<br/>Review Findings to Fix,<br/>no Previous Attempt")
+    Free -->|"own miss"| Retry
+    Free -->|"no"| Over{"loop_count<br/>already 3?"}
     Over -->|"yes: this FAIL<br/>takes it past 3"| Esc("Escalate, loop_count<br/>stays 3, pause, 09")
     Over -->|"no"| Inc["loop_count + 1"]
     Inc --> Retry("Fresh Developer: packet,<br/>issues, previous files<br/>loop 3: xhigh + opus Reviewer")
@@ -68,7 +75,9 @@ flowchart TD
     Kind -->|"Bug, P0"| P0("Step 1.5 now, then<br/>fast lane; wave<br/>keeps running, 08")
 ```
 
-Nodes: 16. UNVERIFIED never touches `loop_count`. A Parity FAIL whose mismatch lies in another
+Nodes: 18. UNVERIFIED never touches `loop_count`; nor does a spawn that returns no Output (one nudge,
+then a respawn). The free FAILs and the overrule guard are Step 1.4's three rules, checked before the escalation check; a Reviewer's
+`Outside this item` findings never enter this loop — they go to the item's `outsideItem` list. A Parity FAIL whose mismatch lies in another
 component's files (e.g. the shell's theme) takes the same cross-component route as a code FAIL.
 
 ## Who sends what to whom
@@ -81,9 +90,13 @@ sequenceDiagram
     participant P as Parity Reviewer, sonnet
     participant U as User
     O->>O: save packet-ID.md, run-state
-    O->>D: Task Packet, Developer Agent Prompt
-    D-->>O: Developer Output
-    O->>O: save it verbatim to devout-ID[-legN][-retryN].md, run-state
+    alt review-only item
+        O->>O: write the Build Record to devout-ID.md, run-state
+    else
+        O->>D: Task Packet, Developer Agent Prompt
+        D-->>O: Developer Output
+        O->>O: save it verbatim to devout-ID[-legN][-retryN].md, run-state
+    end
     opt open question inside packet scope
         O->>D: ruling, SendMessage to the same spawn
         D-->>O: updated Developer Output

@@ -27,12 +27,14 @@ once it is `done`, a FAIL that takes loop_count past 3 escalates at once with te
    each at the Escalated Model (`opus`), with the Integration Agent Prompt plus its `## Sub-problem`
    section (`references/templates.md`): the failing tests in scope and the files it may touch, and the
    run's `## Accepted Known-Reds`. Each fixes
-   only its sub-problem, self-verifies only that, and never commits.
+   only its sub-problem, self-verifies only that, and never commits. Save each Output verbatim as
+   `integration-output-pass<N>-sub<K>.md` (`SKILL.md` Step 2.1; N is the aggregate pass's number).
 3. Sort the results: clean self-verification → "Resolved (Divide-and-Conquer)"; the rest → "Still
    Failing". If any is Still Failing, skip to escalation (template 3 below).
 4. **Aggregate pass.** Spawn **one** `orchestrated-integration` (`opus`) with the normal Integration Agent
    Prompt plus `## Aggregate pass` and the run's `## Accepted Known-Reds`: it re-runs the full gate at the
-   run's Test scope and writes a complete Integration Output. Then (after Step 2.2's untracked known-red
+   run's Test scope and writes a complete Integration Output, saved as its own
+   `integration-output-pass<N>.md`. Then (after Step 2.2's untracked known-red
    pause, if needed) spawn Reviewer-Integration **once** against that Output, `model: "opus"`, Retry
    kind `Normal retry` at loop_count 3 with the loop_count 3 issues as Previous Issues (run-state keeps
    them beside any later Unable to Verify report). Neither spawn
@@ -49,7 +51,7 @@ Before printing any template below: first save `run-state-file` — the escalati
 `escalated` (for Integration, the `integration` block's `escalated: true`), both the last Issues list and the last
 Unable to Verify report, `loop_count`, the row's Final loop_count (`SKILL.md` **Pipeline Telemetry**, using
 `loopCountAtEscalation` from before this escalation), then `loopCountAtEscalation` = that `loop_count`, the latest Developer or Integration Output, and for template 2 `blockedGate:
-reviewer | parity | reviewer-integration`; then append the item's (or Integration's) `metrics-log-file` row with
+reviewer | parity | reviewer-integration | developer | integration | finalizer`; then append the item's (or Integration's) `metrics-log-file` row with
 terminal state `escalated`, Escalated? `Yes`, that saved event time as Timestamp and the saved Final
 loop_count (write-once, **Pipeline Telemetry**). Step 3.6 lines 1 and 2 then run for the pause: the rows so
 far plus a RUN row `Paused (escalation)`, and the saved state, **not** marked complete (so Step 0.0's
@@ -84,7 +86,8 @@ Unresolved issues (from last Reviewer or Reviewer-Integration):
 <copy the last Issues list verbatim>
 
 Last attempt summary:
-<Developer / Integration Output summary from last loop>
+<Developer / Integration Output summary from last loop; for Integration, also its saved file path
+(`integration-output-pass<N>.md`)>
 
 Recommended actions:
 - Review the issues above and make the required changes manually, OR
@@ -93,8 +96,11 @@ Recommended actions:
 ⏸ Orchestrator is PAUSED. Waiting for instruction.
 ```
 
-**2. A Reviewer or Reviewer-Integration returns UNVERIFIED a third time in a row** — verification is
-blocked, the implementation is not known to be wrong:
+**2. A Reviewer or Reviewer-Integration returns UNVERIFIED a third time in a row, or any spawn returns no
+Output twice in a row** (`SKILL.md`, **A spawn that returns no Output**) — verification is blocked, the
+implementation is not known to be wrong. For missing Outputs, replace the `Consecutive UNVERIFIED` and
+`Unable to Verify` lines with `Missing Outputs: 2 (<role>)` and what the spawn last said, and save
+`blockedGate` as that role (`developer`, `integration` or `finalizer` besides the three gate values):
 
 ```
 🚨 Human Intervention Required — Verification Blocked

@@ -12,7 +12,11 @@ Three shapes, selected by `Type`. A **Bug** packet replaces `## Acceptance Crite
 no Acceptance Criteria or Bug Report at all and adds a mandatory `## Spike Directory`.
 
 Format and Lint commands are written **scoped to files**, with `<files you touch>` left for the Developer
-to fill in, whenever the platform allows it (Step 0.2).
+to fill in, whenever the platform allows it (Step 0.2). Format gives the fix form and, where the tool has
+one, the gate (check) form — never a repo-wide format.
+
+A **review-only** item (Step 0.1) adds `## Mode` with `review-only` after `## Type`; omit the section
+otherwise.
 
 ```markdown
 # Task Packet: <COMPONENT>-F-XXX — <Feature Name>
@@ -45,11 +49,16 @@ Feature
 <skill name from Step 0.3b, or "None">
 
 ## Developer Quality Gate
-- Format: <command, scoped to <files you touch> where the platform allows>
+- Format: fix <command, scoped to <files you touch>> · gate <check-mode command, same scope — e.g.
+  `dotnet format <project> --verify-no-changes --include <files you touch>`; run the fix, then the gate>
 - Lint:   <command, scoped likewise>
 
 ## Note on Tests
-Write the test files. Do NOT run the test suite — test execution is the Integration Agent's responsibility.
+Write the test files. You may run only the tests under `Tests you may run`, to catch your own wrong
+expectations before you return; do NOT run the wider suite — test execution is the Integration Agent's
+responsibility, and the Reviewer runs your tests again independently.
+Tests you may run: <the filter for only this item's own new or changed test classes — set only when the
+item is alone in its wave (Step 1.1); otherwise "None">
 
 ## Coding Conventions
 <summary from Step 0.3>
@@ -125,12 +134,15 @@ Bug
 <skill name from Step 0.3b, or "None">
 
 ## Developer Quality Gate
-- Format: <command, scoped to <files you touch> where the platform allows>
+- Format: fix <command, scoped to <files you touch>> · gate <check-mode command, same scope — e.g.
+  `dotnet format <project> --verify-no-changes --include <files you touch>`; run the fix, then the gate>
 - Lint:   <command, scoped likewise>
 
 ## Note on Tests
 Write a regression test that reproduces the bug — it must fail against the pre-fix code and pass once the
 fix is applied. Do NOT run the full test suite — test execution is the Integration Agent's responsibility.
+Tests you may run: <as in the Feature packet — the item's own test classes, only when alone in its wave;
+otherwise "None">.
 State explicitly which assertion is the one that would have caught this bug, and the exact command that
 runs that one test. Check the command really narrows to that test on this repo's runner (some wrappers
 ignore a name filter and run the whole file — then say so and name the file). If the test needs the app
@@ -226,12 +238,17 @@ apply exactly that.
 ## Return Format
 Use exactly your own Output Template.
 
+## Review Findings to Fix (review-only item's first Developer spawn only — omit otherwise)
+<INSERT the Reviewer's issues on the Build Record>
+The code was built outside this pipeline and reviewed as it stands. Fix these findings; you are the first
+Developer on this item, not a retry.
+
 ## Reviewer Issues (only present when Previous Issues exist — a retry, or a resume after escalation; omit otherwise)
 <INSERT REVIEWER'S ISSUES LIST, the user's Manual Verification report, or the escalation's issues —
 keeping any "verified by Step 1.3b, not by you" marks>
 Fix only the issues listed above and nothing else.
 
-## Previous Attempt (present whenever a previous Developer Output exists — a retry, or a resume after escalation; omit otherwise)
+## Previous Attempt (present whenever a previous Developer Output exists — a retry, or a resume after escalation; omit otherwise — a review-only item's Build Record does not count)
 <INSERT PREVIOUS DEVELOPER OUTPUT'S "Files Created or Modified" LIST>
 You are a fresh spawn with no memory of building this — the list above is exactly what the prior attempt
 touched. Start there instead of re-exploring the codebase.
@@ -265,8 +282,21 @@ Developer retry. A file outside every component's roots (e.g. root `package.json
 tagged: check it as a deviation — it passes only when the Developer Output records it with a
 justification the work needs.
 
+Cite an ID, file, document section or tracking item only after opening it and seeing it say what you
+claim. If you cannot find it, write "not tracked" — never name an ID from memory.
+
+A real defect you find **outside this packet's scope** (in code this item did not change and its
+criteria do not cover) is not an issue of this item: list it under your Output Template's `Outside this item`
+section and do not let it change your verdict. A defect in a file this item changed is
+always this item's.
+
+If the Developer Output is a Build Record (`Source: built outside the loop`), review the code as it
+stands against the packet exactly as you would a Developer's work; Format/Lint were not run by a
+Developer, so run the packet's check-mode commands yourself — the Format gate (verify) form and Lint
+without any fix flag — and nothing that rewrites files (your agent's What You May Run).
+
 ## Return Format
-Use exactly your own Output Template.
+Use exactly your own Output Template (its `### Outside this item` section included).
 
 ## Developer Output
 Read it in full: <INSERT PATH of the verbatim Developer Output file — never a summary or excerpt>
@@ -293,20 +323,35 @@ Compared against: <"Board <file>" | "Acceptance Criteria — <surface> not drawn
 Widths: <INSERT parity-viewports, at least 1440>
 Parity folder: <INSERT <gate log directory>/parity/<ID>[-legN][-retryN]/>
 Repo root: <INSERT>
+Parity command: <INSERT parity-command, or "None">
 
 ## How to measure
-1. Write one CommonJS script, `<parity folder>/parity.cjs`. Load Playwright from the repo:
-   `const { chromium } = require(require.resolve('playwright', { paths: ['<repo root>'] }));`
-   Run it with `node <parity folder>/parity.cjs`. Output goes to the parity folder only.
+1. Use the repo's harness before writing your own.
+   - **Parity command** given: run it, or extend it for this item's states. A new spec goes in the repo's
+     test folder only when the packet's `Files to Create or Modify` lists it; otherwise write it in the
+     parity folder, importing the repo's helpers by path, and run it with the repo's Playwright
+     (`--config` pointing at the repo's config if it would not otherwise be found). Never edit the repo's
+     existing specs or helpers.
+   - **Parity command** `None`: first look under the repo's tests for an existing parity or layout spec
+     (a file or folder named `parity` or `layout`). If one exists, reuse it the same way.
+   - No harness at all: write one CommonJS script, `<parity folder>/parity.cjs`. Load Playwright
+     from the repo: `const { chromium } = require(require.resolve('playwright', { paths: ['<repo root>'] }));`
+     Run it with `node <parity folder>/parity.cjs`.
+   Output (screenshots, measurements) goes to the parity folder only.
 2. For each width, and each state in States to compare, open the board's drawing of that state and the
    app in the same state. Reach app states with `page.route` stubs: an empty response for empty, an
    error status for error, a held response for loading. Open every dialog and menu the packet touches.
-3. For each element in each state, record on both sides: computed `font-weight`, `font-size`, `color`;
+3. Measure **the elements this item changes** — those rendered or styled by a file in the packet's
+   `Files to Create or Modify`, named by an Acceptance Criterion, or named in States to compare — not
+   every element on the screen. For each, in each state, record on both sides: computed `font-weight`, `font-size`, `color`;
    a heading's line count (height ÷ line-height); element order and exact wording; whether table tools
    and the paginator are present, and the paginator's page-size choices; tooltips and ⓘ icons.
 4. Transient states: from navigation, sample every ~20 ms for 2 s — how many loaders show, in what order,
    and for how long.
 5. Save a screenshot per state per width per side, and the raw measurements as JSON.
+6. Quick pass for the rest of the screen: per state, at 1440 only, compare the board and the built
+   screen by element order, wording, and what is present or missing. List each difference under
+   `Outside this item`. Do not measure its properties.
 
 ## Verdict
 - First sort each difference: **this item** or **outside this item**. It is this item's when the element
@@ -332,6 +377,7 @@ Issues (if FAIL): one per unruled mismatch — state, width, element, board valu
 Outside this item (or "None"):
 | State | Width | Element | Board | Built | Why outside |
 Unable to Verify (if UNVERIFIED): what and why.
+Harness: <parity-command | existing spec <path> | parity.cjs> — and any spec written or extended
 Files: <the parity folder's contents>
 ```
 
@@ -433,13 +479,29 @@ never leave one unplaced. Write each as `Drift: <doc> — <what> — fixed` or
 - PMBook Update: the PMBook and its history rows, the Version Pointer Sweep.
 - Handoff Update: the handoff doc.
 - Revision + Changelog, Test Runbook: the revision file, the changelog and the test runbook.
-- Yours to fix now: the architecture doc, the test cases doc, and READMEs inside this component's roots.
+- Test Runbook: the test cases doc too — you fix code only there; hand each test-cases-doc gap off as
+  `Drift: test cases doc — <what> — handed to Test Runbook`.
+- Yours to fix now: the architecture doc and READMEs inside this component's roots.
 - Flag only (Unresolvable Issues): diagrams, ADRs and the platform architecture file.
 
 ## Known-Red Failures
 Classify any failure this run did not cause per your **Pre-Existing Failures** section. The component
 map is the Component table above; the live project-management docs are `docs/*/project-management.md`
 (never `archive/` or `history/`).
+
+## Known Reds at Baseline
+<INSERT run-state's baseline.reds, one line each — "- <test> — <how it failed>" — and the command that
+ran (Step 0.4b); or "None — baseline clean (<command>)"; or "Baseline: skipped — <why>". Note when the
+baseline ran the component suite and the scope is now full.>
+A test on this list was red before this run changed anything: not this run's regression. Classify it as
+a known-red like any other (owner, tracking) — never fix it silently, never call it flaky without your
+own two-run evidence. A test on this list that now passes: say so.
+
+## Foreign Paths
+<INSERT Step 2.0's foreign paths, one line each — "- <path> — foreign (another session or the user)" — or "None">
+These changed in the tree but are not this run's. Don't fix, revert or format them, and never count them
+as this run's changes; a failure that traces to one is classified like any known-red (owner: whoever
+changed it, or `unknown`).
 
 ## Accepted Known-Reds
 <INSERT one line per test the user ruled at Step 2.2: "- <test> — accepted by the user" or
@@ -460,7 +522,7 @@ it otherwise)
 loop_count: <INSERT N>
 Retry kind: <INSERT "Doc-only retry" or "Normal retry"; a resume after escalation is "Normal retry">
 Previous Issues: <INSERT REVIEWER-INTEGRATION'S ISSUES LIST>
-Previous Integration Output: <INSERT PRIOR OUTPUT — Quality Gate Results / Gate Logs / Fixes Applied / Documentation Drift / Unresolvable Issues>
+Previous Integration Output: <INSERT the prior pass's saved file path, `<scratchpad>/runs/<run id>/integration-output-pass<N>.md` — read it yourself>
 Address only the issues listed. Treat drift sections your prior pass already cleared as still clear
 unless a Previous Issue reopens one. A doc-only retry follows your Core Workflow's `Doc-only retry`
 rule (same log paths); if an issue turns out to need a code or test change after all, stop and say so under
@@ -516,6 +578,12 @@ verdict. You are operating in **orchestrated mode**.
 ## Gate Log Directory
 <INSERT the same directory given to the Integration Agent>
 
+## Known Reds at Baseline
+<INSERT the same section given to the Integration Agent>
+
+## Foreign Paths
+<INSERT the same section given to the Integration Agent>
+
 ## Accepted Known-Reds
 <INSERT the same section given to the Integration Agent — or "None">
 PMBook for each `tracked by` line: <INSERT the owning component's live PMBook path,
@@ -534,7 +602,8 @@ Expected/Actual behavior only.>
 Use exactly your own Output Template.
 
 ## Integration Output
-<INSERT INTEGRATION OUTPUT>
+<INSERT the saved file path, `<scratchpad>/runs/<run id>/integration-output-pass<N>.md` (Step 2.1) — never a
+summary. Read that file: it is the Output verbatim.>
 
 ## Retry Context
 loop_count: <INSERT N — 0 if this is the first review>
@@ -564,6 +633,11 @@ Version Pointer Sweep instructions say otherwise>
 
 Run ID: <INSERT run id from run-state>
 Scope: <INSERT `lane:<ID>` for a P0 lane's batch, `spike:<ID>` for a Spike Log, or `phase3`>
+
+## Final Status per Item
+<INSERT every item in the run with its final status from run-state, one line each — e.g.
+"OFA-F-013 — passed review → Done", "OFA-B-007 — verified", "OFA-F-014 — dropped". This is the truth
+about each item's state; do not infer it from the docs.>
 
 ## Features Completed
 <INSERT LIST: F-ID, name, files changed — or "N/A, this is a Spike Log Task">

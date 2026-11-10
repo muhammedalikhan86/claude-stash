@@ -29,6 +29,7 @@ flowchart TD
     Cases{"test-cases-doc?"}
     Draft["Draft it from<br/>Feature Backlog"]
     AskCases["Say what is missing; ask:<br/>proceed, draft, or pause"]
+    Filled["An item in this run<br/>writes them: note in<br/>decisions, no question"]
     Next(["Entry point<br/>diagram below"])
 
     Start --> Deps
@@ -56,6 +57,7 @@ flowchart TD
     IsPMB -->|yes| Cases
     Cases -->|absent| Draft --> Next
     Cases -->|"thin or stale"| AskCases --> Next
+    Cases -->|"thin, an item<br/>fills it"| Filled --> Next
     Cases -->|adequate| Next
 ```
 
@@ -69,12 +71,14 @@ passes `test-cases-doc` if it exists, else "None provided".
 ```mermaid
 flowchart TD
     Entry{"Which explicit ask?"}
-    PMB["Step 0.1 Read PMBook:<br/>active phase, Planned or<br/>In Progress features"]
+    PMB["Step 0.1 Read PMBook:<br/>active phase, Planned or<br/>In Progress features, plus<br/>items named review-only"]
     Bug["Step 0.1b Bug Fix Intake:<br/>report, next free B-XXX<br/>(PMBook, run-state queue,<br/>heldForNextRun),<br/>P0 only if user says so"]
     Spk["Step 0.1c Spike Intake:<br/>question, next free S-XXX<br/>(PMBook, run-state queue,<br/>heldForNextRun),<br/>Spike Directory"]
     Plat{"Step 0.2<br/>one platform marker?"}
     AskPlat["Stop and ask user<br/>to confirm platform"]
     Conv["Step 0.3 Detect coding<br/>conventions; summary<br/>saved in run-state"]
+    Base["Step 0.3b Baseline test run<br/>on the tree as found; reds<br/>saved as baseline.reds;<br/>skipped for P0/Spike-only"]
+    Hold["Step 0.3c Design rows hold: UI item<br/>whose rows are not Done waits;<br/>no rows + new layout → write<br/>them in the open round;<br/>old layout → migration guide"]
     Ann["Step 0.4 Announce plan or<br/>Bug/Spike one-liner, Deferred<br/>warning; write run-state-file"]
     UI{"artboards-directory set,<br/>UI packet planned, app-url<br/>or artboard-server missing?"}
     AskUrl["Look in CLAUDE.md,<br/>run skill, READMEs;<br/>ask user once for<br/>what is not found"]
@@ -88,10 +92,15 @@ flowchart TD
     Spk --> Plat
     Plat -->|"none or several"| AskPlat --> Conv
     Plat -->|one| Conv
-    Conv --> Ann --> UI
+    Conv --> Base --> Hold --> Ann --> UI
     UI -->|yes| AskUrl --> Out
     UI -->|no| Out
 ```
+
+Step 0.3b runs the Test command once before any spawn; a failing test is re-run alone once (passes →
+`flaky`). The reds go to Integration as `## Known Reds at Baseline` (05). A mid-run intake or a resume
+reuses the run's saved baseline. Format commands are scoped to the item's changed files, with a verify
+form as the gate (Step 0.2).
 
 Bug and Spike intake replace the feature list in the Step 0.4 announcement with one line
 (`Bug Fix Mode [P0] — B-XXX: …` / `Spike Mode — S-XXX: …`) and still print the Deferred Integration

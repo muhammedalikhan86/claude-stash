@@ -13,11 +13,14 @@ flowchart TD
     UI{"UI packet and<br/>artboards-directory set?"}
     Ref{"Board draws<br/>each surface?"}
     Halt["New layout, no board,<br/>criteria incomplete:<br/>item halts, ask user"]
+    RO{"Mode: review-only,<br/>no Developer yet?"}
+    BR["Orchestrator writes<br/>Build Record from<br/>git diff or user list"]
     Dev{{"Step 1.2 Developer<br/>orchestrated-developer<br/>sonnet, opus at 3"}}
     IsSpike{"Type: Spike?"}
     ToSpike(["Spike Flow<br/>see 07"])
     Rev{{"Step 1.3 Reviewer<br/>orchestrated-reviewer<br/>haiku, sonnet at 3"}}
     V{"Verdict?"}
+    Rule{"Step 1.4 rulings<br/>on the FAIL"}
     LC["loop_count += 1;<br/>status in progress"]
     Max{"loop_count already 3?<br/>this FAIL takes it past 3"}
     Model["Pick model:<br/>Escalated if == 3"]
@@ -28,18 +31,24 @@ flowchart TD
     Pass(["Code PASS<br/>diagram below"])
 
     Start --> Packet --> UI
-    UI -->|no| Dev
+    UI -->|no| RO
     UI -->|"yes: fill Design Reference"| Ref
-    Ref -->|"board, or not drawn:<br/>criteria are the spec"| Dev
+    Ref -->|"board, or not drawn:<br/>criteria are the spec"| RO
     Ref -->|"neither"| Halt
     Halt -->|"board drawn:<br/>resume at Step 1.1"| Ref
-    Halt -->|"user rules 'build to the AC':<br/>Ruled deviation"| Dev
+    Halt -->|"user rules 'build to the AC':<br/>Ruled deviation"| RO
+    RO -->|no| Dev
+    RO -->|yes| BR --> Rev
     Dev --> IsSpike
     IsSpike -->|yes| ToSpike
     IsSpike -->|no| Rev
     Rev --> V
     V -->|PASS| Pass
-    V -->|FAIL| Max
+    V -->|FAIL| Rule
+    Rule -->|"every issue overruled:<br/>PASS by ruling"| Pass
+    Rule -->|"review-only first FAIL:<br/>Review Findings to Fix,<br/>no Previous Attempt"| Dev
+    Rule -->|"Reviewer's own miss<br/>(once): no count"| Dev
+    Rule -->|"counted FAIL"| Max
     V -->|UNVERIFIED| UV --> UVMax
     Max -->|"yes: stays 3"| Esc
     Max -->|no| LC --> Model
@@ -48,7 +57,13 @@ flowchart TD
     UVMax -->|no| Fix --> Rev
 ```
 
-On a retry the Reviewer also gets `loop_count` and the previous issues list (Step 1.4). A Bug packet's
+On a retry the Reviewer also gets `loop_count` and the previous issues list (Step 1.4). Step 1.4's
+rulings: an issue citing no criterion, constraint, convention, failing test or gate may be overruled
+`not an issue` with a checkable reason (`decisions.rulings`, the summary's `Overruled:` line); a
+review-only item's first FAIL and a Reviewer's own miss (once per item) send the item to the Developer
+without counting. A spawn that returns no Output gets one nudge, then a respawn; it counts like an
+UNVERIFIED, and two in a row escalate (08). Every Reviewer's `Outside this item` findings go to the
+item's `outsideItem` list for the final summary. A Bug packet's
 Reviewer also runs the one regression test its `## Note on Tests` names (04). A packet the Orchestrator
 added to (a Design Reference, a ruling) is stored in full in `run-state-file`.
 
@@ -67,7 +82,7 @@ flowchart TD
     UVMax{"unverified_count > 2?"}
     Esc(["🚨 Escalate<br/>see 08"])
     Kind{"Item type?"}
-    Done["Feature terminal PASS:<br/>status passed review,<br/>PMBook Done, ✅ F-XXX,<br/>metrics row, run-state"]
+    Done["Feature terminal PASS:<br/>status passed review<br/>(run-state only), ✅ F-XXX,<br/>metrics row"]
     Next(["Next work item"])
     MV(["Manual Verification Gate<br/>Step 1.5, see 04"])
 
@@ -106,7 +121,7 @@ sequenceDiagram
         P-->>O: Verdict and Parity Table
     end
     alt Feature
-        O->>O: PMBook status Done, run-state, metrics row
+        O->>O: run-state passed review, metrics row (PMBook untouched)
     else Bug
         O->>U: Repro steps, expected behaviour, Parity Table if UI
         U-->>O: verified, a question (answered, asked again), or a reported failure = still broken

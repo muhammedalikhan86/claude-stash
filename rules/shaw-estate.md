@@ -65,7 +65,7 @@ and design. When the question is "what does the data actually contain", look rat
 
 1. **Server:** `idb_ag.shawstock.com.au,4433` (`@@SERVERNAME` is `SIC1DB1.shawstock.com.au\IDB`).
    **Login:** `DatabaseReader`, SQL authentication, read-only, not sysadmin.
-2. **Password:** not stored in this repo. Ask the team lead, then put it in your own copy at `~/.claude/rules/shaw-estate.md` (replace every `<DB_PASSWORD>`).
+2. **Password:** not stored in this repo. Ask the team lead, then put it in your own copy at `~/.claude/rules/shaw-estate.md`, in place of the placeholder in each connection string and the `sqlcmd` line below. The installer carries it over from your old copy on each re-install.
    **Connection strings, one per readable database** (all five checked to connect on 2026-10-09):
 
    ```

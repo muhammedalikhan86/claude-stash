@@ -48,7 +48,10 @@ To undo an install, pass its backup folder (the installer prints the exact comma
 ```
 
 Rollback puts back every file and link, including the symlinks to the share. Making a symlink needs
-Windows Developer Mode or an administrator window; if it can't, it prints the command to run.
+an administrator window (or Developer Mode with PowerShell 7). If a link can't be made, the folder's
+old contents come back as real files instead, so nothing is lost, and it prints the command to run
+as administrator. Before it removes anything, rollback saves what is there now (including edits made
+since the install) in a `before-rollback-<date-time>` folder inside the backup folder.
 
 Then do these by hand:
 

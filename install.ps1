@@ -65,6 +65,30 @@ function Assert-Inside([string]$Path) {
     throw "Refusing to touch a path outside $ClaudeDir : $full"
 }
 
+$Utf8 = New-Object System.Text.UTF8Encoding($false)   # UTF-8 with no BOM (Windows PowerShell's default reads/writes are not)
+
+function Read-Text([string]$Path) { return [IO.File]::ReadAllText($Path, $Utf8) }   # also handles a BOM if present
+function Write-Text([string]$Path, [string]$Text) { [IO.File]::WriteAllText($Path, $Text, $Utf8) }
+
+function Get-LinkedParent([string]$Path) {
+    # The first folder above $Path (up to ~/.claude) that is a link, or $null. Writing or deleting under
+    # such a folder would change the link's target (e.g. the share), so callers refuse.
+    $p = Split-Path ([IO.Path]::GetFullPath($Path)) -Parent
+    while ($p -and $p.Length -gt $ClaudeDir.Length) {
+        if (Test-Path -LiteralPath $p) {
+            $lt = (Get-Item -LiteralPath $p -Force).LinkType
+            if ($lt -eq 'SymbolicLink' -or $lt -eq 'Junction') { return $p }
+        }
+        $p = Split-Path $p -Parent
+    }
+    return $null
+}
+
+function Assert-NoLinkedParent([string]$Path) {
+    $lp = Get-LinkedParent $Path
+    if ($lp) { throw "Refusing to change $Path : the folder $lp above it is a link, so the change would land on the link's target." }
+}
+
 function Get-Kind([string]$Path) {
     $i = Get-Item -LiteralPath $Path -Force
     if ($i.LinkType -eq 'SymbolicLink') { return 'symlink' }
@@ -107,6 +131,7 @@ function Remove-Target([string]$Path) {
     Assert-Inside $Path
     if (-not (Test-Exists $Path)) { return }
     if ($WhatIf) { return }
+    Assert-NoLinkedParent $Path
     $i = Get-Item -LiteralPath $Path -Force
     if ($i.LinkType -eq 'SymbolicLink' -or $i.LinkType -eq 'Junction') {
         $i.Delete()                                   # deletes the link only
@@ -122,7 +147,11 @@ function Remove-Target([string]$Path) {
 
 function Save-Manifest {
     if ($WhatIf) { return }
-    $script:Manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $script:BackupDir "manifest.json") -Encoding UTF8
+    # Write a temp file, then swap it in, so a kill mid-write never leaves a half-written manifest.
+    $mf = Join-Path $script:BackupDir "manifest.json"
+    $tmp = "$mf.tmp"
+    Write-Text $tmp ($script:Manifest | ConvertTo-Json -Depth 6)
+    Move-Item -LiteralPath $tmp -Destination $mf -Force
 }
 
 function Add-Action([hashtable]$Action) {
@@ -162,7 +191,7 @@ function Backup-Item([string]$Rel) {
         $links = New-Object System.Collections.ArrayList
         Copy-Tree $src $dst $Rel $links
         $info.contentCopied = $true
-        if ($kind -ne 'symlink' -and $kind -ne 'junction') { $info.innerLinks = @($links) }
+        $info.innerLinks = @($links)   # for a link, rollback re-makes the link itself and ignores these
     }
     catch {
         if ($info.linkTarget) {
@@ -187,6 +216,7 @@ function Copy-FromRepo([string]$Rel) {
     $dst = Join-Path $ClaudeDir $Rel
     Assert-Inside $dst
     if ($WhatIf) { return }
+    Assert-NoLinkedParent $dst
     if ($script:RepoFiles -and (Test-Path -LiteralPath $src -PathType Container)) {
         $prefix = ($Rel -replace '\\', '/') + '/'
         foreach ($f in $script:RepoFiles | Where-Object { $_.StartsWith($prefix) }) {
@@ -225,11 +255,11 @@ function Restore-DbPassword($Info) {
     if ($WhatIf) { $old = Join-Path $ClaudeDir "rules\shaw-estate.md" }
     $new = Join-Path $ClaudeDir "rules\shaw-estate.md"
     if (-not (Test-Path -LiteralPath $old -PathType Leaf) -or -not (Test-Path -LiteralPath $new)) { return }
-    $m = [regex]::Match((Get-Content -Raw -LiteralPath $old), 'Password=([^;<\s"]+);')
-    $text = Get-Content -Raw -LiteralPath $new
-    if ($WhatIf) { $text = Get-Content -Raw -LiteralPath (Join-Path $Repo "rules\shaw-estate.md") }
+    $m = [regex]::Match((Read-Text $old), 'Password=([^;<\s"]+);')
+    $text = Read-Text $new
+    if ($WhatIf) { $text = Read-Text (Join-Path $Repo "rules\shaw-estate.md") }
     if ($m.Success -and $text.Contains('<DB_PASSWORD>')) {
-        if (-not $WhatIf) { [IO.File]::WriteAllText($new, $text.Replace('<DB_PASSWORD>', $m.Groups[1].Value)) }
+        if (-not $WhatIf) { Write-Text $new $text.Replace('<DB_PASSWORD>', $m.Groups[1].Value) }
         Write-Host "[KEEP]   rules\shaw-estate.md: DB password carried over from your old copy" -ForegroundColor DarkGray
         $script:PasswordKept = $true
     }
@@ -263,8 +293,11 @@ function Invoke-Rollback([string]$Dir) {
     $Dir = [IO.Path]::GetFullPath($Dir).TrimEnd('\')
     $mf = Join-Path $Dir "manifest.json"
     if (-not (Test-Path -LiteralPath $mf)) { throw "No manifest.json in $Dir" }
-    $m = Get-Content -Raw -LiteralPath $mf | ConvertFrom-Json
+    $m = Read-Text $mf | ConvertFrom-Json
     $script:BackupDir = $Dir
+    # Whatever is there now (including edits made after the install) is saved here before rollback removes it.
+    $saveDir = Join-Path $Dir ("before-rollback-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+    $saved = $false
     if ($m.claudeDir -and -not $m.claudeDir.Equals($ClaudeDir, [StringComparison]::OrdinalIgnoreCase)) {
         throw "This backup was taken from $($m.claudeDir), not $ClaudeDir. Pass -ClaudeDir `"$($m.claudeDir)`"."
     }
@@ -274,23 +307,49 @@ function Invoke-Rollback([string]$Dir) {
     foreach ($a in $acts) {
         $target = Join-Path $ClaudeDir $a.path
         Assert-Inside $target
+        if (-not $WhatIf -and (Test-Exists $target) -and -not ((Get-Kind $target) -in 'symlink', 'junction')) {
+            $sd = Join-Path $saveDir $a.path
+            New-Item -ItemType Directory -Path (Split-Path $sd -Parent) -Force | Out-Null
+            $null = Copy-Tree $target $sd $a.path (New-Object System.Collections.ArrayList)
+            $saved = $true
+        }
         switch ($a.action) {
             { $_ -in 'create', 'mkdir' } {
                 Remove-Target $target
                 Say "REMOVE" "$($a.path) (added by the install)" Yellow
             }
             { $_ -in 'replace', 'delete', 'unlinkFolder' } {
-                Remove-Target $target
+                $bak = Join-Path $Dir $a.backup
+                $restoreFiles = $true
                 if ($a.kind -eq 'symlink' -or $a.kind -eq 'junction') {
                     $type = if ($a.kind -eq 'junction') { 'Junction' } else { 'SymbolicLink' }
+                    # Make the link under a temporary name first; only once that works is the current item
+                    # removed and the link renamed into place. If it can't be made, nothing is lost.
+                    $made = $false
                     if (-not $WhatIf) {
-                        try { New-Item -ItemType $type -Path $target -Target $a.linkTarget | Out-Null }
-                        catch { $failedLinks += "New-Item -ItemType $type -Path `"$target`" -Target `"$($a.linkTarget)`"" }
+                        $tmp = "$target.relink-tmp"
+                        try {
+                            if (Test-Exists $tmp) { Remove-Target $tmp }
+                            New-Item -ItemType $type -Path $tmp -Target $a.linkTarget -ErrorAction Stop | Out-Null
+                            Remove-Target $target
+                            Rename-Item -LiteralPath $tmp -NewName (Split-Path $target -Leaf)
+                            $made = $true
+                        }
+                        catch {
+                            if (Test-Exists $tmp) { try { Remove-Target $tmp } catch { } }
+                            $failedLinks += "cmd /c rmdir /s /q `"$target`"   # (or del, for a file) then:"
+                            $failedLinks += "New-Item -ItemType $type -Path `"$target`" -Target `"$($a.linkTarget)`""
+                        }
                     }
-                    Say "RELINK" "$($a.path) -> $($a.linkTarget)" Green
+                    if ($made -or $WhatIf) { Say "RELINK" "$($a.path) -> $($a.linkTarget)" Green; $restoreFiles = $false }
+                    elseif (-not $a.contentCopied) {
+                        Say "WARN  " "$($a.path): could not re-make the link and there is no copy of its contents; left as it is" Yellow
+                        $restoreFiles = $false
+                    }
+                    else { Say "WARN  " "$($a.path): could not re-make the link; its old contents are put back as real files instead" Yellow }
                 }
-                else {
-                    $bak = Join-Path $Dir $a.backup
+                if ($restoreFiles) {
+                    if (-not $WhatIf) { Remove-Target $target }
                     $relinked = $false
                     if ($a.kind -eq 'hardlink' -and -not $WhatIf) {
                         foreach ($o in @($a.otherHardLinks)) {
@@ -303,7 +362,8 @@ function Invoke-Rollback([string]$Dir) {
                         $p = Split-Path $target -Parent
                         if (-not (Test-Path -LiteralPath $p)) { New-Item -ItemType Directory -Path $p -Force | Out-Null }
                         Copy-Item -LiteralPath $bak -Destination $target -Recurse -Force
-                        foreach ($l in @($a.innerLinks)) {
+                        $innerLinks = if ($a.kind -eq 'symlink' -or $a.kind -eq 'junction') { @() } else { @($a.innerLinks) }
+                        foreach ($l in $innerLinks) {
                             if (-not $l) { continue }
                             $lp = Join-Path $ClaudeDir $l.path
                             Assert-Inside $lp
@@ -316,9 +376,11 @@ function Invoke-Rollback([string]$Dir) {
             }
         }
     }
+    if ($saved) { Write-Host "`n[NOTE] What was there before this rollback is saved in $saveDir" -ForegroundColor Cyan }
     if ($failedLinks.Count) {
-        Write-Host "`n[TODO] These links could not be made (Windows needs Developer Mode or an admin window)." -ForegroundColor Cyan
-        Write-Host "       Open PowerShell as administrator and run:" -ForegroundColor Cyan
+        Write-Host "`n[TODO] These links could not be made. Their old contents were put back as real files, so" -ForegroundColor Cyan
+        Write-Host "       Claude Code still works. To get the links back, open PowerShell as administrator" -ForegroundColor Cyan
+        Write-Host "       (Windows PowerShell 5.1 needs admin for links even with Developer Mode) and run:" -ForegroundColor Cyan
         $failedLinks | ForEach-Object { Write-Host "       $_" }
     }
     Write-Host "`nRollback done. Restart Claude Code (or run /reload-plugins)."
@@ -411,6 +473,17 @@ foreach ($folder in $Merged) {
                 Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $target $_.Name) -Recurse -Force
                 Say "KEEP  " "$folder\$($_.Name) (not in this repo; kept from the old folder)" DarkGray
             }
+            # Links that sat inside the linked folder (the backup holds none) are re-made, unless the repo
+            # replaces the item they belong to.
+            foreach ($l in @($info.innerLinks)) {
+                if (-not $l -or $names -contains (($l.path -split '\\')[1])) { continue }
+                $lp = Join-Path $ClaudeDir $l.path
+                try {
+                    New-Item -ItemType $l.type -Path $lp -Target $l.target -ErrorAction Stop | Out-Null
+                    Say "KEEP  " "$($l.path) (a link; re-made, pointing at $($l.target))" DarkGray
+                }
+                catch { Write-Host "[TODO]   could not re-make the link $($l.path). As admin: New-Item -ItemType $($l.type) -Path `"$lp`" -Target `"$($l.target)`"" -ForegroundColor Cyan }
+            }
         }
         else {
             Get-ChildItem -LiteralPath $target -Force -ErrorAction SilentlyContinue | Where-Object { $names -notcontains $_.Name } | ForEach-Object {
@@ -441,6 +514,8 @@ if (Test-Path -LiteralPath $retired) {
         $path = Join-Path $ClaudeDir $rel
         Assert-Inside $path
         if (-not (Test-Exists $path)) { continue }
+        $lp = Get-LinkedParent $path
+        if ($lp) { Write-Host "[SKIP]   retired $rel : $lp is a link, so deleting it would change the link's target. Left alone." -ForegroundColor Yellow; continue }
         $info = Backup-Item $rel
         $info.action = 'delete'
         Add-Action $info
@@ -450,7 +525,7 @@ if (Test-Path -LiteralPath $retired) {
 }
 
 # settings.json
-$template = Get-Content -Raw (Join-Path $Repo "settings.template.json")
+$template = Read-Text (Join-Path $Repo "settings.template.json")
 $template = $template.Replace("__CLAUDE_DIR__", $ClaudeDir.Replace('\', '\\'))
 if ($Context7Key) { $template = $template.Replace("__CONTEXT7_API_KEY__", $Context7Key) }
 $settings = Join-Path $ClaudeDir "settings.json"
@@ -458,13 +533,13 @@ if (Test-Path $settings) {
     $out = Join-Path $ClaudeDir "settings.stash.json"
     if (Test-Exists $out) { $info = Backup-Item "settings.stash.json"; $info.action = 'replace'; Add-Action $info }
     else { Add-Action @{ action = 'create'; path = "settings.stash.json" } }
-    if (-not $WhatIf) { Set-Content -Path $out -Value $template -Encoding UTF8 }
+    if (-not $WhatIf) { Remove-Target $out; Write-Text $out $template }   # removed first, so a link there is never written through
     Say "NOTE  " "settings.json already exists (not touched). Wrote settings.stash.json next to it." Cyan
     Write-Host "         Merge the hooks / env / permissions you want, then delete settings.stash.json."
 }
 else {
     Add-Action @{ action = 'create'; path = "settings.json" }
-    if (-not $WhatIf) { Set-Content -Path $settings -Value $template -Encoding UTF8 }
+    if (-not $WhatIf) { Write-Text $settings $template }   # no BOM: Claude Code's JSON reader rejects one
     Say "NEW   " "settings.json (from template)" Green
 }
 if (-not $Context7Key) {

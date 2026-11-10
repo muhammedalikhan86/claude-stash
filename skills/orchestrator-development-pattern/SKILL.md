@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.16.0"
+  version: "2.16.1"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -425,7 +425,7 @@ and drags them into the diff. The Developer runs the fix form, then the verify f
 the gate — it must exit non-zero on a difference. A fix form alone is not a gate: `dotnet format`
 without `--verify-no-changes` never fails.
 
-**A scoped test command must actually scope.** Before putting one in a packet, check it once with a list-only run (Jest `--listTests`, `dotnet test --list-tests`). Through Nx, the runner's flags go after `--`: `npx nx test <project> -- --testPathPattern=<pattern>`; without the `--`, Nx runs the whole project.
+**A scoped test command must actually scope.** Before putting one in a packet, check it once with a list-only run (Jest `--listTests`, `dotnet test --list-tests`). Through Nx, the runner's flags go after `--`: `npx nx test <project> -- --testPathPattern=<pattern>`; without the `--`, Nx runs the whole project. Quote a pattern that holds `|`, `(` or `\` (`--testPathPattern="(a|b)\.spec\.ts"`), or pass plain file paths; unquoted, the shell mangles it and the whole suite runs.
 
 If no marker is found or multiple platforms are detected, **stop and ask the user to confirm the primary platform** before proceeding.
 

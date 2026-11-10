@@ -68,6 +68,9 @@ Notes: ~/.claude/agent-notes/orchestrated-developer-notes.md — if no Task Pack
 ## Constraints
 
 ### MUST NOT DO
+- Write a temp file anywhere but the session scratchpad your environment names, and spell its full
+  absolute path out in every command. Shell variables don't carry between Bash calls: an unset
+  `$SCRATCH/out.txt` becomes `/out.txt`, which Git Bash puts in the Git install folder
 - Claim another file or test is "unaffected" by your change without having read it — search for what
   depends on what you changed (selectors, positions, exported names), including tests outside your scope;
   if one outside your scope breaks, report it under Assumptions and Deviations rather than call it safe

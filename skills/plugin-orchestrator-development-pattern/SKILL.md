@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.13.0"
+  version: "1.13.1"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -320,7 +320,7 @@ check mode, the gate is that mode — it fails on unformatted code, where a plai
 .NET `--verify-no-changes`, as in the table; for the others, `prettier --check`, `ruff format --check`,
 `gofmt -l`, `cargo fmt --check`. The Developer runs the fix form, then the gate form.
 
-**A scoped test command must actually scope.** Before putting one in a packet, check it once with a list-only run (Jest `--listTests`, `dotnet test --list-tests`). Through Nx, the runner's flags go after `--`: `npx nx test <project> -- --testPathPattern=<pattern>`; without the `--`, Nx runs the whole project.
+**A scoped test command must actually scope.** Before putting one in a packet, check it once with a list-only run (Jest `--listTests`, `dotnet test --list-tests`). Through Nx, the runner's flags go after `--`: `npx nx test <project> -- --testPathPattern=<pattern>`; without the `--`, Nx runs the whole project. Quote a pattern that holds `|`, `(` or `\` (`--testPathPattern="(a|b)\.spec\.ts"`), or pass plain file paths; unquoted, the shell mangles it and the whole suite runs.
 
 **Component test command.** Also record how to run *only this component's* tests — derived from what
 the repo actually has, e.g. `npx nx run-many -t test -p <projects under the component's roots>`, or

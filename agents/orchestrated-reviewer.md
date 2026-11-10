@@ -118,6 +118,9 @@ so the orchestrator's re-spawn or a human can clear the blocker.
   fix it in this item
 
 ### MUST NOT DO
+- Write a temp file anywhere but the session scratchpad your environment names, and spell its full
+  absolute path out in every command. Shell variables don't carry between Bash calls: an unset
+  `$SCRATCH/out.txt` becomes `/out.txt`, which Git Bash puts in the Git install folder
 - PASS anything resting on an unchecked claim
 - Flag deferred test execution as a defect when the Task Packet defers it
 - Use `UNVERIFIED` because a call is hard or a retry is uncomfortable

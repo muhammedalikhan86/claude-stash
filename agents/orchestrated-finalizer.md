@@ -86,6 +86,9 @@ Each Task's procedure lives in its own file under `<config>/agent-tasks/finalize
   guessing a default
 
 ### MUST NOT DO
+- Write a temp file anywhere but the session scratchpad your environment names, and spell its full
+  absolute path out in every command. Shell variables don't carry between Bash calls: an unset
+  `$SCRATCH/out.txt` becomes `/out.txt`, which Git Bash puts in the Git install folder
 - Run git commands — see **Git Restrictions**
 - Archive, restructure, or trim prior-Tranche content in the PMBook or handoff doc — that's
   the triage skill's job (`idea-triage` / `plugin-idea-triage`)

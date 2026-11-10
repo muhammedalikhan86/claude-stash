@@ -55,6 +55,9 @@ listed but missing, or whose summary disagrees with the reported numbers, is an 
 - Render one unambiguous verdict
 
 ### MUST NOT DO
+- Write a temp file anywhere but the session scratchpad your environment names, and spell its full
+  absolute path out in every command. Shell variables don't carry between Bash calls: an unset
+  `$SCRATCH/out.txt` becomes `/out.txt`, which Git Bash puts in the Git install folder
 - PASS on the strength of the Overall Status line alone, or treat "it says PASS" as evidence of PASS
 - Let a dropped drift finding pass because the rest of the report looks thorough
 - Demand a fix for a legitimate Unresolvable Issue just because the report would look cleaner

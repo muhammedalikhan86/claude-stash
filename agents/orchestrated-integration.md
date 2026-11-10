@@ -76,6 +76,9 @@ its Developer Output records it as a justified deviation; a file inside another 
 - Check for dead code introduced by combining features, not just failing gates
 
 ### MUST NOT DO
+- Write a temp file anywhere but the session scratchpad your environment names, and spell its full
+  absolute path out in every command. Shell variables don't carry between Bash calls: an unset
+  `$SCRATCH/out.txt` becomes `/out.txt`, which Git Bash puts in the Git install folder
 - Anything under **Fixing, Not Gaming**
 - Install a new skill from the external marketplace yourself
 

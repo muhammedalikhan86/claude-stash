@@ -1,6 +1,6 @@
 #!/bin/bash
 . "$(dirname "${BASH_SOURCE[0]}")/lib-python.sh"
-# shaw-library-guard.sh — PreToolUse hook on Bash|PowerShell|Monitor
+# shaw-library-guard.sh — PreToolUse hook (matcher: Bash|PowerShell|Monitor)
 # Stops anything that would put a Shaw.* library change on the server before
 # Muhammed has reviewed it (rule: ~/.claude/memory/shaw-library-changes-need-review.md):
 #   1. a Release build/pack of anything under Libraries\ShawLibraries

@@ -1,6 +1,6 @@
 #!/bin/bash
 . "$(dirname "${BASH_SOURCE[0]}")/lib-python.sh"
-# allow-claude-config-read.sh — PreToolUse hook
+# allow-claude-config-read.sh — PreToolUse hook (matcher: Read|Glob|Grep)
 # Auto-approves READ-ONLY tool calls (Read, Glob, Grep) whose target path is inside
 # ~/.claude/agents or ~/.claude/skills, or that is ~/.claude/settings.json. Nothing else is touched: no writes, no Bash,
 # no other folder. Added because the permission prompt for ~/.claude/agents was not

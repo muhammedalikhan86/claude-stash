@@ -1,6 +1,6 @@
 #!/bin/bash
 . "$(dirname "${BASH_SOURCE[0]}")/lib-python.sh"
-# pre-compact-snapshot.sh — PreCompact hook
+# pre-compact-snapshot.sh — PreCompact hook (matcher: "")
 # Backs up per-project state files before /compact wipes them from context,
 # and writes a small self-contained pointer (derived from `git status
 # --short`, not a human-authored note) that post-compact-restore.sh reads

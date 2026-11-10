@@ -1,5 +1,5 @@
 #!/bin/bash
-# lib-python.sh — shared interpreter resolution for the hooks in this directory.
+# lib-python.sh — helper (sourced, not a hook) — shared interpreter resolution for the hooks in this directory.
 # Sourced (not executed) by each hook; sets $PY to a Python that actually runs.
 #
 # Why this exists: on Windows, `python3` is usually the Microsoft Store

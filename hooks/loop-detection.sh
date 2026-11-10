@@ -2,7 +2,11 @@
 . "$(dirname "${BASH_SOURCE[0]}")/lib-python.sh"
 # loop-detection.sh — PostToolUse hook (matcher: Edit|Write)
 # Doom-loop guard: counts repeated edits to the same file within a session and
-# nudges a rethink once the count crosses a threshold. Ported from
+# nudges a rethink once the count crosses a threshold. Counts are per full path
+# (slash direction and case normalised), never per file name, so two files both
+# called SKILL.md are counted apart. Markdown under a docs/ folder is skipped:
+# governed docs (PRD, Architecture, PMBook) are edited turn after turn by design.
+# Ported from
 # sangrokjung/claude-forge (hooks/loop-detection.sh), kept close to the
 # original — it was already self-contained and dependency-light.
 #
@@ -41,22 +45,31 @@ fi
 SESSION_ID="${SESSION_ID//[^A-Za-z0-9_-]/_}"
 TRACK_FILE="/tmp/claude-loop-detect-${SESSION_ID}.jsonl"
 
-BASENAME=$(basename "$FILE_PATH")
+# One key per file: forward slashes, lower case (Windows paths arrive as both
+# C:\x and c:/x).
+KEY="${FILE_PATH//\\//}"
+KEY="${KEY,,}"
+
+# Governed docs: Markdown anywhere under a docs/ folder is edited on purpose,
+# turn after turn. Not a loop.
+if [[ "$KEY" == *.md && ( "$KEY" == docs/* || "$KEY" == */docs/* ) ]]; then
+    exit 0
+fi
 
 COUNT=0
 if [[ -f "$TRACK_FILE" ]]; then
-    COUNT=$(grep -cF "\"$FILE_PATH\"" "$TRACK_FILE" 2>/dev/null || true)
+    COUNT=$(grep -cF "\"$KEY\"" "$TRACK_FILE" 2>/dev/null || true)
     COUNT=${COUNT:-0}
 fi
 
-echo "{\"file\":\"$FILE_PATH\",\"ts\":\"$(date -u +%FT%TZ)\",\"tool\":\"$TOOL_NAME\"}" >> "$TRACK_FILE"
+echo "{\"file\":\"$KEY\",\"ts\":\"$(date -u +%FT%TZ)\",\"tool\":\"$TOOL_NAME\"}" >> "$TRACK_FILE"
 COUNT=$((COUNT + 1))
 
 MSG=""
 if [[ $COUNT -ge 10 ]]; then
-    MSG="[Loop Detection] '$BASENAME' has been edited ${COUNT} times this session - possible doom loop. Suggested: (1) check git diff for what actually changed (2) look for the root cause in a different file (3) reconsider the approach entirely."
+    MSG="[Loop Detection] '$FILE_PATH' has been edited ${COUNT} times this session - possible doom loop. Suggested: (1) check git diff for what actually changed (2) look for the root cause in a different file (3) reconsider the approach entirely."
 elif [[ $COUNT -ge 5 ]]; then
-    MSG="[Loop Detection] '$BASENAME' has been edited ${COUNT} times. You're repeatedly editing the same file - consider a different approach."
+    MSG="[Loop Detection] '$FILE_PATH' has been edited ${COUNT} times. You're repeatedly editing the same file - consider a different approach."
 fi
 
 if [[ -n "$MSG" ]]; then

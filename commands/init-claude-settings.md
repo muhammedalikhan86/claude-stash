@@ -38,21 +38,21 @@
      "permissions": {
        "allow": [
          "Read(*)",
-         "Bash(*ls*)",
-         "Bash(*cat*)",
-         "Bash(*cd*)",
-         "Bash(*mkdir*)",
-         "Bash(*mv*)",
-         "Bash(*cp*)",
-         "Bash(*echo*)",
-         "Bash(*curl * http://127.0.0.1*)",
-         "Bash(*curl * http://localhost*)",
-         "Bash(*git log*)",
-         "Bash(*git status*)",
-         "Bash(*git diff*)",
-         "Bash(*git add*)",
-         "Bash(*git commit*)",
-         "Bash(*git branch*)"
+         "Bash(ls *)",
+         "Bash(cat *)",
+         "Bash(cd *)",
+         "Bash(mkdir *)",
+         "Bash(mv *)",
+         "Bash(cp *)",
+         "Bash(echo *)",
+         "Bash(curl * http://127.0.0.1*)",
+         "Bash(curl * http://localhost*)",
+         "Bash(git log *)",
+         "Bash(git status *)",
+         "Bash(git diff *)",
+         "Bash(git add *)",
+         "Bash(git commit *)",
+         "Bash(git branch *)"
        ],
        "deny": [
          "Bash(*git push --force*)",
@@ -81,9 +81,17 @@
 
    Then, based on the stack detected in step 3, append a handful of
    stack-specific allow patterns for the package manager / test runner /
-   build tool actually present (e.g. `Bash(*npm*)` + `Bash(*node*)` for
-   Node, `Bash(*cargo*)` for Rust, `Bash(*dotnet*)` for .NET). Do not add
+   build tool actually present (e.g. `Bash(npm *)` + `Bash(node *)` for
+   Node, `Bash(cargo *)` for Rust, `Bash(dotnet *)` for .NET). Do not add
    permissions for tools that aren't present in the repo.
+
+   **Allow patterns are prefix rules: `Bash(<command> *)`, with the space.**
+   The space makes a word boundary, so `Bash(ls *)` matches `ls -la` but not
+   `lsof`. Never write an allow rule with a leading `*` or without the space
+   (`Bash(*cd*)`, `Bash(cd*)`): `*cd*` matches any command that merely contains
+   "cd". Claude Code splits `&&`, `;` and `|` chains and checks each part on its
+   own, so a leading `*` buys nothing. The `deny` list keeps its leading `*`
+   on purpose: there, matching more is the safe direction.
 
    **`git stash`, `git checkout` and branch-creating `git switch` (`-c`, `-C`,
    `--create`, `--force-create`) stay in `deny` — do not move any of them back

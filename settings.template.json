@@ -6,8 +6,8 @@
   },
   "permissions": {
     "allow": [
-      "Bash(grep*)",
-      "Bash(cd*)",
+      "Bash(grep *)",
+      "Bash(cd *)",
       "WebSearch",
       "Read(~/.claude/skills/**)",
       "Read(~/.claude/agents/**)",

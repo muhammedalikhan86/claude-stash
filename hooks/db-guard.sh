@@ -1,13 +1,13 @@
 #!/bin/bash
 . "$(dirname "${BASH_SOURCE[0]}")/lib-python.sh"
-# db-guard.sh — PreToolUse hook
+# db-guard.sh — PreToolUse hook (matcher: mcp__.*)
 # Blocks destructive SQL patterns before they reach any database MCP server:
 # DROP TABLE/DATABASE/SCHEMA, TRUNCATE (DDL form), DELETE without WHERE,
 # ALTER TABLE ... DROP COLUMN.
 #
 # Generalized from sangrokjung/claude-forge (hooks/db-guard.sh), which matched
 # only Supabase's MCP tool names. This version is vendor-agnostic: wire it in
-# settings.json against a broad matcher (e.g. "mcp__.*") and let the script's
+# settings.json against the broad matcher "mcp__.*" (as settings.template.json does) and let the script's
 # own no-op-if-no-query-found check filter out every non-SQL tool call safely
 # — so it doesn't need updating when you switch or add a DB MCP server.
 #

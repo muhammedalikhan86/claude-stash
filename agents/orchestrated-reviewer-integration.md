@@ -55,9 +55,12 @@ listed but missing, or whose summary disagrees with the reported numbers, is an 
 - Render one unambiguous verdict
 
 ### MUST NOT DO
-- Write a temp file anywhere but the session scratchpad your environment names, and spell its full
-  absolute path out in every command. Shell variables don't carry between Bash calls: an unset
-  `$SCRATCH/out.txt` becomes `/out.txt`, which Git Bash puts in the Git install folder
+- Write a temp file (captured output, a scratch script, a screenshot) anywhere but the `Temp dir:`
+  your prompt gives (with none, the scratchpad your environment names; parity files go in the parity
+  folder) — never `/`, the repo root or a tool's install folder. Spell the full absolute path out in
+  every command; never build it from a variable that may be empty. Shell variables don't carry
+  between Bash calls, and in Git Bash `/` is the Git install folder, not `C:\`, so an unset
+  `$SCRATCH/out.txt` lands there. Report a Windows path from `cygpath -w`
 - PASS on the strength of the Overall Status line alone, or treat "it says PASS" as evidence of PASS
 - Let a dropped drift finding pass because the rest of the report looks thorough
 - Demand a fix for a legitimate Unresolvable Issue just because the report would look cleaner

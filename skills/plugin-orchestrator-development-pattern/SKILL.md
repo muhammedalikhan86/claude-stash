@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.13.2"
+  version: "1.13.3"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -115,6 +115,8 @@ generic agent.
 **Before every spawn** print `→ Spawning <Role> agent — <item ID> — model: <model>[, effort: <effort>]`,
 and pass `model` explicitly from **Model Assignment**. The agent's own frontmatter model is only its
 standalone default.
+
+Every spawn prompt also carries `Temp dir: <absolute path>`: the Orchestrator's own scratchpad, as its environment names it, written out in full. Sub-agents cannot discover it themselves, and one without it has written temp files into the Git install folder.
 
 ### Model Assignment
 

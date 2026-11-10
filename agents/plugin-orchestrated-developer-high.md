@@ -68,9 +68,12 @@ Notes: ~/.claude/agent-notes/orchestrated-developer-notes.md — if no Task Pack
 ## Constraints
 
 ### MUST NOT DO
-- Write a temp file anywhere but the session scratchpad your environment names, and spell its full
-  absolute path out in every command. Shell variables don't carry between Bash calls: an unset
-  `$SCRATCH/out.txt` becomes `/out.txt`, which Git Bash puts in the Git install folder
+- Write a temp file (captured output, a scratch script, a screenshot) anywhere but the `Temp dir:`
+  your prompt gives (with none, the scratchpad your environment names; parity files go in the parity
+  folder) — never `/`, the repo root or a tool's install folder. Spell the full absolute path out in
+  every command; never build it from a variable that may be empty. Shell variables don't carry
+  between Bash calls, and in Git Bash `/` is the Git install folder, not `C:\`, so an unset
+  `$SCRATCH/out.txt` lands there. Report a Windows path from `cygpath -w`
 - Claim another file or test is "unaffected" by your change without having read it — search for what
   depends on what you changed (selectors, positions, exported names), including tests outside your scope;
   if one outside your scope breaks, report it under Assumptions and Deviations rather than call it safe

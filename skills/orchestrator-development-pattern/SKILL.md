@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.16.2"
+  version: "2.16.3"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -136,6 +136,8 @@ Every spawn — Developer, Reviewer, Integration, Reviewer-Integration, and each
 `model` explicitly as an `Agent` tool parameter, from **Model Assignment** below, including roles whose
 value matches the agent's default. That overrides the agent's own frontmatter `model:`, which is only its
 standalone default; model selection lives in this one table, with one plug-in point per role.
+
+Every spawn prompt also carries `Temp dir: <absolute path>`: the Orchestrator's own scratchpad, as its environment names it, written out in full. Sub-agents cannot discover it themselves, and one without it has written temp files into the Git install folder.
 
 ### Model Assignment
 

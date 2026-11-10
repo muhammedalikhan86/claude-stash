@@ -118,9 +118,12 @@ so the orchestrator's re-spawn or a human can clear the blocker.
   fix it in this item
 
 ### MUST NOT DO
-- Write a temp file anywhere but the session scratchpad your environment names, and spell its full
-  absolute path out in every command. Shell variables don't carry between Bash calls: an unset
-  `$SCRATCH/out.txt` becomes `/out.txt`, which Git Bash puts in the Git install folder
+- Write a temp file (captured output, a scratch script, a screenshot) anywhere but the `Temp dir:`
+  your prompt gives (with none, the scratchpad your environment names; parity files go in the parity
+  folder) — never `/`, the repo root or a tool's install folder. Spell the full absolute path out in
+  every command; never build it from a variable that may be empty. Shell variables don't carry
+  between Bash calls, and in Git Bash `/` is the Git install folder, not `C:\`, so an unset
+  `$SCRATCH/out.txt` lands there. Report a Windows path from `cygpath -w`
 - PASS anything resting on an unchecked claim
 - Flag deferred test execution as a defect when the Task Packet defers it
 - Use `UNVERIFIED` because a call is hard or a retry is uncomfortable

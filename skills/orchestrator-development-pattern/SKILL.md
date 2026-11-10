@@ -485,6 +485,15 @@ Spawn a Developer sub-agent via the Agent tool with `subagent_type: "orchestrate
 
 It returns a **Developer Output** in its agent's Output Template (Format and Lint must be PASS).
 
+**A design ruling.** If the Developer's Assumptions raise a difference from the board (it cannot be
+built as drawn, e.g. no Material slot for it), rule on it — the user rules when it changes what the user
+sees beyond the board's intent. A ruling that accepts the difference becomes a `Ruled deviations` line
+in the packet's `## Design Reference`, with its source (`orchestrator ruling, <date>` or
+`user ruling, <date>`). Before the Reviewer spawn: **re-save the packet file** with that line, store the
+full packet in `run-state-file`, and save the ruling in run-state's `decisions.rulings` (item, the
+difference, the ruling, its source). The Reviewer and the Parity Check then read it from the packet.
+Send the Developer back only when the ruling needs a code change; otherwise go straight to Step 1.3.
+
 **`Type: Spike` carve-out:** skip Step 1.3 and Step 1.4 entirely — go straight to **Spike Flow** (below
 Step 1.5) instead. There is no Reviewer spawn, no retry loop, and no Manual Verification Gate for a Spike;
 its Developer Output is Findings, not a reviewable implementation.
@@ -520,6 +529,14 @@ and why the check is measured on the rendered screen.
 5. **Keep the Parity Table's path, with its unruled-mismatch count beside it,** in `run-state-file`.
    Step 1.5 attaches the table, and the metrics row sums the counts; the counts are cleared once that
    row is written, so a later leg counts only its own. Save run-state after every Parity verdict.
+6. **Outside this item.** Differences the check returns under `Outside this item` are not mismatches:
+   they do not touch the verdict, the issues list or the unruled-mismatch count, and no Developer
+   retry fixes them. Check its sorting — a row whose element is rendered or styled by a file in the
+   packet's `Files to Create or Modify` is this item's, and counts as an unruled mismatch. Save the rest
+   in `run-state-file` under the item's `outsideItem` list, merged across retries (one entry per
+   state + element). The final summary lists them, and offers once to log each as a new Bug in the
+   PMBook, or as a design row when the board itself may be what is wrong. Nothing is logged without
+   the user's yes.
 
 ### Handling an UNVERIFIED Verdict
 
@@ -1394,8 +1411,12 @@ as it always is for Bug and Spike intake items (no PMBook row to regenerate from
 `commit: yes | no | ask`; the Release label per scope (`lane:<ID>`, `phase3` — each scope reuses only its
 own); the accepted known-reds, with any tracking ruling's assigned `OI-NNN`; `heldForNextRun` (full
 packets of mid-run intakes held because Phase 2 had started — counted in the next-free-ID scan, announced
-at resume and at close-out, and seeding the next run's queue); and the `app-url` / `artboard-server`
-answers.
+at resume and at close-out, and seeding the next run's queue); the `app-url` / `artboard-server`
+answers; and `rulings` (Step 1.2's design rulings).
+
+**One file, replaced by each new run.** A new run writes over the last one's file once that run is
+complete. That is intended: the file exists for resume, and a complete run has nothing to resume. The
+finished run's record is its `metrics-log-file` rows and its commits (`Run-Id:` trailer), not this file.
 
 **When it is saved:** when each step starts and when it ends; at every Developer return and every
 verdict (so every `loop_count` change); at every user decision; when a Bug enters `awaiting
@@ -1437,7 +1458,8 @@ gets a second row when it reaches its next terminal state.
 
 **Close-out always runs** — Spike-only and P0-only runs included: append a row for each item (and
 Integration) that has no row for its current leg (a `Dropped` row counts; a resumed escalated item or a resumed Integration adds one), the
-`RUN` row (Verdict `Complete`), announce any `decisions.heldForNextRun` items, and mark run-state complete. An escalation pause is not close-out: it
+`RUN` row (Verdict `Complete`), announce any `decisions.heldForNextRun` items and every item's
+`outsideItem` entries (Step 1.3b point 6, with the offer to log them), and mark run-state complete. An escalation pause is not close-out: it
 writes the rows so far plus a `RUN` row with Verdict `Paused (escalation)`, and saves run-state **without**
 marking it complete, so Step 0.0's resume check still fires. When the resumed run finishes, its close-out
 appends a second `RUN` row, `Complete`.
@@ -1542,6 +1564,7 @@ P0 hotfixes:      B-XXX — status as it stands after Step 3.2 (Integration Pend
                   run's Integration re-validated it) (or "None this run")
 Spikes run:       S-XXX (or "None this run")
 Dropped:          F-XXX / B-XXX — dropped or deferred by the user (or "None")
+Outside items:    <ID> — <state, element: board vs built> — log as Bug / design row? (one per line; or "None")
 Quality gate:     ✅
 Integration:      ✅ (or "Not run — the run has no Feature and no non-P0 Bug")
 Known-reds:       <test> — owner <module> — tracked by <ID> / accepted by the user (one per line; or "None")

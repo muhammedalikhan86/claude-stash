@@ -442,6 +442,15 @@ that the packet did not name as retired), decide it — a ruling that changes sc
 goes to the user — and **resume the same Developer spawn** (`SendMessage` to its ID) with the ruling.
 No cold retry, no `loop_count` change. Pass the ruling to the Reviewer as binding.
 
+**A design ruling.** If the question is a difference from the board (the Developer's Assumptions say
+the board cannot be built as drawn, e.g. no Material slot for it), rule on it — the user rules when it
+changes what the user sees beyond the board's intent. A ruling that accepts the difference becomes a
+`Ruled deviations` line in the packet's `## Design Reference`, with its source (`hub ruling, <date>` or
+`user ruling, <date>`). Before the Reviewer spawn: **re-save the packet file** with that line, save the
+full packet in `run-state-file`, and save the ruling in run-state's `decisions.rulings` (item, the
+difference, the ruling, its source). The Reviewer and the Parity Check then read it from the packet.
+Resume the Developer only when the ruling needs a code change; otherwise go straight to Step 1.3.
+
 **`Type: Spike`** → Spike Flow in `references/spike-and-p0.md`, not Step 1.3.
 
 ### Step 1.3 — Invoke Reviewer Agent
@@ -833,7 +842,8 @@ saved but not complete.
    Linked Runs: the RUN row goes into each linked component's `metrics-log-file`.
 2. Mark `run-state-file` complete — Linked Runs: every run-state file with this run id.
 3. Surface every Finalizer `Notes` entry in the summary.
-4. List any `## Deferred Integration` row still `Pending`, and any `heldForNextRun` item.
+4. List any `## Deferred Integration` row still `Pending`, any `heldForNextRun` item, and every item's
+   `outsideItem` entries (Step 1.3b), with the offer to log them (`references/ui-packets.md` point 7).
 5. List every known-red, with its tracking ID or `accepted by the user`.
 6. Leave the stack in the state it was found in (or say which state it is in).
 7. Set every task-bar task `completed`.
@@ -946,7 +956,13 @@ files, time), `doneAt` once the user says "done", and its file set (`references/
 **`decisions`** — written the moment the user (or the Orchestrator) decides, before acting on it:
 `commit: yes | no | ask`; the Release label per scope (`lane:<ID>`, `phase3`), each scope reusing only
 its own; the accepted known-red list, with each tracking ruling and its assigned OI id (saved before
-the PMBook write); `heldForNextRun` (Step 0.1b item 7); the `app-url` and `artboard-server` answers.
+the PMBook write); `heldForNextRun` (Step 0.1b item 7); the `app-url` and `artboard-server` answers; `rulings` (Step 1.2's
+design rulings).
+
+**One file per component, replaced by each new run.** Step 0.4 writes a new run over the last one's
+file once that run is complete. That is intended: the file exists for resume, and a complete run has
+nothing to resume. The finished run's record is its `metrics-log-file` rows and its commits
+(`Run-Id:` trailer), not this file.
 **Packets:** a PMBook item the Orchestrator used unchanged persists only its ID; every other packet —
 ad-hoc Bug and Spike items, and any packet the Orchestrator added to (e.g. a Design Reference) — is
 persisted in full.
@@ -1095,6 +1111,7 @@ Bugs fixed:       <IDs> (or "None this run")
 P0 hotfixes:      <ID> — <its status as it stands after Step 3.2: Hotfixed — Integration Pending, or Fixed> (one per line; or "None this run")
 Spikes run:       <IDs> (or "None this run")
 Dropped:          <ID> — dropped/deferred by the user (one per line; or "None")
+Outside items:    <ID> — <state, element: board vs built> — log as Bug / design row? (one per line; or "None")
 Quality gate:     ✅  (test scope: <full|component>)
 Integration:      ✅ (or "Not run — <why: only P0 fast lanes / Spikes / escalated items>")
 Known-reds:       <test> — owner <component> — tracked by <ID> / accepted by the user (one per line; or "None")

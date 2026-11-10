@@ -309,8 +309,15 @@ Repo root: <INSERT>
 5. Save a screenshot per state per width per side, and the raw measurements as JSON.
 
 ## Verdict
-- Every difference is a row. A difference covered by a Ruled deviations line is a match with its ruling
-  named. Any **unruled** difference is a FAIL.
+- First sort each difference: **this item** or **outside this item**. It is this item's when the element
+  is rendered or styled by a file in the packet's `Files to Create or Modify`, is named by an Acceptance
+  Criterion, or changed between the board and the built screen because of this item. Otherwise — an
+  element the item does not touch, on a surface it happens to share — it is outside this item. When
+  unsure, it is this item's.
+- Every difference of this item is a row. A difference covered by a Ruled deviations line is a match
+  with its ruling named. Any **unruled** difference of this item is a FAIL.
+- A difference outside this item goes under `Outside this item`, never in the Parity Table. It never
+  makes the verdict FAIL, and it is never fixed in this item.
 - When Compared against is the Acceptance Criteria, a row is a mismatch when the built screen breaks a
   criterion.
 - The app or board will not load, or a listed state cannot be reached even with stubs → UNVERIFIED for
@@ -322,6 +329,8 @@ Compared against: <as given>
 Parity Table:
 | State | Width | Element | Board | Built | Match | Ruling |
 Issues (if FAIL): one per unruled mismatch — state, width, element, board value, built value.
+Outside this item (or "None"):
+| State | Width | Element | Board | Built | Why outside |
 Unable to Verify (if UNVERIFIED): what and why.
 Files: <the parity folder's contents>
 ```

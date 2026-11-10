@@ -85,3 +85,11 @@ for a packet with no `## Design Reference`.
 6. **Keep every run's Parity Table path** — PASS or FAIL, one per parity folder — in `run-state-file`,
    with that run's unruled-mismatch count beside it, and save it after the verdict. Step 1.5 attaches
    the latest, and the metrics row sums the counts (clearing: **Pipeline Telemetry**).
+7. **Outside this item.** Differences the check returns under `Outside this item` are not mismatches:
+   they do not touch the verdict, the issues list or the unruled-mismatch count, and no Developer
+   retry fixes them. Check its sorting — a row whose element is rendered or styled by a file in the
+   packet's `Files to Create or Modify` is this item's, and counts as an unruled mismatch. Save the rest
+   in `run-state-file` under the item's `outsideItem` list, merged across retries (one entry per
+   state + element). The final summary lists them, and offers once to log each as a new Bug in this
+   component's PMBook, or as a design row when the board itself may be what is wrong. Nothing is
+   logged without the user's yes.

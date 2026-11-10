@@ -4,7 +4,7 @@ description: Initialise a repo for the ADLC (AI Development Life Cycle) workflow
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.0.0"
+  version: "1.1.0"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project
   role: platform-engineer
@@ -33,6 +33,8 @@ a skill and *generates* a skill rather than a command.
 | `.claude/memory.md` | Session-orientation **pointer file** — no content of its own |
 | `.claude/skills/run-app/SKILL.md` | Project-local launch skill (not a slash command) |
 | `.claude/SKILLS.md` | Variable bindings consumed by the global skills |
+| `.gitignore` | Knowledge-graph ignore block appended — created only if absent, never overwritten |
+| `scripts/graph.ps1` | The standard knowledge-graph build script, copied from this skill's `templates/` |
 | `CLAUDE.md` | Operating guidance, written only from verified facts |
 | `docs/adr/` | ADR home (`.gitkeep`'d) |
 
@@ -85,6 +87,12 @@ the stack will be and what the run/test commands are; do not infer from the repo
 
 Also detect whether the repo is **multi-toolchain** (e.g. an SPA + an API). If so, every quality
 claim must cover both halves — a green run on one says nothing about the other. Record that.
+
+Also settle the **code roots** — the folders that hold source and tests (`src/<Project>`,
+`tests/<Project>.Tests`, `app/`, …), read from the manifests found above. They become
+`graphify-directories` (Step 8), which `scripts/graph.ps1` (Step 3d) builds the knowledge graph from.
+Never the repo root: a graph of `./` pulls `docs/` and every planning document into a code graph. A
+pre-code repo has none to read — ask the user where the code will live.
 
 ## Step 3 — `.claude/settings.json`
 
@@ -274,6 +282,63 @@ servers the first time the repo is opened — that's expected, not a sign anythi
 
 If `.mcp.json` already exists, show the user its current `mcpServers` keys and ask before adding or
 overwriting `playwright`/`context7` entries — never clobber an existing server config silently.
+
+## Step 3c — `.gitignore`: the knowledge-graph block
+
+**Create or append. Never overwrite.** A repository that already has a `.gitignore` has one for
+reasons you cannot see, and replacing it is how a scaffold step turns into a data-loss step. If the
+file exists, append the block below to the end of it; if it does not, create it with the block as its
+only content. If the block is already present — test for the `graphify-out` line — change nothing and
+say so.
+
+```gitignore
+# Knowledge graph (graphify)
+#
+# One graph, at graphify-out/. Only GRAPH_REPORT.md is committed - it is what
+# humans and later agents read. graph.json, graph.html, manifest.json,
+# cost.json, the AST cache and .graphify_analysis.json are regenerable, large,
+# and rewritten in full on every run. Rebuild them with scripts/graph.ps1.
+#
+# .graphify_root is ignored too: it records an absolute path from the machine
+# that built the graph, so committing it breaks every other clone.
+graphify-out/**
+!graphify-out/
+!graphify-out/GRAPH_REPORT.md
+.graphify_root
+```
+
+The three `graphify-out` lines have to be in that order. `graphify-out/**` excludes everything; git
+will not look inside an excluded directory, so `!graphify-out/` is what re-admits the folder far
+enough for the third line to match the report. Drop it and nothing is committed at all. (This is the
+one-graph shape of `plugin-init-adlc-repo`'s block, which keeps a graph per component in
+`graphify-out/<component>/`.)
+
+## Step 3d — `scripts/graph.ps1`: the graph build script
+
+Copy `~/.claude/skills/init-adlc-repo/templates/graph.ps1` (this skill's own `templates/graph.ps1`)
+to `scripts/graph.ps1` in the target repo, byte for byte. If the template is missing, stop this step
+and say so in Step 9 — do not write a script from memory.
+
+**Create only.** If `scripts/graph.ps1` already exists, show the user how it differs from the template
+and ask before replacing it.
+
+What the copy does, so the summary can say it plainly:
+
+- Reads `.claude/SKILLS.md` each run. With no `components:` table it treats the repo as one
+  component: the roots are `graphify-directories` (falling back to `source-code-directory`, which it
+  refuses if that is the repo root), and the output folder is `graphify-out` (`./graphify-out`).
+  **It holds no list of roots**, so changing a root is a `SKILLS.md` edit only.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1` runs `graphify update`
+  once per root (no LLM, no API cost) with an absolute `GRAPHIFY_OUT`, so the roots merge into one
+  graph, then stamps `GRAPH_REPORT.md` with `> Built at commit: <sha>` (plus
+  `+ uncommitted working tree` when the roots have uncommitted changes). The orchestrator's Graphify
+  step finds this script and runs it (its route 1).
+- `-DryRun` parses `SKILLS.md` and prints what it would build, writing nothing. Exit 1 means graphify
+  is not on PATH or the build failed.
+- Works under Windows PowerShell 5.1 (`powershell`) and PowerShell 7.
+
+If the repo has a `Makefile`, offer a `graph` target that calls it; do not add a `Makefile` to a repo
+without one. After the copy, run it once with `-DryRun` and put its output in the Step 9 summary.
 
 ## Step 4 — `.claude/memory.md`
 
@@ -485,6 +550,14 @@ values:
   architecture-doc: "./docs/architecture.md"
   test-cases-doc: "./docs/test-cases.md"
   adr-directory: "./docs/adr"
+  graphify-directories:
+    - "<./src/Project>"
+    - "<./tests/Project.Tests>"
+  graphify-out: "./graphify-out"
+
+`graphify-directories` keeps the knowledge graph on the code roots (Step 2); `source-code-directory`
+stays the repo root for platform detection. `scripts/graph.ps1` reads both bindings — change a root
+here and nowhere else.
 
 ---
 
@@ -505,11 +578,25 @@ values:
 
 ## Graph-Assisted Context
 
-Skill: `graphify` (located at `~/.claude/skills/graphify/SKILL.md`)
-Trigger: `/graphify` or `/graphify query "<topic>"` or `/graphify --update`
+One graph of the `graphify-directories` roots, at `graphify-out/`, **built by `scripts/graph.ps1`** —
+not by the `/graphify` skill:
 
-Use graphify before starting any feature that touches multiple modules.
-The graph report lives at `graphify-out/GRAPH_REPORT.md` after the first run.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1
+```
+
+The script reads `graphify-directories` and `graphify-out` above, runs `graphify update` per root
+(no LLM) and stamps `GRAPH_REPORT.md` with the commit it was built at. The orchestrator's Graphify
+step runs the same script. Only `GRAPH_REPORT.md` is committed; `graph.json`, `graph.html` and the
+cache are regenerable and gitignored, so a fresh clone has no graph until the script runs. If the
+report's `> Built at commit:` is not `git rev-parse HEAD` and the diff since touches a code root, it
+is stale: rebuild before relying on it.
+
+Read `graphify-out/GRAPH_REPORT.md` before starting any feature that touches multiple modules.
+
+Skill: `graphify` (located at `~/.claude/skills/graphify/SKILL.md`)
+Trigger: `/graphify query "<topic>"` — to ask the built graph a question. Run `/graphify` over a
+root by hand only when the LLM-enriched graph (inferred edges, named communities) is wanted.
 
 ---
 
@@ -544,6 +631,9 @@ these are project conventions meant to be committed, not local config. Explicitl
   their header didn't declare an event/matcher, or because `~/.claude/hooks` was empty/missing.
 - That `.mcp.json` was created with `playwright` and `context7`, and that `CONTEXT7_API_KEY` needs
   to be set in the user's environment before the Context7 server will authenticate.
+- **That `scripts/graph.ps1` builds the knowledge graph** (or why it was not copied), with its
+  `-DryRun` output, the `graphify-directories` it read, and that a fresh clone has no graph until it
+  runs.
 
 ---
 
@@ -579,6 +669,10 @@ Diagram *type* selection still matters and is unchanged — that guidance lives 
 - Never describe the architecture in `CLAUDE.md` beyond one orienting paragraph — it belongs in
   `docs/architecture.md`.
 - Never create a `docs/diagrams/` tree or a render script.
+- **Never overwrite an existing `.gitignore`.** Step 3c appends its block or creates the file.
+- **Never write `scripts/graph.ps1` from memory or put roots in it.** Copy the template (Step 3d);
+  the roots live in `graphify-directories`, and a second list in the script drifts from it silently.
+  Never bind `graphify-directories` to the repo root.
 - Generate a project **skill**, not a slash command, for app launch.
 - Never leave `settings.json`'s `hooks` block as a hardcoded empty stub — always attempt discovery
   against `~/.claude/hooks` first (Step 3a), and only leave it unset if that directory is genuinely
@@ -588,5 +682,5 @@ Diagram *type* selection still matters and is unchanged — that guidance lives 
   updates to the script keep reaching the project automatically.
 - Never write a real Context7 API key (or any other secret) into `.mcp.json` — it's a committed
   file. Use `${VAR}` environment-variable expansion and tell the user to set the variable locally.
-- This skill touches `.claude/`, `.mcp.json`, `CLAUDE.md`, and `docs/adr/`. It does not modify
-  application code.
+- This skill touches `.claude/`, `.mcp.json`, `.gitignore`, `scripts/graph.ps1`, `CLAUDE.md`, and
+  `docs/adr/`. It does not modify application code.

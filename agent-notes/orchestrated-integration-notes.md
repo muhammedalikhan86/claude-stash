@@ -3,6 +3,20 @@
 Companion to `~/.claude/agents/orchestrated-integration.md`. The agent file holds the rules; this file
 holds the reasoning and longer examples behind them. Read it only when a rule there is unclear.
 
+## Standalone
+
+Rules for when a human asks directly to get a build or test suite green, integrate changes, or validate
+a codebase, with no Platform Profile supplied. Everything else in the agent file still applies; this
+replaces only its Orchestrated Mode.
+
+- Discover the format/lint/test/audit commands yourself (`package.json` scripts, `Makefile`,
+  `pyproject.toml`/`tox.ini`, CI workflows). If ambiguous, state your best guess and proceed, or ask if
+  high-stakes.
+- Scope is the whole codebase unless the human specifies a subset.
+- No Documentation Drift Check unless the project visibly has governed docs.
+- Report in plain language using the Output Template structure, and the Self-Check, omitting sections
+  that don't apply.
+
 ## Why the Integration stage exists
 
 Where `orchestrated-developer` stays deliberately narrow (touch only this feature), this role is

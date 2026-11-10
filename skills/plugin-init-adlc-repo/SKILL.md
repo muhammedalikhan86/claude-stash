@@ -4,7 +4,7 @@ description: Initialise a PLUGIN-BASED repo for the ADLC (AI Development Life Cy
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.0.0"
+  version: "1.1.0"
   forked-from: "init-adlc-repo@1.0.0 (2026-09-10)"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project, add component, add plugin, new plugin
@@ -63,6 +63,7 @@ a skill and *generates* a skill rather than a command.
 | `.claude/skills/run-app/SKILL.md` | Project-local launch skill (not a slash command) |
 | `.claude/SKILLS.md` | Variable bindings consumed by the global skills |
 | `.gitignore` | Knowledge-graph ignore block appended — created only if absent, never overwritten |
+| `scripts/graph.ps1` | The standard knowledge-graph build script, copied in — reads the `components:` table, so it has no list of its own |
 | `CLAUDE.md` | Operating guidance, written only from verified facts |
 | `docs/adr/` | **Shared** ADR home (`.gitkeep`'d) - one folder, component-prefixed IDs |
 | `docs/<component>/` | One governed-doc folder per component, each with `history/` and `archive/` |
@@ -95,10 +96,19 @@ In **add** mode you are extending a repo that is already initialised. Do this an
 4. Report (Step 9).
 
 **Add mode must not touch** `.claude/settings.json`, `.mcp.json`, `.claude/memory.md`,
-`.claude/skills/run-app/`, `CLAUDE.md`, `docs/adr/`, or any other component's folder. Those are
-shared or already correct; rewriting them to add one plugin is how a scaffold clobbers a team's
-work. The only two writes are the new `docs/<component>/` tree and one appended row in
-`.claude/SKILLS.md`.
+`.claude/skills/run-app/`, `CLAUDE.md`, `docs/adr/`, `scripts/graph.ps1`, or any other component's
+folder. Those are shared or already correct; rewriting them to add one plugin is how a scaffold
+clobbers a team's work. The only two writes are the new `docs/<component>/` tree and one appended row
+in `.claude/SKILLS.md`.
+
+**The graph script needs no edit for a new component.** The standard `scripts/graph.ps1` (Step 3d)
+reads the `components:` table every time it runs, so the appended row is all it takes:
+`scripts/graph.ps1 -Component <component>` works as soon as the row is in and its roots are on disk
+(until then it skips that component with a note and exits 0). **One exception — an older repo whose
+`scripts/graph.ps1` keeps its own hard-coded component list** (look for a `$Components = [ordered]@{`
+block in it). That script does not see the new row, so `-Component <component>` exits 1 with
+"Unknown component". Say so in the Step 9 report and offer to replace it with the standard script
+(Step 3d) — never edit or replace it without the user's yes, since it is outside add mode's two writes.
 
 Everything below this point is **init mode**.
 
@@ -369,8 +379,42 @@ everything; git will not look inside an excluded directory, so the two `!` direc
 re-admit the path far enough for the fourth line to match the report itself. Drop either and nothing
 is committed at all.
 
-Tell the user in the Step 9 summary that `make graph` (or whatever the repo's rebuild entry point is)
-is what regenerates these, and that a fresh clone has no graph until it runs.
+Tell the user in the Step 9 summary that `scripts/graph.ps1` (Step 3d) is what regenerates these, and
+that a fresh clone has no graph until it runs.
+
+## Step 3d — `scripts/graph.ps1`: the graph build script
+
+Copy `~/.claude/skills/init-adlc-repo/templates/graph.ps1` to `scripts/graph.ps1` in the target repo,
+byte for byte. (It lives under the single-component skill because both init skills share it; it is
+installed with the skills.) If that template is missing, stop this step and say so in Step 9 — do not
+write a script from memory.
+
+**Create only.** If `scripts/graph.ps1` already exists, show the user how it differs from the template
+and ask before replacing it. A hand-made one with a hard-coded component list is the usual case; the
+standard script replaces it with no loss, but it is the user's call.
+
+What the copy does, so the summary can say it plainly:
+
+- Reads `.claude/SKILLS.md` each run: the `components:` table for each component's `code` roots, and
+  the `graphify-out` binding (`./graphify-out/{component}`) for where each graph goes. **It holds no
+  component list**, so a new component (add mode) needs no edit to it.
+- `scripts/graph.ps1` builds every component; `-Component <name>` builds one. The second is the exact
+  command `plugin-orchestrator-development-pattern` runs in its Graphify step:
+  `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1 -Component <component>`.
+- Runs `graphify update` once per root (no LLM, no API cost) with an absolute `GRAPHIFY_OUT`, so a
+  component's roots merge into one graph at `graphify-out/<component>/`, then stamps
+  `GRAPH_REPORT.md` with `> Component:`, `> Built at commit: <sha>` (plus `+ uncommitted working tree`
+  when the roots have uncommitted changes) and `> Code roots:`.
+- `-Root <root>` rebuilds only those roots of a component whose `graph.json` already exists;
+  `-DryRun` parses `SKILLS.md` and prints what it would build, writing nothing.
+- A component whose roots are not on disk yet is skipped with a note (exit 0). Exit 1 means an
+  unknown component, graphify not on PATH, or a failed build.
+- Works under Windows PowerShell 5.1 (`powershell`) and PowerShell 7.
+
+If the repo has a `Makefile`, offer a `graph` target that calls it (`graph:` →
+`powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1 $(if $(C),-Component $(C))`),
+but do not add one to a repo without a `Makefile`. After the copy, run it once with `-DryRun` and put
+its output in the Step 9 summary — it proves the table parses.
 
 ## Step 4 — `.claude/memory.md`
 
@@ -491,7 +535,8 @@ The eight documents that will live there, for reference:
 
 Finally, append the component to the `components:` table in `.claude/SKILLS.md` (Step 8) with its
 source roots. In **add mode** this is the only step that runs; report the created paths and the
-updated table, and stop.
+updated table, and stop. `scripts/graph.ps1` picks the new row up on its next run — see *Add mode*
+above for the one case where it does not.
 
 ## Step 6 — `.claude/skills/run-app/SKILL.md`
 
@@ -752,13 +797,27 @@ when a new plugin is triaged.
 
 ## Graph-Assisted Context
 
-Skill: `graphify` (located at `~/.claude/skills/graphify/SKILL.md`)
-Trigger: `/graphify` or `/graphify query "<topic>"` or `/graphify --update`
+One graph per component, at `graphify-out/<component>/`, **built by `scripts/graph.ps1`** — not by
+the `/graphify` skill:
 
-One graph per component, at `graphify-out/<component>/`. Only `GRAPH_REPORT.md` is committed;
-`graph.json`, `graph.html`, `manifest.json`, `cost.json` and `.graphify_analysis.json` are
-regenerable and gitignored — a committed whole-repo graph is an unmergeable conflict on every
-parallel run.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1                          # every component
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1 -Component <component>   # one
+```
+
+The script reads the `components:` table above, so a new component needs no edit to it. It runs
+`graphify update` per `code` root (no LLM) and stamps `GRAPH_REPORT.md` with the commit it was built
+at. The orchestrator's Graphify step runs the same command.
+
+Only `GRAPH_REPORT.md` is committed; `graph.json`, `graph.html`, `manifest.json`, `cost.json` and
+`.graphify_analysis.json` are regenerable and gitignored — a committed whole-repo graph is an
+unmergeable conflict on every parallel run. A fresh clone therefore has no graph until the script
+runs. If a report's `> Built at commit:` is not `git rev-parse HEAD` and the diff since touches that
+component's `code` roots, it is stale: rebuild before relying on it.
+
+Skill: `graphify` (located at `~/.claude/skills/graphify/SKILL.md`)
+Trigger: `/graphify query "<topic>"` — to ask a built graph a question. Run `/graphify` over one
+root by hand only when the LLM-enriched graph (inferred edges, named communities) is wanted.
 
 ---
 
@@ -806,6 +865,7 @@ Added component: <name>
   Docs:   docs/<name>/  (history/, archive/ — documents are written by plugin-idea-triage)
   Code:   <roots from the components: row>
   Wired:  .claude/SKILLS.md components: table
+  Graph:  scripts/graph.ps1 -Component <name>  (no script edit needed)
 
 Next: /plugin-idea-triage <name>
 ```
@@ -826,6 +886,8 @@ Explicitly call out:
   `archive/v<N>/` and touches no other component.
 - Which hook scripts were wired (event + matcher for each) and which, if any, were skipped because
   their header didn't declare an event/matcher, or because `~/.claude/hooks` was empty/missing.
+- **That `scripts/graph.ps1` builds the knowledge graphs** (or why it was not copied), with its
+  `-DryRun` output, and that a fresh clone has no graph until it runs.
 - That `.mcp.json` was created with `playwright` and `context7`, and that `CONTEXT7_API_KEY` needs
   to be set in the user's environment before the Context7 server will authenticate.
 - **The suggested next command:** `/plugin-idea-triage <shell>` — the shell is triaged first,
@@ -868,6 +930,9 @@ Diagram *type* selection still matters and is unchanged — that guidance lives 
 - **Never overwrite an existing `.gitignore`.** Step 3c appends its block or creates the file; it
   does not replace one. The rules already in there were put there deliberately, and losing them is
   invisible until something secret or enormous shows up in a commit.
+- **Never write `scripts/graph.ps1` from memory or edit the copy.** Copy the standard template
+  (Step 3d); a component list or root written into the script is a second copy of the `components:`
+  table that drifts from it silently. Never replace an existing script without the user's yes.
 - **Never stub a component's governed documents.** Step 5b creates `history/` and `archive/` and
   stops. `plugin-idea-triage` writes the PRD, architecture doc and PMBook from a real conversation.
 - **Never run anything but Step 5b in add mode.** Settings, MCP config, `memory.md`, `CLAUDE.md`,
@@ -888,5 +953,5 @@ Diagram *type* selection still matters and is unchanged — that guidance lives 
   updates to the script keep reaching the project automatically.
 - Never write a real Context7 API key (or any other secret) into `.mcp.json` — it's a committed
   file. Use `${VAR}` environment-variable expansion and tell the user to set the variable locally.
-- This skill touches `.claude/`, `.mcp.json`, `CLAUDE.md`, and `docs/adr/`. It does not modify
-  application code.
+- This skill touches `.claude/`, `.mcp.json`, `.gitignore`, `scripts/graph.ps1`, `CLAUDE.md`,
+  `docs/adr/` and `docs/<component>/`. It does not modify application code.

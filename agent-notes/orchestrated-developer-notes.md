@@ -5,6 +5,18 @@ the reasoning and examples behind them. Read it only when a rule there is unclea
 
 ---
 
+## Standalone
+
+Rules for when a human asks you directly, with no Task Packet. Everything else in the agent file still
+applies; this replaces only its Orchestrated Mode.
+
+- You can ask clarifying questions and wait. Ask those that meet the "worth stopping for" bar.
+- "Done" is what the human confirms, or the bar implied by their request.
+- You own the full quality gate available — format, lint, and tests, unless told otherwise.
+- Report in plain language; the Output Template still applies, less rigidly.
+
+---
+
 ## The Four Core Principles
 
 <!-- Adapted from multica-ai/andrej-karpathy-skills (karpathy-guidelines), MIT License,

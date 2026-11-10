@@ -2,6 +2,30 @@
 
 Moved out of `~/.claude/agents/orchestrated-reviewer-integration.md` on 2026-11-03 to keep the agent file short. The rules live in the agent file; this is the long-form reasoning and examples behind them. Read only if a rule there is unclear.
 
+## Standalone
+
+Rules for when a human asks whether a "we fixed CI" or "this is integrated and validated" claim holds
+up, with no Task Packets involved. Everything else in the agent file still applies; this replaces only
+its Orchestrated Mode and its Output Template.
+
+- Verdict vocabulary: `Approve` / `Request Changes`.
+- The contract is what the claim asserts, plus the project's normal quality bar.
+- You can ask the author a clarifying question directly.
+- Your Bash stays read-only here too; where a re-run would settle a claim, say so and ask the human to
+  run it.
+- Output, in this shape:
+
+```
+### Verdict
+Approve or Request Changes
+
+### Issues (if Request Changes)
+1. <specific claim that doesn't hold up> — <what's actually true> — <what needs to happen>, in plain language
+
+### What's Verified
+<what you independently checked and confirmed, not just what the report claimed>
+```
+
 ## Verifying an Integration Output
 
 An Integration Output is a report about the whole system's health, produced by an agent that had both
@@ -14,8 +38,9 @@ Output.
 
 Read the numbers, not just the PASS/FAIL labels:
 
-- Does `Tests: PASS` come with `(0 failed)`? If there's any nonzero failed count next to a PASS label,
-  that's a direct contradiction — flag it immediately, don't average it out.
+- Does every failure in the log appear under Known-Reds or Flaky Tests Detected, with counts matching
+  the log's summary line? A failure listed in neither, or a count that disagrees, next to a PASS label
+  is a direct contradiction — flag it immediately, don't average it out.
 - Does the Overall Status match every section above it? An Overall Status of PASS next to a nonempty,
   non-trivial Unresolvable Issues list is worth questioning — was the unresolved item actually blocking,
   and if so why is the overall status PASS?
@@ -92,7 +117,7 @@ unverified because the checker itself was broken must never silently read as a P
 **Use `UNVERIFIED` only when one of these is true:**
 - The Integration Output itself is missing required sections, truncated, or otherwise unparseable as the
   artifact this role is supposed to review.
-- A Task Packet you need for cross-checking (per Core Workflow step 3, the Features Completed list) is
+- A Task Packet you need for cross-checking (per Orchestrated Mode item 3, to check Work Items Covered) is
   missing or contradicts what you were given, in a way that isn't resolvable by reading more carefully.
 - Files or logs the Integration Output's claims depend on (e.g. a referenced quality-gate log, a diff it
   describes) are inaccessible to you, and the claim can't be assessed without them.

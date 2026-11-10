@@ -17,14 +17,38 @@ cd "$env:USERPROFILE\source\repos\claude-stash"
 .\install.ps1 -Context7Key <your-context7-key>
 ```
 
+Preview first, then install. Nothing is changed by the preview:
+
+```powershell
+.\install.ps1 -WhatIf
+.\install.ps1
+```
+
 What the installer does:
 
-1. Copies each skill, agent, hook, rule, memory, mod and output style into `~/.claude`.
-   Anything you already have is skipped. Add `-Force` to overwrite.
-2. Replaces old symlinks to `\\sic2tfs1\Claude\Prod` with real files.
-3. Copies `CLAUDE.md` (the global instructions) if you have none.
-4. Writes `settings.json` from `settings.template.json` if you have none. If you have one, it
+1. **Backs up first.** Everything it replaces or deletes is copied to
+   `~/.claude-backups/install-<date-time>/`, with a `manifest.json` of every change, written as it goes.
+2. Copies each skill, agent, agent task file, hook, rule, memory, mod and output style this repo holds
+   into `~/.claude`, replacing the old copy. Your own skills and other items are left alone.
+3. Replaces old symlinks to `\\sic2tfs1\Claude\Prod` with real files. Only the link is removed; the
+   share is never written to. Anything in a linked folder that this repo lacks is kept.
+   If the share can't be reached, it stops before changing anything.
+4. Deletes items listed in `retired.txt` (renamed or retired; backed up first).
+5. Copies `CLAUDE.md`. If yours is a hard link shared with another account's folder, yours gets its
+   own copy and the other one keeps its text.
+6. Keeps your Shaw database password from your old `rules/shaw-estate.md`.
+7. Writes `settings.json` from `settings.template.json` if you have none. If you have one, it
    writes `settings.stash.json` beside it for you to merge by hand.
+
+To undo an install, pass its backup folder (the installer prints the exact command at the end):
+
+```powershell
+.\install.ps1 -Rollback "$env:USERPROFILE\.claude-backups\install-<date-time>" -WhatIf   # preview
+.\install.ps1 -Rollback "$env:USERPROFILE\.claude-backups\install-<date-time>"
+```
+
+Rollback puts back every file and link, including the symlinks to the share. Making a symlink needs
+Windows Developer Mode or an administrator window; if it can't, it prints the command to run.
 
 Then do these by hand:
 
@@ -36,7 +60,7 @@ Then do these by hand:
 4. **Public skills**: see below.
 5. Restart Claude Code.
 
-To update later: `git pull`, then `.\install.ps1 -Force`.
+To update later: `git pull`, then `.\install.ps1`.
 
 ## What is in here
 
@@ -47,7 +71,8 @@ To update later: `git pull`, then `.\install.ps1 -Force`.
 | `memory/` | `~/.claude/memory/` | Lessons learned, one per file (Shaw.DataAccess not EF Core, library review flow, exec briefs …) |
 | `skills/` | `~/.claude/skills/` | Our own skills (see list below) |
 | `agents/` | `~/.claude/agents/` | Developer / Reviewer / Integration / Finalizer agents used by the orchestrator skills |
-| `agent-notes/` | `~/.claude/agent-notes/` | Background and examples the agents read when a rule is unclear |
+| `agent-notes/` | `~/.claude/agent-notes/` | Each agent's standalone rules (read when a human calls it directly, with no orchestrator), plus background and examples it reads when a rule is unclear |
+| `scripts/` | — | `build-developer-agents.ps1` regenerates `agents/plugin-orchestrated-developer-*.md` from `orchestrated-developer.md`. Re-run it after editing that file |
 | `hooks/` | `~/.claude/hooks/` | Guard and helper hooks, wired up in `settings.template.json` |
 | `commands/` | `~/.claude/commands/` | Slash commands (`/init-claude-settings`) |
 | `output-styles/` | `~/.claude/output-styles/` | `ELI5` and `terse` reply styles |
@@ -62,7 +87,7 @@ To update later: `git pull`, then `.\install.ps1 -Force`.
 |---|---|
 | `idea-triage`, `plugin-idea-triage` | Idea → PRD → Architecture → PMBook, before any code |
 | `orchestrator-development-pattern`, `plugin-orchestrator-development-pattern` | Developer → Reviewer → Integration → Finalizer pipeline |
-| `init-adlc-repo`, `plugin-init-adlc-repo` | Set a repo up for the above |
+| `init-adlc-repo`, `plugin-init-adlc-repo` | Set a repo up for the above. Both copy `skills/init-adlc-repo/templates/graph.ps1` into the repo as `scripts/graph.ps1`, the standard knowledge-graph build script (it reads its components and roots from the repo's `.claude/SKILLS.md`) |
 | `graphify` | Build a knowledge graph of a codebase or docs |
 | `llm-council` | Pressure-test a decision with five advisors |
 | `dont-lie` | Strict accuracy / no invented sources |

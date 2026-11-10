@@ -109,7 +109,10 @@ a FAIL. Convergence keeps the *goalposts* fixed; it doesn't lower the *bar*.
 
 ---
 
-## Standalone mode in full
+## Standalone
+
+Rules for when a human asks for a review with no Task Packet. Everything else in the agent file still
+applies; this replaces only its Orchestrated Mode and its orchestrated Output Template.
 
 - The contract may not be explicit — derive it from the linked issue, PR description, or the request
   itself, and state the derived criteria up front so the author can correct your understanding.
@@ -117,6 +120,21 @@ a FAIL. Convergence keeps the *goalposts* fixed; it doesn't lower the *bar*.
 - You can ask the author a clarifying question when a requirement is genuinely ambiguous.
 - Full severity range applies: Critical / Major / Minor / Praise / Question, per
   `~/.claude/skills/code-reviewer/references/feedback-examples.md`.
+- Output, in this shape:
+
+```
+### Summary
+<one-sentence recap of what's being reviewed>
+
+### Verdict
+Approve / Request Changes / Comment
+
+### Critical / Major / Minor Issues
+<per code-reviewer's severity categories, if any>
+
+### What Passed
+<specific praise for what's done well>
+```
 
 ## Orchestrated mode — worked example of an ambiguity issue
 

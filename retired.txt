@@ -1,0 +1,7 @@
+# Items this repo used to install that are now renamed or retired.
+# install.ps1 backs each one up, then deletes it from ~/.claude.
+# One path per line, relative to ~/.claude, forward slashes. Lines starting with # are ignored.
+# Only list things this repo itself once installed; never a developer's own files.
+
+# Renamed to memory/muhammed-owns-the-ofa-initiative.md
+memory/user-owns-the-ofa-initiative.md

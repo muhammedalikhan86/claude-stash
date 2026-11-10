@@ -28,7 +28,7 @@ a skill and *generates* a skill rather than a command.
 
 | Path | Purpose |
 |---|---|
-| `.claude/settings.json` | Permissions, default mode, effort level, **hooks wired to `~/.claude/hooks`** |
+| `.claude/settings.json` | Permissions, default mode, effort level. **No hooks**: they are wired once, globally |
 | `.mcp.json` | Project-scoped MCP servers (Playwright, Context7) — committed, team-shared |
 | `.claude/memory.md` | Session-orientation **pointer file** — no content of its own |
 | `.claude/skills/run-app/SKILL.md` | Project-local launch skill (not a slash command) |
@@ -96,8 +96,7 @@ pre-code repo has none to read — ask the user where the code will live.
 
 ## Step 3 — `.claude/settings.json`
 
-Write, if absent, starting from this base (permissions + identity fields — the `hooks` block is
-assembled separately below, never left as a hardcoded empty stub):
+Write, if absent, starting from this base (permissions + identity fields; no `hooks` block, see Step 3a):
 
 ```json
 {
@@ -169,83 +168,31 @@ copy the file to the session scratchpad, edit the copy, and run the assertion ag
 read-only git command — `git status`, `git diff`, `git log`, `git rev-parse` — stays allowed, and
 verification should lean on those.
 
-### Step 3a — Wire the `hooks` block from `~/.claude/hooks`
+### Step 3a — No `hooks` block in the project
 
-**This is not optional and must never be left as an empty stub.** A generated project whose
-`settings.json` has empty `PreToolUse`/`PostToolUse`/`Stop`/`Notification` arrays silently runs
-none of the org's hook scripts — nothing about the file *looks* broken, so this only surfaces when
-someone later asks why loop-detection or db-guard never fired. Wire it at scaffold time, every time.
+**Do not add a `hooks` block to the project's `.claude/settings.json`.** The org's hook scripts in
+`~/.claude/hooks` are already wired in each user's global `~/.claude/settings.json` (the
+`claude-stash` installer writes them there from `settings.template.json`). Claude Code runs hooks
+from every settings file that declares them, so wiring the same scripts in the project as well makes
+every one of them run twice on every matching event. That is not harmless: `loop-detection.sh` counts
+each edit twice and warns on every edit, and `db-guard.sh` and `auto-verify-fix.sh` do their work
+twice.
 
-1. **Resolve the global hooks directory.** It lives at `~/.claude/hooks` — this may be a plain
-   directory or a symlink to an org-managed share (e.g. `\\<server>\Claude\Prod\hooks`); either
-   way, list its contents. If the directory doesn't exist or is empty, skip this section entirely,
-   leave `hooks` unset (or `{}`) in `settings.json`, and say so plainly in the Step 9 summary —
-   do not fabricate hook entries for scripts that aren't there.
-
-2. **For each `*.sh` (or `*.ps1`/`*.py`, on a stack where that's the convention) script found**,
-   read its leading comment header. The convention in use is a first comment line shaped like:
-
-   ```
-   # <script-name> — <HookEvent> hook (matcher: <matcher>)
-   ```
-
-   e.g. `# loop-detection.sh — PostToolUse hook (matcher: Edit|Write)` or
-   `# pre-compact-snapshot.sh — PreCompact hook`. Extract `<HookEvent>` and `<matcher>` from that
-   line. If no matcher is given, use `""` (empty string) — per current Claude Code hooks docs, an
-   empty or omitted matcher means "match all" for that event; don't substitute `"*"` for this even
-   though it appears to also work, since it isn't the documented form. **Never guess an event or
-   matcher for a script whose header doesn't declare one** — skip it, list it under "needs manual
-   wiring" in the Step 9 summary instead, since a wrong matcher (e.g. gating a security hook on the
-   wrong tool) is worse than an unwired one.
-
-3. **Group scripts by `(event, matcher)`** and emit one entry per group, each `command` pointing at
-   the script's absolute path in the *global* hooks directory (not copied into the project — so an
-   org-side update to the script reaches every scaffolded project automatically):
-
-   ```json
-   "hooks": {
-     "PostToolUse": [
-       {
-         "matcher": "Edit|Write",
-         "hooks": [
-           { "type": "command", "command": "bash \"<resolved-hooks-dir>/loop-detection.sh\"" },
-           { "type": "command", "command": "bash \"<resolved-hooks-dir>/auto-verify-fix.sh\"" }
-         ]
-       }
-     ],
-     "PreToolUse": [
-       {
-         "matcher": "mcp__.*",
-         "hooks": [
-           { "type": "command", "command": "bash \"<resolved-hooks-dir>/db-guard.sh\"" }
-         ]
-       }
-     ],
-     "PreCompact": [
-       {
-         "matcher": "",
-         "hooks": [
-           { "type": "command", "command": "bash \"<resolved-hooks-dir>/pre-compact-snapshot.sh\"" }
-         ]
-       }
-     ],
-     "SessionStart": [
-       {
-         "matcher": "compact",
-         "hooks": [
-           { "type": "command", "command": "bash \"<resolved-hooks-dir>/post-compact-restore.sh\"" }
-         ]
-       }
-     ]
-   }
-   ```
-
-   Use the resolved absolute path (forward slashes, quoted) — on Windows this looks like
-   `bash "C:/Users/<user>/.claude/hooks/db-guard.sh"`. Every event a hook actually declared gets
-   its own array; do not add `Stop`/`Notification` keys unless a discovered hook declares them.
-
-4. Validate the resulting `settings.json` still parses as JSON, then report in Step 9 exactly which
-   hook scripts were wired to which event/matcher, and which (if any) were skipped and why.
+1. **New `settings.json`:** write it with no `hooks` key.
+2. **Existing `settings.json` that already has a `hooks` block** (from an earlier run of this skill):
+   list every entry whose `command` runs a script in `~/.claude/hooks` (any spelling of that path:
+   `~/.claude/hooks`, `$HOME/.claude/hooks`, `C:/Users/<user>/.claude/hooks`, or a share it links to).
+   Those duplicate the global wiring. Show the user the list and, once they confirm, remove those
+   entries, then remove any event array or the whole `hooks` key that is left empty. Keep any hook
+   whose script is not one of the global ones: that is a genuine project hook.
+3. **A project that needs a hook of its own** (a script that lives in the repo and only makes sense
+   there) is the one case for a project `hooks` block. Point its `command` at the repo's script,
+   never at `~/.claude/hooks`.
+4. **Check the global wiring exists.** Read `~/.claude/settings.json`. If it has no `hooks` block, or
+   no entry for a script in `~/.claude/hooks`, do not fix that here: say in the Step 9 summary which
+   scripts are not wired globally and that re-running the `claude-stash` installer (or merging its
+   `settings.stash.json`) wires them.
+5. Validate the resulting `settings.json` still parses as JSON.
 
 ## Step 3b — `.mcp.json`: Playwright + Context7
 
@@ -627,8 +574,9 @@ common offender, and gating on its exit code makes that half of the audit decora
 Report what was created, what was skipped and why, and any `<TODO>` left for the user. Remind them
 these are project conventions meant to be committed, not local config. Explicitly call out:
 
-- Which hook scripts were wired (event + matcher for each) and which, if any, were skipped because
-  their header didn't declare an event/matcher, or because `~/.claude/hooks` was empty/missing.
+- That the project `settings.json` has no `hooks` block (or which duplicate entries were removed from an
+  existing one, and which project-only hooks were kept), and any `~/.claude/hooks` script that is not
+  wired in the user's global `~/.claude/settings.json`.
 - That `.mcp.json` was created with `playwright` and `context7`, and that `CONTEXT7_API_KEY` needs
   to be set in the user's environment before the Context7 server will authenticate.
 - **That `scripts/graph.ps1` builds the knowledge graph** (or why it was not copied), with its
@@ -674,12 +622,9 @@ Diagram *type* selection still matters and is unchanged — that guidance lives 
   the roots live in `graphify-directories`, and a second list in the script drifts from it silently.
   Never bind `graphify-directories` to the repo root.
 - Generate a project **skill**, not a slash command, for app launch.
-- Never leave `settings.json`'s `hooks` block as a hardcoded empty stub — always attempt discovery
-  against `~/.claude/hooks` first (Step 3a), and only leave it unset if that directory is genuinely
-  empty or absent.
-- Never fabricate a hook's event or matcher when its header comment doesn't declare one, and never
-  copy a hook script's contents into the project — always reference the global path so org-side
-  updates to the script keep reaching the project automatically.
+- **Never wire a `~/.claude/hooks` script in the project's `settings.json`.** The user's global settings
+  already run it, so a project copy makes it run twice (Step 3a). A project `hooks` block holds only
+  hooks whose scripts live in the repo.
 - Never write a real Context7 API key (or any other secret) into `.mcp.json` — it's a committed
   file. Use `${VAR}` environment-variable expansion and tell the user to set the variable locally.
 - This skill touches `.claude/`, `.mcp.json`, `.gitignore`, `scripts/graph.ps1`, `CLAUDE.md`, and

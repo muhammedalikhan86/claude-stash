@@ -1,6 +1,6 @@
 # Plugin Orchestrator — Flow Diagrams
 
-Reference only; `SKILL.md` is the source of truth. Matches v1.15.0.
+Reference only; `SKILL.md` is the source of truth. Matches v1.15.1.
 
 Start with `01`; each of its boxes names the file that draws that stage in detail. Every file ends
 with **Open questions**, places where the skill text was ambiguous; all are now closed in the text, so

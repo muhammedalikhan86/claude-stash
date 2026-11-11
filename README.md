@@ -31,7 +31,7 @@ You can switch between them any time; each one backs up what it replaces.
 ```
 
 1. It refuses to run if the repo has uncommitted changes, the generated developer agents are stale,
-   or `rules/shaw-estate.md` holds a real password instead of the `<DB_PASSWORD>` placeholder.
+   or `rules/global-memory.md` holds a real password instead of the `<DB_PASSWORD>` placeholder.
 2. It copies everything to a staging folder on the share, then swaps each item in, moving the old
    one into `\\sic2tfs1\Claude\Backups\publish-<date-time>\`. An item someone has open is skipped and
    reported; run it again later.
@@ -72,7 +72,8 @@ What the installer does:
 4. Deletes items listed in `retired.txt` (renamed or retired; backed up first).
 5. Copies `global/CLAUDE.md` to `~/.claude/CLAUDE.md`. If yours is a hard link shared with another
    account's folder, yours gets its own copy and the other one keeps its text.
-6. Keeps your Shaw database password from your old `rules/shaw-estate.md`.
+6. Keeps your Shaw database password from your old `rules/global-memory.md` (or the retired
+   `rules/shaw-estate.md`).
 7. Writes `settings.json` from `settings.template.json` if you have none. If you have one, it
    writes `settings.stash.json` beside it for you to merge by hand.
 
@@ -94,7 +95,7 @@ Then do these by hand:
 1. **Context7 key**: if you did not pass `-Context7Key`, put it in `settings.json` under
    `env.CONTEXT7_API_KEY`. Get a free key at https://context7.com.
 2. **Shaw database password**: ask the team lead, then replace `<DB_PASSWORD>` in
-   `~/.claude/rules/shaw-estate.md`. It is kept out of git on purpose.
+   `~/.claude/rules/global-memory.md`. It is kept out of git on purpose.
 3. **graphify**: `uv tool install graphifyy` (or `pip install graphifyy`).
 4. **Public skills**: see below.
 5. Restart Claude Code.
@@ -106,7 +107,7 @@ To update later: `git pull`, then `.\install.ps1`.
 | Folder | Goes to | What it is |
 |---|---|---|
 | `global/CLAUDE.md` | `~/.claude/CLAUDE.md` | Global instructions: when to use which skill, mod conventions |
-| `rules/` | `~/.claude/rules/` | Always-on rules: Context7 use, Shaw estate (load the `shaw-estate` skill, the hard rules, your DB credentials), memory index |
+| `rules/` | `~/.claude/rules/` | `global-memory.md`, the one always-on file: where to look (the `shaw-estate` skill, Context7), the Shaw hard rules, your DB credentials, the memory index |
 | `memory/` | `~/.claude/memory/` | Lessons learned, one per file (exec briefs, OFA ownership …; Shaw facts live in the `shaw-estate` skill) |
 | `skills/` | `~/.claude/skills/` | Our own skills (see list below) |
 | `agents/` | `~/.claude/agents/` | Developer / Reviewer / Integration / Finalizer agents used by the orchestrator skills |

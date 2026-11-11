@@ -18,7 +18,7 @@ The skill listing already describes each skill. These are the routing rules it d
 - **`/graphify`**: invoke the `graphify` skill before doing anything else.
 - **`dont-lie`** is on demand only: `/dont-lie`, or when the user asks for facts, citations, statistics,
   quotes, or a fact-check.
-- **Shaw & Partners work**: load the `shaw-estate` skill first (see `rules/shaw-estate.md`).
+- **Shaw & Partners work**: load the `shaw-estate` skill first (see `rules/global-memory.md`).
 
 # Project memory vs governed docs
 
@@ -30,12 +30,6 @@ version-controlled, team-visible, and reviewed like code; personal memory is pri
 invisible to teammates or other agents working the same repo. Reserve personal memory for what's
 genuinely about *you* across projects: your role, your preferences for how Claude should collaborate,
 feedback on approach, and pointers to external systems (Linear, Slack, dashboards).
-
-# Temp files
-
-Temp files (captured output, scratch scripts, screenshots) go only in the session's scratchpad, by
-its full absolute path in every command; never in `/`, a repo root or a tool's install folder. In Git
-Bash `/` is the Git install folder, and shell variables don't carry between Bash calls.
 
 # answer-buttons
 The answer-buttons plugin draws buttons under questions to the user (needs 2+ in one reply). Write them in a shape it can read:

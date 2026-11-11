@@ -9,7 +9,7 @@ The one place for Shaw facts. Other skills, rules and repos point here instead o
 Read the reference a task needs; don't load them all.
 
 **Credentials are not here.** The `DatabaseReader` connection strings and password live in
-`~/.claude/rules/shaw-estate.md`, which is copied per user. This skill is shared, so it holds none.
+`~/.claude/rules/global-memory.md`, which is copied per user. This skill is shared, so it holds none.
 
 ## References
 
@@ -65,6 +65,6 @@ Keep these apart when asking or designing:
 
 ## Always-on rules
 
-These are also in `~/.claude/rules/shaw-estate.md`, so they apply even before this skill loads:
+These are also in `~/.claude/rules/global-memory.md`, so they apply even before this skill loads:
 Angular Material house standard (charts: ECharts via ngx-echarts); `Shaw.DataAccess`, not EF Core; `Shaw.*` library changes need
 Muhammed's review; query output rules; no schema copies in a repository.

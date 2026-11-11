@@ -24,7 +24,8 @@
        if you have one, settings.stash.json is written beside it (the old stash is backed up first).
   Everything else in ~/.claude (your own skills, public skills, links to ~/.agents) is left alone.
 
-  The Shaw database password in rules/shaw-estate.md is carried over from your old copy if it had one.
+  The Shaw database password in rules/global-memory.md is carried over from your old copy (or from the
+  retired rules/shaw-estate.md) if it had one.
 
   -Link (what create-symlinks.bat runs): instead of copying from this repo, links ~/.claude to the
   team's shared copies on the PROD share (-ProdDir), which publish-to-prod.ps1 fills from this repo:
@@ -32,7 +33,7 @@
       your folder holds items of your own, each shared item is linked one by one instead and yours stay.
     - skills, memory, rules: each shared item is linked one by one; your own items stay.
     - CLAUDE.md: linked, so every account on the machine reads the same file.
-    - Copied, not linked: rules/shaw-estate.md (it holds your DB password) and mods (they write into
+    - Copied, not linked: rules/global-memory.md (it holds your DB password) and mods (they write into
       their own folder).
   Same backup, manifest and rollback as above. Making a symlink needs an administrator window. Nothing
   on the share is ever written; this mode only reads it.
@@ -69,8 +70,9 @@ $Merged = "skills", "agents", "agent-notes", "agent-tasks", "commands", "hooks",
 $KeepGenerated = ".claude-plugin\types", ".last_update_check"
 # -Link: folders linked whole; items copied rather than linked.
 $LinkFolders = "agents", "agent-notes", "agent-tasks", "hooks", "output-styles", "commands"
-$CopyItemsInLinkMode = @("rules\shaw-estate.md")
+$CopyItemsInLinkMode = @("rules\global-memory.md")
 $CopyFoldersInLinkMode = @("mods")
+$DbFile = "rules\global-memory.md"   # the one rules file that holds the per-user DB password
 # Tests only: this account can't make symlinks, so the sandbox uses junctions (folders) and hard links (files).
 $TestLinks = $env:CLAUDE_STASH_TEST_LINKS -eq '1'
 
@@ -274,18 +276,23 @@ function Restore-Generated([string]$Rel, $Info) {
 }
 
 function Restore-DbPassword($Info) {
-    # Carries the Shaw DB password from the old rules/shaw-estate.md into the new one.
-    if (-not $Info -or -not $Info.contentCopied) { return }
-    $old = Join-Path $script:BackupDir $Info.backup
-    if ($WhatIf) { $old = Join-Path $ClaudeDir "rules\shaw-estate.md" }
-    $new = Join-Path $ClaudeDir "rules\shaw-estate.md"
-    if (-not (Test-Path -LiteralPath $old -PathType Leaf) -or -not (Test-Path -LiteralPath $new)) { return }
-    $m = [regex]::Match((Read-Text $old), 'Password=([^;<\s"]+);')
-    $text = Read-Text $new
-    if ($WhatIf) { $text = Read-Text (Join-Path $Src "rules\shaw-estate.md") }
-    if ($m.Success -and $text.Contains('<DB_PASSWORD>')) {
+    # Carries the Shaw DB password from the old rules/global-memory.md (or, once, from the retired
+    # rules/shaw-estate.md, still in place because retired items are deleted after this) into the new one.
+    $new = Join-Path $ClaudeDir $DbFile
+    if (-not (Test-Path -LiteralPath $new)) { return }
+    $olds = @()
+    if ($Info -and $Info.contentCopied) { $olds += $(if ($WhatIf) { $new } else { Join-Path $script:BackupDir $Info.backup }) }
+    $olds += Join-Path $ClaudeDir "rules\shaw-estate.md"
+    $m = $null
+    foreach ($old in $olds) {
+        if (-not (Test-Path -LiteralPath $old -PathType Leaf)) { continue }
+        $m = [regex]::Match((Read-Text $old), 'Password=([^;<\s"]+);')
+        if ($m.Success) { break }
+    }
+    $text = if ($WhatIf) { Read-Text (Join-Path $Src $DbFile) } else { Read-Text $new }
+    if ($m -and $m.Success -and $text.Contains('<DB_PASSWORD>')) {
         if (-not $WhatIf) { Write-Text $new $text.Replace('<DB_PASSWORD>', $m.Groups[1].Value) }
-        Write-Host "[KEEP]   rules\shaw-estate.md: DB password carried over from your old copy" -ForegroundColor DarkGray
+        Write-Host "[KEEP]   $($DbFile): DB password carried over from your old copy" -ForegroundColor DarkGray
         $script:PasswordKept = $true
     }
 }
@@ -309,7 +316,7 @@ function Install-RepoItem([string]$Rel, [string]$SrcRel = $Rel) {
         Say "NEW   " $Rel Green
     }
     Restore-Generated $Rel $info
-    if ($Rel -eq 'rules\shaw-estate.md') { Restore-DbPassword $info }
+    if ($Rel -eq $DbFile) { Restore-DbPassword $info }
 }
 
 function Test-LinkedTo([string]$Path, [string]$To) {
@@ -663,7 +670,7 @@ if (-not $Context7Key) {
     Write-Host "[TODO]   Put your Context7 API key in settings.json (CONTEXT7_API_KEY) if it is not there. Free key: https://context7.com" -ForegroundColor Cyan
 }
 if (-not $script:PasswordKept) {
-    Write-Host "[TODO]   Shaw database password: if $ClaudeDir\rules\shaw-estate.md still shows <DB_PASSWORD>, ask the team lead and replace it." -ForegroundColor Cyan
+    Write-Host "[TODO]   Shaw database password: if $ClaudeDir\rules\global-memory.md still shows <DB_PASSWORD>, ask the team lead and replace it." -ForegroundColor Cyan
 }
 
 Write-Host @"

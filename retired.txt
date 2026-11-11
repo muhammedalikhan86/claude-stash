@@ -6,6 +6,10 @@
 # Renamed to memory/muhammed-owns-the-ofa-initiative.md
 memory/user-owns-the-ofa-initiative.md
 
+# Merged into rules/global-memory.md
+rules/context7.md
+rules/shaw-estate.md
+
 # Replaced by skills/shaw-estate
 skills/shaw-dotnet-estate
 

@@ -3,7 +3,7 @@
 **Shaw & Partners builds its user interfaces with Angular Material.** This holds for any Shaw work,
 in any repository, whether or not the request says so — it is the house standard, not a per-project
 preference, and it does not need restating in a brief to be in force. (The one-line version is also
-an always-on rule in `~/.claude/rules/shaw-estate.md`.)
+an always-on rule in `~/.claude/rules/global-memory.md`.)
 
 1. **If Angular Material or the Angular CDK has a component for it, use that component.** Not a
    native element styled to look like it, and not a hand-built equivalent. That covers buttons,

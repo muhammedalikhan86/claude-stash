@@ -49,7 +49,7 @@ Or name the folders: `create-symlinks.bat <username> .claude .claude-lachlan`.
    and keeps yours.
 3. Links each shared skill, memory file and rule one by one, so your own skills and memories stay.
 4. Links `CLAUDE.md`.
-5. Copies (does not link) `rules\shaw-estate.md`, because your copy holds the database password,
+5. Copies (does not link) `rules\global-memory.md`, because your copy holds the database password,
    and the mods, because they write into their own folder. Your password is carried over.
 6. Never touches `settings.json`. If you have one, it writes `settings.stash.json` beside it for
    you to merge by hand.

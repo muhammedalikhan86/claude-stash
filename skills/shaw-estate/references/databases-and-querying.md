@@ -22,7 +22,7 @@ guess. It is never an app's production identity (`app-identity-and-sql.md`).
 1. **Server:** `idb_ag.shawstock.com.au,4433` (`@@SERVERNAME` is `SIC1DB1.shawstock.com.au\IDB`), an
    availability-group listener, not a single node. **Login:** `DatabaseReader`, SQL authentication,
    read-only, not sysadmin.
-2. **Connection strings, the `sqlcmd` line and the password** are in `~/.claude/rules/shaw-estate.md`,
+2. **Connection strings, the `sqlcmd` line and the password** are in `~/.claude/rules/global-memory.md`,
    not here: that file is copied per user so it can hold their real password; this skill is shared.
 3. **Databases it can read:** `DataWarehouse`, `PowerBI`, `ShawCentral`, `FeeDisclosure`, `IS`, plus
    `master`, `msdb`, `tempdb`. Nothing else on that server (not GridPay, Phoenix,

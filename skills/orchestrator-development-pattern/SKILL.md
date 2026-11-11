@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.18.0"
+  version: "2.18.1"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -63,9 +63,16 @@ this checkout's rows against the ports its config and run skill actually use. Th
 3. **A clash** — a port the config names is registered to another checkout (a new clone of an existing
    repo always hits this): the checkout registered first keeps it. This one moves: pick a free offset
    or free ports (not in the registry and not in use: `netstat -ano | findstr :<port>` on Windows,
-   `lsof -i :<port>` elsewhere), move every port the stack uses together, and register them. Apply the
-   move through the repo's own offset mechanism or an untracked local override (an env var, a
-   `.local` config the repo ignores); a change to a tracked config file is the user's call, asked once.
+   `lsof -i :<port>` elsewhere). With an offset mechanism, move every port it moves, together. With
+   fixed ports, move only the ports that clash. Apply the move through the repo's own offset mechanism
+   or an untracked local override (an env var, a `.local` config the repo ignores). A change to a
+   tracked config file is the user's call, asked once; when the tool has no untracked override (an
+   Angular `ng serve` port, say), that ask is the normal path.
+   - **Register the new port at once**, before the user answers, so nothing else takes it; mark the
+     row `pending: <what waits>` and drop the mark when the move is done. If the user declines, remove
+     the row and ask again with another port.
+   - **A server already running** on the clashing port keeps running until its next restart; it
+     restarts on the new port, never on the old one.
 4. **A new project** (no ports chosen yet): choose them from the registry first — free ports, kept clear
    of other checkouts' blocks — register them, then write them into the config.
 5. **A port in use that the registry does not list:** add it as `owner unknown — seen <date>`, and

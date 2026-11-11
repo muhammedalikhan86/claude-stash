@@ -17,7 +17,7 @@
 
   How:
     1. Checks first, before anything changes: the repo has no uncommitted changes (unless -AllowDirty),
-       the generated developer agents are current, rules/shaw-estate.md still holds the <DB_PASSWORD>
+       the generated developer agents are current, rules/global-memory.md still holds the <DB_PASSWORD>
        placeholder and no real password, and the share can be read.
     2. Every item is copied to a staging folder on the share first.
     3. Then, one item at a time, the old item is moved into the backup folder and the staged one is
@@ -136,9 +136,9 @@ $global:LASTEXITCODE = 0
 & (Join-Path $Repo "scripts\build-developer-agents.ps1") -Check *> $null
 if ($LASTEXITCODE -ne 0) { $stop += "Generated developer agents are stale. Run scripts\build-developer-agents.ps1 and commit." }
 
-$estate = [IO.File]::ReadAllText((Join-Path $Repo "rules\shaw-estate.md"), $Utf8)
+$estate = [IO.File]::ReadAllText((Join-Path $Repo "rules\global-memory.md"), $Utf8)
 if (-not $estate.Contains('<DB_PASSWORD>') -or [regex]::IsMatch($estate, 'Password=(?!<DB_PASSWORD>)[^;\s]+;')) {
-    $stop += "rules\shaw-estate.md must hold the <DB_PASSWORD> placeholder and no real password."
+    $stop += "rules\global-memory.md must hold the <DB_PASSWORD> placeholder and no real password."
 }
 
 try { $null = Get-ChildItem -LiteralPath $Target -Force -ErrorAction Stop } catch { $stop += "Can't read $Target. Connect to the network (or VPN)." }

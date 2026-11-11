@@ -36,5 +36,5 @@ So **an application never connects with a SQL login.**
    deliberately **no Production counterpart**.
 
 `DatabaseReader` is for analysis, design and development reads only — never a deployed app's
-identity and never a design default. Its connection details are in `~/.claude/rules/shaw-estate.md`
+identity and never a design default. Its connection details are in `~/.claude/rules/global-memory.md`
 (`databases-and-querying.md`).

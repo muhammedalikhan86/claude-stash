@@ -42,6 +42,23 @@ make the review unit first; when done, hand Muhammed the review and the publish 
 Why: these packages are shared across the whole estate, so an unreviewed change reaches every consumer
 (Shaw.WebJob 2.1.0 and Shaw.Word 2.1.0 were once edited straight in the working folder).
 
+**Backward compatibility (hard rule; many apps use these libraries):**
+
+1. **Additive only.** No existing public type, member, signature, default, exception or config key
+   changes or goes. Existing behaviour stays exactly as it is (e.g. `new Mail()` still reads
+   `appSettings` and throws the same message when one is missing).
+2. **A consumer-side fix first.** If the app can work round the library unchanged, do that and record it
+   in an ADR. Change the library only when no consumer-side route exists, or Muhammed asks.
+3. **Same target framework(s), same dependencies.** No dependency removed, upgraded or downgraded in the
+   same change: an app may get one transitively. List a removable one as a candidate in the review notes.
+4. **A compatible version bump:** minor or patch (2.0.0.1 → 2.0.1), never a major. A breaking change is a
+   new package or a new major, and needs Muhammed's explicit say-so.
+5. **Proof before review:** the existing tests and an old-style consumer pass against the new version
+   unchanged; the new API works; and the review notes list the known consumers (search
+   `%USERPROFILE%\source\repos` for the package reference), so Muhammed sees who is affected.
+6. **The review notes say "additive only, no behaviour change"**, with that evidence. The review gate
+   above stays as it is.
+
 Develop and test locally first; no review is raised until the new version has been built and used by
 its consumer on this machine:
 

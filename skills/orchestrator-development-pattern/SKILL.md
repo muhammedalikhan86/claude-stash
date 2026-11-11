@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.21.1"
+  version: "2.22.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -32,6 +32,7 @@ metadata:
     artboard-server,
     parity-viewports,
     parity-command,
+    findings-directory,
     known-red-baseline
   ]
 ---
@@ -135,7 +136,7 @@ Read each only when its trigger occurs. They are part of this skill.
 ## Invocation boundary
 
 The pipeline needs an explicit ask — "orchestrate a fix for X", "run the orchestrator on this bug",
-"build this from the PMBook", "spike this", "this is a P0". A plain "debug X" / "why is this failing" is a
+"build this from the PMBook", "spike this", "this is a P0", "orchestrate the findings in <file>". A plain "debug X" / "why is this failing" is a
 normal debugging conversation (`debugging-wizard` or direct investigation), not this pipeline. Spike and
 P0 likewise need the user to actually ask for them ("spike", "P0", "hotfix" or equivalent); never infer
 them from tone or severity.
@@ -164,6 +165,13 @@ fast lanes only.
   never continues the old conversation: it spawns fresh with the Task Packet, the issues list and the
   previous attempt's file list (Step 1.4). After each item the Orchestrator keeps only its one-line
   `✅ F-XXX — PASS after N iteration(s)` result; the durable record is the PMBook on disk.
+- **Settled rules decide; ask only where none applies.** Before asking the user or the hub, check what
+  is already settled: the board, `decisions.rulings`, a packet's Ruled deviations, the ADRs, the
+  project's `CLAUDE.md`, the PMBook (e.g. "follow the board", a naming rule). When one answers the
+  question, decide it and name that rule in the item's result line. Ask only where none applies.
+- **Spend tokens where they buy quality.** Read a governed doc by the section the step needs, never
+  whole. Don't re-read this skill or a reference file mid-run unless it changed on disk. A status
+  message to the hub or another session is one line (item, decision, commit hash), not a report.
 
 ---
 
@@ -279,6 +287,8 @@ and do not block — for Step 0.4 to surface in the plan announcement.
   packet carries a `## Design Reference` and Step 1.3b never runs. Boards are read from here, as synced.
 - `design-directory`, `design-rows-directory`, `design-rounds-directory` — optional; the design folder's
   row ledgers and round files (`~/.claude/skills/sync-artboards/references/design-files.md`). Read and written by Step 0.3c and Phase 3's **Design rows owed**.
+- `findings-directory` — optional; where findings files live (`disparity-checker`, Step 1.3b's deferred
+  minor gaps, Step 0.1d). Unset → `./docs/findings`.
 - **For UI packets (Step 1.3b), when `artboards-directory` is set:** `app-url` — the app's address as a
   pattern with the port offset in it, e.g. `http://localhost:{4200+offset}`, filled with **this checkout's**
   offset (from its ports in `~/.claude/ports.md`, else its stack config; never assume 0); `artboard-server` — how the boards are served;
@@ -387,6 +397,14 @@ after the Developer Agent step instead of going to the Reviewer.
    `references/spike-and-p0.md` now for its shape. Skip Step 0.4's feature-list announcement in favor of a one-line equivalent:
    `Spike Mode — S-XXX (<size> pts): <one-line question>`. As for a Bug, still print the `⚠ Deferred Integration
    outstanding` line when one is Pending, and still write `run-state-file` (mid-run, see **Mid-run intake**).
+
+### Step 0.1d — Findings Intake (alternate entry point)
+
+On an explicit ask to fold in a findings file (from `disparity-checker`, or Phase 3's deferred minor
+gaps): "orchestrate the findings in <file>", "log the disparity findings". Read
+`~/.claude/skills/disparity-checker/references/findings-intake.md` and follow it: each finding becomes
+a Bug Log row (or a design row, or an Open Items row), the file is marked consumed, and the Bugs the
+user picks are fixed in this run as Bug Fix Intake items.
 
 ### Step 0.2 — Detect Platform
 
@@ -643,22 +661,26 @@ and why the check is measured on the rendered screen.
 3. **It measures** the elements this item changes, in every state in `States to compare` at every width,
    running or extending the repo's parity harness when there is one, plus a quick pass that lists
    differences outside the item — as the prompt says — and returns a Parity Table; screenshots and measurements stay in the parity folder.
-4. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. `Design defects` (Parity Prompt) are never mismatches; the build keeps the design-system value. The Orchestrator puts each in its summary for the user, as a question for the designer's next round. The mismatches go
+4. **Verdict.** Any **major** mismatch (the Parity Prompt's major/minor sort) not covered by a `Ruled deviations` line is a **FAIL**. `Design defects` (Parity Prompt) are never mismatches; the build keeps the design-system value. The Orchestrator puts each in its summary for the user, as a question for the designer's next round. The major mismatches go
    back into Step 1.4's loop as the issues list, under the same 3-strike rule: a Developer retry, then
    the code Reviewer, then this check again. In that retry's Reviewer Retry Context, mark each parity
    issue `verified by Step 1.3b, not by you`: the code Reviewer checks only its own issues, and this
    check re-runs the parity ones. UNVERIFIED (the app or board would not load) follows
    **Handling an UNVERIFIED Verdict**: it counts toward the item's same `unverified_count` and
    `unverifiedTotal` as the code Reviewer's, and the spawn repeated is this Parity Check. PASS → the item goes on as Step 1.4's "When verdict == `PASS`" says.
-5. **Keep the Parity Table's path, with its unruled-mismatch count beside it,** in `run-state-file`.
+5. **Keep the Parity Table's path, with its unruled major-mismatch count beside it,** in `run-state-file`.
    Step 1.5 attaches the table, and the metrics row sums the counts; the counts are cleared once that
    row is written, so a later leg counts only its own. Save run-state after every Parity verdict.
 6. **Outside this item.** Differences the check returns under `Outside this item` are not mismatches:
-   they do not touch the verdict, the issues list or the unruled-mismatch count, and no Developer
+   they do not touch the verdict, the issues list or the unruled major-mismatch count, and no Developer
    retry fixes them. Check its sorting — a row whose element is rendered or styled by a file in the
-   packet's `Files to Create or Modify` is this item's, and counts as an unruled mismatch. Save the rest
+   packet's `Files to Create or Modify` is this item's, sorted major or minor like any other. Save the rest
    in `run-state-file` under the item's `outsideItem` list, merged across retries (one entry per
    state + element). Phase 3 handles them as for Step 1.3.
+7. **Deferred minor gaps.** Unruled minor mismatches PASS: the check lists them under `Deferred to
+   disparity-checker`. They are not issues and no retry fixes them. Save the latest Parity run's list
+   on the item in run-state as `deferredGaps` (each Parity run replaces it). Phase 3 writes them into a
+   findings file (**Deferred minor gaps — written before the Finalizers**).
 
 ### Handling an UNVERIFIED Verdict
 
@@ -789,6 +811,15 @@ go straight from Reviewer PASS to the next work item.
 
 2. **PAUSE.** Run-state holds the item `awaiting verification` (saved at its PASS). Do not proceed to Integration, do not
    spawn anything else, until the user responds.
+
+   **When the user has waived manual checks** for a period (in their own words: in this session, or
+   quoted with its date by the hub they named), save it in run-state's `decisions.mvWaiver` (the user's
+   words, from, until, and the delegate who approves: the hub session or a person the user named). Until
+   it ends, a non-P0 Bug skips the pause: send the delegate the gate block above as one message, and it
+   approves on Reviewer PASS plus Board Parity PASS (a non-UI bug needs only the Reviewer PASS). Save the
+   item's `verification` as `waived by <user> <date>; approved by <who> on <evidence>` (evidence: the
+   Reviewer's regression-test run, the parity folder); it reaches the Bug Log row as measurements do. A P0
+   is never waived. An ended waiver, or a delegate who reports a failure, puts the bug back on this gate.
 
 3. **On `verified`:** save status `verified`, then fork on the Task Packet's `## Priority` field.
    A `verified` reply may carry **measurements** (a timing, a hash, a before/after count): save them
@@ -977,21 +1008,34 @@ disjoint files and are spawned in parallel (one message, each `orchestrated-fina
 from **Model Assignment**). Step 3.6 waits for all of them.
 
 **Outside items — asked before the Finalizers.** When any item's run-state `outsideItem` list
-(Steps 1.3 and 1.3b) is not empty, ask the user once, now, before spawning a Finalizer, so a yes lands
+(Steps 1.3 and 1.3b) is not empty, settle them once, now, before spawning a Finalizer, so a yes lands
 in this run's PMBook. **First sift them**, so only new defects reach the user: an entry a `Planned` or `In
 Progress` PMBook item will build, or an open Bug Log row already covers, is `planned: <ID>`; one a
 ruling covers (run-state's `decisions.rulings`, a packet's Ruled deviations, a design round's rows,
 an ADR) is `ruled: <source>`; a `board may be wrong` entry that the design kit or a built sibling
 contradicts is `board right: <what was checked>`. Show each sifted entry in one line and never offer
-it as a Bug. List every remaining entry, and offer to log them as new Bugs: **one Bug per surface** (a
+it as a Bug. **A remaining entry that differs from the board** (the board draws it; the build shows
+something else) **is logged as a new Bug of this component without asking**, one per surface, and
+listed in the summary. Never ask about an outside item mid-gate; every entry waits for this point.
+List every entry no board or rule covers, and offer to log them as new Bugs: **one Bug per surface** (a
 screen, or a file) **or one Bug grouping them all** — say which you propose and why. A board
 difference where the board itself may be wrong is still a Bug, with `board may be wrong — needs a design
 ruling` in its description. Save the answer in run-state's `decisions` as `outsideItemLog` (the grouping,
 then each entry: `logged as <new ID>` or `declined`) before any Finalizer runs; a resume reuses it and
 never asks again. On a yes, give each new Bug the next free ID and hand it to Step 3.2 as a new `## Bug
-Log` row: Status `Open`, `Fixed In` blank. Nothing is logged without the user's yes. A P0 fast lane does
+Log` row: Status `Open`, `Fixed In` blank. Nothing else is logged without the user's yes. A P0 fast lane does
 not ask; a run that never reaches Phase 3 lists the entries at close-out as `not logged — no
 Finalization this run`.
+
+**Deferred minor gaps — written before the Finalizers.** When any item's run-state `deferredGaps`
+is not empty (Step 1.3b), the Orchestrator writes them, unasked, into one findings file in the format
+of `~/.claude/skills/disparity-checker/references/findings-format.md`:
+`<findings-directory>/<yyyy-mm-dd>-run-<run id>.md`, `Status: open`. One finding per element (its
+states and widths listed), `Suggested type: Bug`, `Severity` Medium or Low as `disparity-checker`'s
+step 5 says, `Component` the repo, `Built by` the item, `Evidence` its parity folder. No IDs: a later
+Findings Intake (Step 0.1d) logs them. Add the file to `orchestratorFiles` so Step 3.6 commits it, and
+name it in the final summary. `findings-directory` unset → `./docs/findings`. A P0 fast lane writes its own
+the same way; a run that never reaches Phase 3 writes it at close-out.
 
 **Design rows owed — written before the Finalizers.** When `decisions.designRowsOwed` has an entry not
 yet written (a drawing a design ruling, a "build to the Acceptance Criteria" ruling or a not-drawn surface
@@ -1221,11 +1265,11 @@ States to compare: <every state the board draws that this item's elements appear
   state labels and frames, not only the loaded view: populated, empty, loading, error, full view, and
   each dialog and menu it touches>
 Ruled deviations: <each accepted difference from the board, with its source: a design row ID, or a
-  user ruling with its date — or "None". Only these may differ; anything else fails>
+  user ruling with its date — or "None". Only these may differ; any other major gap fails>
 Data sources: <each field the board shows → its API field and database read, or "added by this item"
   (Step 0.3d)>
 Standing acceptance criterion (every UI packet): The built screen matches the board in every listed
-  state; the Parity Table (Step 1.3b) shows no unruled mismatch.
+  state; the Parity Table (Step 1.3b) shows no unruled major mismatch (minor gaps are deferred).
 
 ## Constraints
 - Edge decisions: <each choice the criteria rest on — which exceptions are caught, ordering and
@@ -1696,11 +1740,11 @@ resume rules in `references/resume.md` read it; a legacy `done` from an older ru
 row), `priorLoops` (loop counts from legs before an escalation), `leg` (1, plus 1 per escalation resume),
 `files` (the union of Files Created or Modified across all its Developer Outputs, every attempt and leg;
 every "files changed" this skill passes reads it),
-a verified Bug's regression test path, each Parity table path with its unruled-mismatch count (cleared
+a verified Bug's regression test path, each Parity table path with its unruled major-mismatch count (cleared
 with `unverifiedTotal` once the metrics row is written), the latest Developer Output (for a review-only
 item, the Build Record until a Developer returns), and the last Issues list and Unable to Verify report;
 `mode: review-only` when set; `outsideItem` (Steps 1.3 and 1.3b — defects and board differences outside
-the item, merged across retries); `reviewerMissRetry: used` once Step 1.4 has spent it; `verification` (a Bug's measurements from Step 1.5's reply, verbatim); `parkedAt` (the durable folder an escalation pause parked the item in — `references/escalation.md`). The run's
+the item, merged across retries); `deferredGaps` (Step 1.3b — the latest Parity run's minor gaps); `reviewerMissRetry: used` once Step 1.4 has spent it; `verification` (a Bug's measurements from Step 1.5's reply, verbatim); `parkedAt` (the durable folder an escalation pause parked the item in — `references/escalation.md`). The run's
 `baseline` (Step 0.3b: when it ran, or why it was skipped, and its `reds`); `foreignPaths` (Step 2.1). An `integration` block: `loop_count`, `unverifiedTotal`, `priorLoops`,
 the latest Integration Output, `outputPaths` (every saved Integration Output file, in order — Step 2.1), `files` (the union of changed files across every Integration pass and
 every Divide-and-Conquer sub-problem spawn), and `divideAndConquer: not run | running | confirmation pass | done`. At
@@ -1719,7 +1763,7 @@ own); `acceptedKnownReds` — the accepted known-reds (documented-baseline ones 
 packets of mid-run intakes held because Phase 2 had started — counted in the next-free-ID scan, announced
 at resume and at close-out, and seeding the next run's queue); the `app-url` / `artboard-server`
 answers; `rulings` (Step 1.2's design rulings and Step 1.4's `not an issue` rulings, each with its
-reason); `outsideItemLog` (Phase 3's offer); `designHolds` (Step 0.3c: item, open rows, round); `dataSourceGaps` (Step 0.3d: item, fields, ruling);
+reason); `outsideItemLog` (Phase 3's offer); `mvWaiver` (Step 1.5); `findingsIntake` (Step 0.1d); `designHolds` (Step 0.3c: item, open rows, round); `dataSourceGaps` (Step 0.3d: item, fields, ruling);
 `designRowsOwed` (Steps 1.1–1.2 and 0.3c: item, surface, change, source, then `written as <row ID>` or
 `not written — <why>`); and `testCasesDoc` when Step 0.0 let a thin doc stand because an item fills it.
 
@@ -1803,7 +1847,7 @@ appends a second `RUN` row, `Complete`.
   ` — commits <ids>` on this run's latest RUN row's Verdict cell (never another run's row).
 - `Phase times` — RUN row only: `P0 <t> · P1 <t> · MV <t> · P2 <t> · P3 <t>` (MV = the Manual
   Verification wait), `n/a` for a phase that did not run.
-- `Parity mismatches caught` — the sum of the unruled-mismatch counts run-state keeps for this leg's
+- `Parity mismatches caught` — the sum of the unruled major-mismatch counts run-state keeps for this leg's
   Step 1.3b runs (`n/a` for a non-UI item). Clear them once the row is written, as for `unverifiedTotal`.
 - `Mismatches reported after hand-over` — starts at `0`. When Bug Fix Intake (Step 0.1b) takes a design
   mismatch on a surface an item built, it notes the mismatch at intake and writes nothing until Step 0.4

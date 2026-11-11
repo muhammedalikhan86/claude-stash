@@ -663,6 +663,8 @@ if (Test-Path -LiteralPath $retired) {
 # settings.json
 $template = Read-Text (Join-Path $Src "settings.template.json")
 $template = $template.Replace("__CLAUDE_DIR__", $ClaudeDir.Replace('\', '\\'))
+# The checkouts folder, so Claude works in any repo there without a folder prompt (edits still follow the permission mode).
+$template = $template.Replace("__REPOS_DIR__", (Join-Path $env:USERPROFILE "source\repos").Replace('\', '\\'))
 if ($Context7Key) { $template = $template.Replace("__CONTEXT7_API_KEY__", $Context7Key) }
 $settings = Join-Path $ClaudeDir "settings.json"
 if (Test-Path $settings) {
@@ -707,4 +709,9 @@ else {
     Write-Host "To undo:  powershell -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Rollback `"$script:BackupDir`"" -ForegroundColor Cyan
     if ($Link) { Write-Host "          (run it as administrator, so the old links can be re-made)" -ForegroundColor Cyan }
     Write-Host "Restart Claude Code (or run /reload-plugins) to pick everything up."
+}
+# The other accounts on this machine (claude-account-switcher): point their shared folders at this one.
+if (-not $Link -and -not $Rollback -and (Test-Path (Join-Path $Repo "scripts\link-accounts.ps1")) -and $ClaudeDir -ieq [IO.Path]::GetFullPath((Join-Path $env:USERPROFILE ".claude")).TrimEnd('\')) {
+    Write-Host "`nOther accounts on this machine:" -ForegroundColor Cyan
+    & (Join-Path $Repo "scripts\link-accounts.ps1") -WhatIf:$WhatIf -MainDir $ClaudeDir -BackupRoot $BackupRoot
 }

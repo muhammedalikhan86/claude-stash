@@ -39,19 +39,20 @@ flowchart TD
     Up --> Spawn{{"2 Parity check<br/>orchestrated-reviewer,<br/>sonnet, Parity Prompt"}}
     Spawn --> Measure["3 Measure every state<br/>at every width, min 1440,<br/>vs board, or AC if not<br/>drawn or no binding"]
     Measure --> Table["4 Parity Table:<br/>element, board, built,<br/>match, ruling"]
-    Table --> V{"5 Verdict"}
+    Table --> V{"5 Verdict: major<br/>or minor gaps,<br/>§Major and minor gaps"}
     V --> Keep["6 Keep this run's table<br/>path in run-state,<br/>PASS or FAIL"]
     Keep --> Res{"Result"}
-    Res -->|"PASS"| Pass("Step 1.4 On PASS<br/>03")
-    Res -->|"FAIL: unruled mismatch"| Where{"Fix lies in another<br/>component's files?"}
+    Res -->|"PASS: none, or<br/>minor gaps only"| Defer["Minor gaps saved as<br/>the item's deferredGaps,<br/>written to a findings<br/>file at Phase 3, 07"]
+    Defer --> Pass("Step 1.4 On PASS<br/>03")
+    Res -->|"FAIL: unruled<br/>major gap"| Where{"Fix lies in another<br/>component's files?"}
     Where -->|"yes"| XC("Cross-component route<br/>11")
-    Where -->|"no"| Fail("Mismatches = issues,<br/>loop_count + 1, Developer,<br/>code Reviewer, Parity again<br/>03")
+    Where -->|"no"| Fail("Major gaps = issues,<br/>loop_count + 1, Developer,<br/>code Reviewer, Parity again<br/>03")
     Res -->|"UNVERIFIED: app or<br/>board would not load"| Unv["Fix or respawn,<br/>max 2, then escalate"]
     Unv --> Spawn
 ```
 
-Nodes: 12. Step 1.5 attaches the latest Parity Table; the metrics row counts the unruled mismatches
-across every run's table.
+Nodes: 13. Step 1.5 attaches the latest Parity Table; the metrics row counts the unruled major
+mismatches across every run's table.
 
 ## Open questions
 

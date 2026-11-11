@@ -30,6 +30,8 @@ serialized.
 flowchart TD
     In(["Bug packet PASS:<br/>status awaiting verification"])
     Post["Post gate: repro steps,<br/>expected behaviour,<br/>Parity Table if UI bug"]
+    Waiver{"decisions.mvWaiver active<br/>and not P0?"}
+    Deleg["Send the gate block to the<br/>delegate; it approves on<br/>Reviewer PASS + Board Parity<br/>PASS (non-UI: Reviewer only);<br/>verification: waived by …"]
     Pause["PAUSE: run-state holds<br/>'awaiting verification';<br/>spawn nothing"]
     Reply{"User reply?"}
     Answer["Answer it;<br/>ask again"]
@@ -45,7 +47,11 @@ flowchart TD
     Esc(["🚨 Escalate<br/>see 08"])
     Dev(["Developer retry,<br/>Step 1.4, see 03"])
 
-    In --> Post --> Pause --> Reply
+    In --> Waiver
+    Waiver -->|"no, or P0<br/>(never waived)"| Post --> Pause --> Reply
+    Waiver -->|yes| Deleg
+    Deleg -->|"approved:<br/>status verified"| P0
+    Deleg -->|"reports a failure,<br/>or waiver ended"| Post
     Reply -->|"verified:<br/>status verified"| P0
     Reply -->|"a question"| Answer --> Pause
     Reply -->|"a different,<br/>new bug"| NewBug --> Pause

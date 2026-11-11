@@ -67,9 +67,9 @@ flowchart TD
     Inc --> Retry("Fresh Developer: packet,<br/>issues, previous files<br/>loop 3: xhigh + opus Reviewer")
     V -->|"PASS"| DR{"Packet has a<br/>Design Reference?"}
     DR -->|"yes"| Par{{"1.3b Board Parity Check<br/>04"}}
-    Par -->|"FAIL: mismatches are the<br/>issues, marked verified<br/>by 1.3b for the Reviewer"| Where
+    Par -->|"FAIL: unruled major gaps<br/>are the issues, marked verified<br/>by 1.3b for the Reviewer"| Where
     DR -->|"no"| Kind{"Item type"}
-    Par -->|"PASS"| Kind
+    Par -->|"PASS: none, or minor<br/>gaps only (deferredGaps)"| Kind
     Kind -->|"Feature"| Feat("Passed in run-state,<br/>PMBook Done at Phase 3")
     Kind -->|"Bug, not P0"| Queue("Queued for batched<br/>Step 1.5, 05")
     Kind -->|"Bug, P0"| P0("Step 1.5 now, then<br/>fast lane; wave<br/>keeps running, 08")

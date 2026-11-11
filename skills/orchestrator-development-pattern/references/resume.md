@@ -7,6 +7,11 @@ Phase 2's entry rule, the item statuses and the metrics rows referred to below a
 
 **Task bar first.** Before anything below, send the task list as `SKILL.md`'s **Task bar** says for a resume, so the user sees where the run stands.
 
+**A scheduled wakeup does not survive.** A wakeup, cron or loop this session scheduled dies when
+the session's window closes or restarts; it never fires later. A paused run resumes only when the user,
+or the hub they named, re-triggers it (types "resume", or sends it). Say so in the message that pauses
+the run.
+
 ## Where a resumed run rejoins
 
 On explicit user confirmation, take the latest phase first (run-state's `phase`: `closeout`, `phase3`, `phase2`, `phase1`) and stop at the first match (a `dropped` item is skipped by every rule): run complete → nothing; an item with status `escalated` (or the

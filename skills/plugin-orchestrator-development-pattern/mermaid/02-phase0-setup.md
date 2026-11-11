@@ -52,7 +52,7 @@ flowchart TD
     Own -->|"no"| AskGap["Tell user the gaps:<br/>proceed, draft, or pause"]
     Note --> Entry
     Thin -->|"yes"| Entry
-    Draft --> Entry("Entry point<br/>0.1, 0.1b, 0.1c, 0.1d")
+    Draft --> Entry("Entry point<br/>0.1, 0.1b, 0.1c, 0.1d, 0.1e")
     AskGap --> Entry
 ```
 
@@ -63,7 +63,7 @@ graphify directories, run-state, metrics) are created or skipped later and never
 
 ```mermaid
 flowchart TD
-    In("After the entry point<br/>0.1 PMBook, 0.1b Bug,<br/>0.1c Spike") --> Plat{"0.2 one clear<br/>platform marker?"}
+    In("After the entry point<br/>0.1 PMBook, 0.1b Bug,<br/>0.1c Spike, 0.1e Findings") --> Plat{"0.2 one clear<br/>platform marker?"}
     Plat -->|"none, or several"| AskPlat["Ask the user"]
     Plat -->|"yes"| Prof["Platform Profile:<br/>Format, Lint, Test full,<br/>Test component, audit"]
     AskPlat --> Prof
@@ -79,10 +79,15 @@ flowchart TD
     UIB --> RS["Fix run id, runs/ and<br/>gate-logs/ folders,<br/>write run-state-file"]
     RS --> Base["0.4b Baseline test run<br/>on the untouched tree,<br/>save baseline.reds;<br/>skipped for P0, Spike,<br/>UI Iteration, mid-run intake"]
     Base --> P1("Phase 1<br/>03")
+    RS -->|"0.1e findings entry"| Rows["Save decisions.findingsIntake;<br/>write rows: Bug Log Open /<br/>design row owed / Open Items;<br/>mark the file consumed"]
+    Rows --> Picked{"Bugs picked<br/>to fix?"}
+    Picked -->|"yes: join the queue as<br/>Bug Fix Intake items"| Base
+    Picked -->|"no"| NoFix("None: diff + draft commit,<br/>commit step, then close-out<br/>07")
 ```
 
-Nodes: 14. The UI bindings are checked after the announcement and before Phase 1, in the order Step
-0.4 lists them.
+Nodes: 17. The UI bindings are checked after the announcement and before Phase 1, in the order Step
+0.4 lists them. Step 0.1e reads `~/.claude/skills/disparity-checker/references/findings-intake.md`:
+it re-sifts the findings and asks once which Bugs to fix before Steps 0.2–0.4 run.
 
 ## Step 1.0 — may an item join this wave?
 

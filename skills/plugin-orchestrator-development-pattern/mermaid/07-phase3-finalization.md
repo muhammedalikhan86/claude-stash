@@ -5,8 +5,9 @@
 ```mermaid
 flowchart TD
     S0("Reviewer-Integration PASS,<br/>a clean skip, or a<br/>P0 fast lane") --> Label["Release label, once, saved<br/>in decisions per scope:<br/>Unreleased, or bump<br/>minor feat, patch fix"]
-    Label --> Out["Outside items? Ask once:<br/>one Bug per surface or grouped;<br/>save decisions.outsideItemLog"]
-    Out --> Owed["Design rows owed: write<br/>decisions.designRowsOwed as<br/>Open rows in the open round"]
+    Label --> Out["Outside items: sift; one differing<br/>from the board → Bug, unasked;<br/>offer the rest once, per surface<br/>or grouped; save decisions.outsideItemLog"]
+    Out --> Gaps["Deferred minor gaps → write<br/>findings file {findings-directory}/<br/>{date}-run-{run id}.md"]
+    Gaps --> Owed["Design rows owed: write<br/>decisions.designRowsOwed as<br/>Open rows in the open round"]
     Owed --> Lists["Edit List per doc Finalizer:<br/>file, anchor, change;<br/>no edit off the list;<br/>yes adds Open Bug rows"]
     Lists --> G{"Roots changed by the<br/>run's own files<br/>(not raw git status)?<br/>P0 lane: single-item run,<br/>or only Spikes remain"}
     G -->|"no"| GS["Print Graphify skipped,<br/>tell Handoff + summary"]
@@ -22,7 +23,7 @@ flowchart TD
     Wait --> Commit("Step 3.5 commit<br/>below")
 ```
 
-Nodes: 11. The spawns (four, or three when Graphify is skipped) go in one message and write disjoint
+Nodes: 12. The spawns (four, or three when Graphify is skipped) go in one message and write disjoint
 files. The PMBook and Changelog Finalizers both get `Release label:`; the PMBook one also gets
 `P0 fast lane: <B-ID>, Hotfixed On <date>` when relevant and the `Deferred Integration Re-Validated`
 list (those Deferred rows → `Resolved`, their Bug Log rows → `Fixed`). The PMBook Finalizer always

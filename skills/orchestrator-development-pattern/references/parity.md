@@ -76,7 +76,10 @@ Parity command: <INSERT parity-command, or "None">
   the board's value, the board is right: it is a target, not a defect. Name what you checked in the
   row's `Checked` cell.
 - Every difference of this item is a row. A difference covered by a Ruled deviations line is a match
-  with its ruling named. Any **unruled** difference of this item is a FAIL.
+  with its ruling named. Sort each **unruled** one **major** or **minor** per
+  `~/.claude/skills/plugin-orchestrator-development-pattern/references/ui-packets.md`
+  §Major and minor gaps (read it; when unsure, major). An unruled **major** difference is a FAIL. An
+  unruled **minor** one does not FAIL: list it under `Deferred to disparity-checker`, never in Issues.
 - A difference outside this item goes under `Outside this item`, never in the Parity Table. It never
   makes the verdict FAIL, and it is never fixed in this item.
 - When Compared against is the Acceptance Criteria, a row is a mismatch when the built screen breaks a
@@ -88,8 +91,10 @@ Parity command: <INSERT parity-command, or "None">
 Verdict: PASS | FAIL | UNVERIFIED
 Compared against: <as given>
 Parity Table:
-| State | Width | Element | Board | Built | Match | Ruling |
-Issues (if FAIL): one per unruled mismatch — state, width, element, board value, built value.
+| State | Width | Element | Board | Built | Match (yes / major / minor) | Ruling |
+Issues (if FAIL): one per unruled major mismatch — state, width, element, board value, built value.
+Deferred to disparity-checker (or "None"):
+| State | Width | Element | Board | Built | Gap |
 Outside this item (or "None"):
 | State | Width | Element | Board | Built | Why outside |
 Design defects (or "None"):

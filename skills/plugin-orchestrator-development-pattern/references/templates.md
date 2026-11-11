@@ -80,11 +80,11 @@ States to compare: <every state the board draws that this item's elements appear
   state labels and frames, not only the loaded view: populated, empty, loading, error, full view, and
   each dialog and menu it touches>
 Ruled deviations: <each accepted difference from the board, with its source: a design row ID, or a
-  hub or user ruling with its date — or "None". Only these may differ; anything else fails>
+  hub or user ruling with its date — or "None". Only these may differ; any other major gap fails>
 Data sources: <each field the board shows → its API field and database read, or "added by this item"
   (Step 0.4, `references/ui-packets.md` §Data sources check)>
 Standing acceptance criterion (every UI packet): The built screen matches the board in every listed
-  state; the Parity Table (Step 1.3b) shows no unruled mismatch.
+  state; the Parity Table (Step 1.3b) shows no unruled major mismatch (minor gaps are deferred).
 
 ## Constraints
 - Edge decisions: <each choice the criteria rest on — which exceptions are caught, ordering and
@@ -374,7 +374,10 @@ Parity command: <INSERT parity-command, or "None">
   the board's value, the board is right: it is a target, not a defect. Name what you checked in the
   row's `Checked` cell.
 - Every difference of this item is a row. A difference covered by a Ruled deviations line is a match
-  with its ruling named. Any **unruled** difference of this item is a FAIL.
+  with its ruling named. Sort each **unruled** one **major** or **minor** per
+  `~/.claude/skills/plugin-orchestrator-development-pattern/references/ui-packets.md`
+  §Major and minor gaps (read it; when unsure, major). An unruled **major** difference is a FAIL. An
+  unruled **minor** one does not FAIL: list it under `Deferred to disparity-checker`, never in Issues.
 - A difference outside this item goes under `Outside this item`, never in the Parity Table. It never
   makes the verdict FAIL, and it is never fixed in this item.
 - When Compared against is the Acceptance Criteria, a row is a mismatch when the built screen breaks a
@@ -386,8 +389,10 @@ Parity command: <INSERT parity-command, or "None">
 Verdict: PASS | FAIL | UNVERIFIED
 Compared against: <as given>
 Parity Table:
-| State | Width | Element | Board | Built | Match | Ruling |
-Issues (if FAIL): one per unruled mismatch — state, width, element, board value, built value.
+| State | Width | Element | Board | Built | Match (yes / major / minor) | Ruling |
+Issues (if FAIL): one per unruled major mismatch — state, width, element, board value, built value.
+Deferred to disparity-checker (or "None"):
+| State | Width | Element | Board | Built | Gap |
 Outside this item (or "None"):
 | State | Width | Element | Board | Built | Why outside |
 Design defects (or "None"):

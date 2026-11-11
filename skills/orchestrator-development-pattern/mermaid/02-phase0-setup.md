@@ -76,6 +76,10 @@ flowchart TD
     PMB["Step 0.1 Read PMBook:<br/>active phase, Planned or<br/>In Progress features, plus<br/>items named review-only"]
     Bug["Step 0.1b Bug Fix Intake:<br/>report, next free B-XXX<br/>(PMBook, run-state queue,<br/>heldForNextRun),<br/>P0 only if user says so"]
     Spk["Step 0.1c Spike Intake:<br/>question, next free S-XXX<br/>(PMBook, run-state queue,<br/>heldForNextRun),<br/>Spike Directory"]
+    Find["Step 0.1d Findings Intake<br/>(disparity-checker findings-intake.md):<br/>re-sift, show plan, ask once<br/>which Bugs to fix"]
+    Rows["Save decisions.findingsIntake;<br/>write rows: Bug Log Open /<br/>design row owed / Open Items;<br/>mark the file consumed"]
+    Picked{"Bugs picked<br/>to fix?"}
+    NoFix(["None: diff + draft commit,<br/>commit step, then Close-out<br/>see 09"])
     Plat{"Step 0.2<br/>one platform marker?"}
     AskPlat["Stop and ask user<br/>to confirm platform"]
     Conv["Step 0.3 Detect coding<br/>conventions; summary<br/>saved in run-state"]
@@ -89,12 +93,17 @@ flowchart TD
     Entry -->|"build from PMBook"| PMB
     Entry -->|"orchestrate a fix"| Bug
     Entry -->|"spike this"| Spk
+    Entry -->|"orchestrate the<br/>findings in a file"| Find
     PMB --> Plat
     Bug --> Plat
     Spk --> Plat
+    Find --> Plat
     Plat -->|"none or several"| AskPlat --> Conv
     Plat -->|one| Conv
     Conv --> Base --> Hold --> Ann --> UI
+    Ann -->|"findings entry"| Rows --> Picked
+    Picked -->|"yes: join the queue as<br/>Bug Fix Intake items"| UI
+    Picked -->|no| NoFix
     UI -->|yes| AskUrl --> Out
     UI -->|no| Out
 ```

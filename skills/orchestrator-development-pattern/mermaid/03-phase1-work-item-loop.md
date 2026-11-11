@@ -76,8 +76,8 @@ flowchart TD
     Up["Step 1.3b Bring up app<br/>and boards; fill app-url<br/>with port offset"]
     Parity{{"Board Parity Check<br/>orchestrated-reviewer<br/>Parity Prompt, sonnet"}}
     PV{"Parity verdict?"}
-    Keep["Keep Parity Table path and<br/>unruled count in run-state-file"]
-    Retry(["Unruled mismatches =<br/>issues list: FAIL path<br/>above, loop_count += 1,<br/>status in progress"])
+    Keep["Keep Parity Table path and<br/>unruled major count in run-state-file;<br/>minor gaps saved as deferredGaps"]
+    Retry(["Unruled major mismatches =<br/>issues list: FAIL path<br/>above, loop_count += 1,<br/>status in progress"])
     UV["Same unverified_count and<br/>unverifiedTotal as Reviewer"]
     UVMax{"unverified_count > 2?"}
     Esc(["🚨 Escalate<br/>see 08"])
@@ -89,11 +89,11 @@ flowchart TD
     Pass --> HasRef
     HasRef -->|no| Kind
     HasRef -->|yes| Up --> Parity --> PV
-    PV -->|FAIL| Retry
+    PV -->|"FAIL: an unruled<br/>major gap"| Retry
     PV -->|UNVERIFIED| UV --> UVMax
     UVMax -->|"no: re-run the<br/>Parity Check"| Parity
     UVMax -->|yes| Esc
-    PV -->|PASS| Keep --> Kind
+    PV -->|"PASS: none, or<br/>minor gaps only"| Keep --> Kind
     Kind -->|Feature| Done --> Next
     Kind -->|"Bug: status<br/>awaiting verification"| MV
 ```

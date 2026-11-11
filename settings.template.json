@@ -26,7 +26,8 @@
     ],
     "defaultMode": "auto",
     "additionalDirectories": [
-      "__CLAUDE_DIR__"
+      "__CLAUDE_DIR__",
+      "__REPOS_DIR__"
     ]
   },
   "model": "opus",

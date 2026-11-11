@@ -61,12 +61,17 @@ The estate shows three generations of style. **Identify which generation a repo 
 - **Mail settings (`Shaw.Mail`).** v2.0.0.1 has one constructor, `new Mail()`. It reads `MailServer`,
   `MailPort` and `ClientDomain` from classic `appSettings` (`System.Configuration.ConfigurationManager`),
   not from `appsettings.json`, and throws if one is missing (`Shaw.Mail\Mail.cs`). `Shaw.Configuration`
-  used to fill those in. Without it, the route that works today is an `App.config` (shipped as
-  `<App>.dll.config`) holding those three `appSettings`. A constructor that takes the values, so they can
-  come from `appsettings.{Environment}.json`, is a planned `Shaw.Mail` change, not yet on the feed.
-  **When a project uses `Shaw.Mail`, ask the user which approach to take**: the `.dll.config` now, or
-  the new constructor once it is published (`nuget.md` §Changing a Shaw.* library). Record the answer
-  in the project's `CLAUDE.md` or an ADR.
+  used to fill those in. Without it there are three routes:
+  1. **Copy them in memory at startup** from the `Mail` section of `appsettings.json` into
+     `ConfigurationManager.AppSettings`, writing no file: the library stays unchanged. Precedent:
+     `shaw-plugin-dashboard` portfolio-services, `Mail/ShawMailTransport.cs` (OFA-ADR-010, amended
+     2026-11-03).
+  2. **An `App.config`** (shipped as `<App>.dll.config`) holding the three `appSettings`.
+  3. **A constructor that takes the values**: a planned, additive `Shaw.Mail` change, not yet on the feed.
+     A library change comes only when no consumer-side route works, or Muhammed asks (`nuget.md`
+     §Backward compatibility), so offer route 1 first.
+  **When a project uses `Shaw.Mail`, ask the user which route to take**, and record the answer in the
+  project's `CLAUDE.md` or an ADR.
 - **Connection strings:** `Shaw.DataAccess` v2.x resolves a connection string by checking `IConfiguration` first and only falling back to the `ShawCentral`-populated value if nothing's there (read `Shaw.DataAccess\DBConnectionBase.cs`'s `GetConnectionString()` for the exact order). Define them under `ConnectionStrings:<DatabaseName>` in `appsettings.{Environment}.json`, with Windows Integrated Security. Most legacy `Web.config`s still carry plaintext SQL credentials — that's the pattern to move away from, not copy.
 - **Logging / job-completion notification**: `Shaw.Diagnostics.Trace` (`Trace.Init(name)`, `Trace.TraceInformation`/`TraceException`, `Trace.Flush()`) plus `Shaw.Diagnostics.TraceMail`, which accumulates an HTML log and emails it at job end with the subject line prefixed `[SUCCESS]` or `[FAILURE]` depending on whether any errors were traced. This exact pattern repeats across most `ShawApplications` jobs — reuse it rather than inventing a new notification mechanism.
 - **Errors**: throw/catch through the `Shaw.Exception` hierarchy (`CustomException` → `BusinessException` / `DataAccessException`, plus `UndefinedConfigurationException` for missing config) rather than raw `Exception`, so callers can distinguish business failures from infrastructure failures.

@@ -122,6 +122,25 @@ draws the boards. A `Depends on:` item being done is not proof the data exists: 
 
 ---
 
+## Major and minor gaps (the one definition)
+
+Used by the Board Parity Check here, by the plain orchestrator's Parity Prompt, and by
+`disparity-checker`. The aim: the orchestrators cover features; pixel perfection is caught later by
+`disparity-checker` sweeps.
+
+- **Major** (sends the item back into the retry loop): a missing or extra element; a wrong control or
+  component (a select where the board draws a toggle, a plain button where it draws a menu); wrong
+  wording; a wrong order; a missing state (the board draws it, the build does not render it); broken
+  layout (overflow, clipping, a heading wrapping onto more lines than the board, a card or panel not
+  filling its space); an accessibility failure (no accessible name, not reachable by keyboard, contrast
+  below WCAG AA).
+- **Minor** (PASSes, deferred to `disparity-checker`): a value off on an element that is otherwise right:
+  a few px of spacing, size, radius or line height; a font-weight step; a colour shade.
+- **When unsure, it is major.** A rule of thumb: if a user would notice something missing, wrong or
+  broken, it is major; if only a measurement shows it, it is minor.
+
+---
+
 ## Board Parity Check (Step 1.3b)
 
 **Runs after the code Reviewer's PASS, before the Manual Verification Gate and Integration.** Skip only
@@ -139,7 +158,7 @@ for a packet with no `## Design Reference`.
    one, plus a quick pass that lists differences outside the item — per the Parity Prompt.
 4. **It returns a Parity Table**, one row per element: `State | Width | Element | Board | Built | Match | Ruling`.
    Screenshots and measurements stay in the parity folder.
-5. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. `Design defects` (Parity Prompt) are never mismatches; the build keeps the design-system value. The Orchestrator puts each in its summary for the user, as a question for the designer's next round. The mismatches go
+5. **Verdict.** Any **major** mismatch (§Major and minor gaps) not covered by a `Ruled deviations` line is a **FAIL**. `Design defects` (Parity Prompt) are never mismatches; the build keeps the design-system value. The Orchestrator puts each in its summary for the user, as a question for the designer's next round. The major mismatches go
    back into Step 1.4's loop as the issues list, under the same 3-strike rule: a Developer retry, then
    the code Reviewer (to whom they are marked `verified by Step 1.3b, not by you`), then this check
    again. UNVERIFIED (the app or board would not load) follows
@@ -147,13 +166,16 @@ for a packet with no `## Design Reference`.
    mismatch whose fix lies in another component's files (e.g. the shell's theme) takes Step 1.4's
    cross-component route, as a code FAIL would.
 6. **Keep every run's Parity Table path** — PASS or FAIL, one per parity folder — in `run-state-file`,
-   with that run's unruled-mismatch count beside it, and save it after the verdict. Step 1.5 attaches
+   with that run's unruled major-mismatch count beside it, and save it after the verdict. Step 1.5 attaches
    the latest, and the metrics row sums the counts (clearing: **Pipeline Telemetry**).
 7. **Outside this item.** Differences the check returns under `Outside this item` are not mismatches:
-   they do not touch the verdict, the issues list or the unruled-mismatch count, and no Developer
+   they do not touch the verdict, the issues list or the unruled major-mismatch count, and no Developer
    retry fixes them. Check its sorting — a row whose element is rendered or styled by a file in the
-   packet's `Files to Create or Modify` is this item's, and counts as an unruled mismatch. Save the rest
+   packet's `Files to Create or Modify` is this item's, sorted major or minor like any other. Save the rest
    in `run-state-file` under the item's `outsideItem` list, merged across retries (one entry per
    state + element). Phase 3 offers once, before its Finalizers run, to log them as new Bugs in this
-   component's PMBook (`SKILL.md` **Outside items — asked before the Finalizers**); nothing is logged
-   without the user's yes.
+   component's PMBook (`SKILL.md` **Outside items — asked before the Finalizers**).
+8. **Deferred minor gaps.** Unruled minor mismatches PASS: the check lists them under `Deferred to
+   disparity-checker`. They are not issues and no retry fixes them. Save the latest Parity run's list
+   on the item in run-state as `deferredGaps` (each Parity run replaces it). Phase 3 writes them into a
+   findings file (`SKILL.md` **Deferred minor gaps — written before the Finalizers**).

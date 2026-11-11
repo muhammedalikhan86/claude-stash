@@ -76,6 +76,13 @@ What the installer does:
    with the password from your old `rules/global-memory.md` if it had one. It never overwrites it.
 7. Writes `settings.json` from `settings.template.json` if you have none. If you have one, it
    writes `settings.stash.json` beside it for you to merge by hand.
+8. **Other accounts on this machine** (the `claude-account-switcher` list, `~/.claude-<name>`): runs
+   `scripts/link-accounts.ps1`, which links each account's skills, agents, agent notes and tasks,
+   commands, hooks, output styles, rules, memory, mods and plugins to `~/.claude` (junctions, no
+   administrator window), copies `CLAUDE.md`, and gives an account with no `settings.json` a copy of
+   yours (one that differs gets a `settings.stash.json`). A real folder it replaces goes to
+   `~/.claude-backups/accounts-<name>-<date-time>/` first. Logins, sessions and history stay separate per
+   account. After adding an account, run the installer again (or `scripts/link-accounts.ps1`).
 
 To undo an install, pass its backup folder (the installer prints the exact command at the end):
 
@@ -137,6 +144,7 @@ To update later: `git pull`, then `.\install.ps1`.
 | `dont-lie` | Strict accuracy / no invented sources |
 | `shaw-estate` | The single Shaw & Partners knowledge base: code, `Shaw.*` NuGet packages, databases, IIS hosting, app identity, AD sign-in, UI standard, standard architecture defaults |
 | `sync-artboards` | Pull the designer's boards and change logs into a repo's design folder, check them against the design rows, write the findings into the round file. Owns the design-folder spec (`references/design-files.md`) and the move from the old layout (`references/migrate-design-layout.md`) |
+| `disparity-checker` | Compare the build with its boards and test cases at the parity widths, in every state; write one findings file (read-only). Owns the findings format and the orchestrators' Findings Intake (`references/`) |
 | `claude-account-switcher` | Switch between team Claude Code accounts on Windows |
 | `pdf-to-markdown` | Convert PDFs to Markdown before Claude reads them |
 | `context7-mcp`, `find-skills`, `developing-with-streamlit` | Helpers |

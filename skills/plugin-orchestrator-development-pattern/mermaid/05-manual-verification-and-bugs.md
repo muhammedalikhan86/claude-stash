@@ -39,8 +39,12 @@ flowchart TD
     Queue --> All{"Every item in the run<br/>passed or escalated?"}
     All -->|"no"| Wait("Feature loop<br/>carries on, 03")
     All -->|"yes"| Msg["Post ONE message:<br/>steps, expected,<br/>Parity Table if UI"]
-    Msg --> Pause["PAUSE until<br/>the user answers"]
-    Now --> Pause
+    Msg --> Waiver{"decisions.mvWaiver<br/>active? (non-P0 only)"}
+    Waiver -->|"no"| Pause["PAUSE until<br/>the user answers"]
+    Waiver -->|"yes"| Deleg["Send the gate block to the<br/>delegate; it approves on<br/>Reviewer PASS + Board Parity<br/>PASS (non-UI: Reviewer only);<br/>verification: waived by …"]
+    Deleg -->|"approved"| P0v
+    Deleg -->|"reports a failure,<br/>or waiver ended"| Pause
+    Now -->|"P0: never waived"| Pause
     Pause --> Ans{"Per bug"}
     Ans -->|"a question"| Answer["Answer it,<br/>ask again"]
     Answer --> Pause
@@ -54,7 +58,7 @@ flowchart TD
     Gate -->|"yes, and every<br/>P0 lane done"| P2("Phase 2<br/>06")
 ```
 
-Nodes: 16. Only a reply that reports a failure (or says it is not fixed) is a rejection; a question
+Nodes: 18. Only a reply that reports a failure (or says it is not fixed) is a rejection; a question
 is answered and the gate asked again; a new bug is a mid-run intake, not a rejection. Rejected bugs can run as a wave. With Linked Runs, one message covers every linked run's bugs.
 A verified Bug's PMBook row is written `Fixed` at Phase 3 (a P0's `Hotfixed — Integration Pending`).
 

@@ -38,7 +38,8 @@ project root. Route 2 runs every path when `graphify-out/graph.json` does not ex
 ```mermaid
 flowchart TD
     Label["Release label: Unreleased if<br/>changelog keeps one, else<br/>bump newest; saved as<br/>decisions phase3; print it"]
-    Out["Outside items? Ask once:<br/>one Bug per surface or grouped;<br/>save decisions.outsideItemLog"]
+    Out["Outside items: sift; one differing<br/>from the board → Bug, unasked;<br/>offer the rest once, per surface<br/>or grouped; save decisions.outsideItemLog"]
+    Gaps["Deferred minor gaps → write<br/>findings file {findings-directory}/<br/>{date}-run-{run id}.md"]
     Owed["Design rows owed: write<br/>decisions.designRowsOwed as<br/>Open rows in the open round"]
     Fork(["Spawn in one message,<br/>each with model announced"])
     subgraph Par["Parallel, disjoint files"]
@@ -56,7 +57,7 @@ flowchart TD
     Notes["Surface every<br/>Finalizer's Notes"]
     Sum(["Close-out: a row per leg<br/>still without one, RUN row with<br/>commit ids from git, run-state<br/>complete; 🏁 Final summary"])
 
-    Label --> Out --> Owed --> Fork --> Par --> Join --> CM --> Staged
+    Label --> Out --> Gaps --> Owed --> Fork --> Par --> Join --> CM --> Staged
     Staged -->|yes| Stop
     Staged -->|no| Commit --> Notes --> Sum
 ```

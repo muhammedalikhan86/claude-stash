@@ -13,6 +13,9 @@ flowchart TD
     E -->|"Bug, P0 if user says so"| Bug["Step 0.1b Bug Fix Intake<br/>05"]
     E -->|"Spike"| Spike["Step 0.1c Spike Intake<br/>08"]
     E -->|"look and feel"| UI["Step 0.1d UI Iteration<br/>no gates until done<br/>10"]
+    E -->|"findings file"| Find["Step 0.1e Findings Intake:<br/>findings → Bug Log / design /<br/>Open Items rows; file consumed<br/>02"]
+    Find --> Setup
+    Setup -->|"findings, none picked:<br/>commit the rows"| Close
     Bug --> Setup
     Spike --> Setup
     Setup --> Loop["Phase 1, Steps 1.0–1.4<br/>waves of up to 3,<br/>Developer → Reviewer,<br/>UI: Design Gate, Parity<br/>03, 04"]
@@ -33,8 +36,9 @@ flowchart TD
     P3 --> Close("Step 3.6 close-out,<br/>every run: metrics,<br/>run-state complete<br/>07, 12")
 ```
 
-Nodes: 17. The UI Iteration also runs Step 1.4's retry rules for its one Reviewer, which this view
-folds into the "done" edge (`10-ui-iteration.md`).
+Nodes: 18. The UI Iteration also runs Step 1.4's retry rules for its one Reviewer, which this view
+folds into the "done" edge (`10-ui-iteration.md`). A Findings Intake's picked Bugs join the queue as Bug
+Fix Intake items and run Phase 1 as Bugs.
 
 ## Open questions
 

@@ -4,7 +4,7 @@ description: Initialise a PLUGIN-BASED repo for the ADLC (AI Development Life Cy
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.6.2"
+  version: "1.7.0"
   forked-from: "init-adlc-repo@1.0.0 (2026-09-10)"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project, add component, add plugin, new plugin
@@ -810,6 +810,7 @@ values:
   artboard-server: "<command and port that serve artboards-directory>"
   parity-viewports: "1440"
   # parity-command: "<optional — the repo's checked-in parity harness, e.g. npx playwright test business-tests/layout/parity.spec.ts>"
+  findings-directory: "./docs/{component}/findings"
   # design-source: "<optional — where the designer works, e.g. an Artifact URL and its root folder; sync-artboards asks if unset>"
 
 ---
@@ -857,6 +858,19 @@ values:
   # design-row-tests: "<how a row is tied to a test: tag, skip marker, known-differences list>"
   # design-post-sync: "<anything run after a sync, and whether Claude may push it>"
   # ui-contract: "<the full UI contract, if the repo has one; default brief.md §Build rules>"
+
+---
+
+## Disparity Checker
+
+Skill: `disparity-checker` (located at `~/.claude/skills/disparity-checker/SKILL.md`)
+Trigger: "check disparity", "compare the build with the boards", "what's different from the design".
+Omit this block when the repo has no UI. Read-only: it writes one findings file, which the
+orchestrator's Findings Intake folds into the PMBook. Every other binding it uses (the boards,
+`app-url`, `parity-viewports`, `parity-command`, `test-cases-doc`) is read from the orchestrator block.
+
+values:
+  findings-directory: "./docs/{component}/findings"
 
 ---
 

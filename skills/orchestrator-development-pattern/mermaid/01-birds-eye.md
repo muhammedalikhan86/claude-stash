@@ -20,11 +20,15 @@ flowchart TD
     Close["Close-out, always:<br/>metrics rows, RUN row,<br/>run-state complete — see 09"]
     Done(["🏁 Final summary"])
     Esc["🚨 Escalation pause<br/>until resume<br/>see 08"]
+    Find["Findings Intake, Step 0.1d:<br/>findings → Bug Log / design /<br/>Open Items rows; file consumed<br/>see 02"]
 
     Start --> Setup --> Entry
     Entry -->|"PMBook, Step 0.1"| Loop
     Entry -->|"Bug, Step 0.1b<br/>may be P0"| Loop
     Entry -->|"Spike, Step 0.1c"| Loop
+    Entry -->|"findings file, Step 0.1d"| Find
+    Find -->|"picked Bugs join<br/>the Bug Fix queue"| Loop
+    Find -->|"none picked:<br/>commit the rows"| Close
     Setup -->|"resume: saved<br/>Phase 1 item"| Loop
     Setup -->|"resume: saved<br/>Phase 2 step"| P2
     Setup -->|"resume: lane<br/>not done"| Lane

@@ -6,7 +6,8 @@ creates it once and never overwrites it.
 Claude may use this read-only SQL login to query the Shaw databases for analysis, design and
 development reads (how: the `shaw-estate` skill's `references/databases-and-querying.md`). It is never
 a deployed app's identity (apps use their pool's gMSA). Never echo the password into chat or into a
-tracked file. If the lines below still show `<DB_PASSWORD>`, ask the team lead and replace it.
+tracked file. If the lines below still show the `DB_PASSWORD` placeholder, ask the team lead and
+replace it.
 
 ```
 DataWarehouse: Data Source=idb_ag.shawstock.com.au,4433;Initial Catalog=DataWarehouse;User ID=DatabaseReader;Password=<DB_PASSWORD>;TrustServerCertificate=true

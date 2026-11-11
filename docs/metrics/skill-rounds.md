@@ -72,7 +72,85 @@ Read of the snapshot:
 
 ## Snapshot 2 — 2026-11-11, 13:00 +11:00
 
-To be collected. First snapshot on round 4 (orchestrator 2.16.0, plugin orchestrator 1.13.0).
+Skills installed: round 4 (orchestrator 2.16.0, plugin orchestrator 1.13.0) at 10:12, then up to
+2.18.1 / 1.15.1 by 12:35 (temp-file rule, task bar on resume, design system fixed, ports registry).
+Sessions picked these up at their own reloads, so items in the period ran on mixed versions.
+Collected from 10 sessions; 5 ran orchestrated items (Hub merged and ruled only).
+
+| Measure | Snapshot 1 (to 10:00) | Snapshot 2 (10:00 to 13:00) |
+|---|---|---|
+| Items finished | 9 reviewed, plus 1 spike | 10 reviewed (6 done, 4 passed review and waiting on Integration or close-out), 1 bug withdrawn at Phase 0 |
+| First-review pass rate | 6 of 9 (67%) | 8 of 10 (80%) |
+| Escalations | 0 | 1 (log viewer F-025, model escalation at loop 3) |
+| Integration first-pass rate | 5 of 6 | 2 of 2 (advisor run 1, ps run 0926); compliance running at snapshot |
+| Time per item | 20–77 min | 33–41 min clean (F-093, F-094, F-103); about 95–105 min (est.) with rulings or usage-limit stops (F-010, F-102). Whole runs: ps 3 features 2 h 05 m, advisor 2 features 2 h 29 m |
+| Restart survival | 8 of 8 parked; 5 of 5 resumed | 3 of 3 resumed (Hub, compliance cleanly; advisor lost its run work folders and rebuilt F-093's packet from the PMBook) |
+| Board Parity | B-021: PASS first run | 11 runs, 4 FAILs; first run passed on 4 of 8 items (F-025 icon size, F-094 field order, F-082 3 differences, F-086 10 differences) |
+| Usage-limit stops | — | 3 (F-010 parity, F-102 parity, F-086 Developer), all resumed by message; about 1.5 h idle (est.) |
+| Hub rulings | about 20 | about 22 (est.), most on parity differences and scope |
+| Skill surprises | about 30 raised; all fixed in the repo | about 30 raised; 8 fixed in the repo, about 18 distinct open (below) |
+
+Items this period, by worker:
+
+| Worker | Item | Type | loop_count | Reviewer FAILs | Integration passes | Notes |
+|---|---|---|---|---|---|---|
+| ps | OFA-F-082 | Feature | 1 | 0 | 1 | Parity 2 runs: FAIL (3 differences; 2 fixed, 1 ruled a deviation), then PASS. Run 0926: 09:26 to 11:31 |
+| ps | OFA-F-089 | Feature | 1 | 0 | 1 | no screen |
+| ps | OFA-F-090 | Feature | 1 | 0 | 1 | no screen |
+| ps | OFA-F-086 | Feature | 1 | 0 | — | in progress; Parity run 1 FAIL, 10 differences (3 to hub rulings); Developer stopped on usage limit, about 50 min idle (est.) |
+| compliance | SHELL-F-103 | Feature | 0 | 0 | running | Parity PASS; 1 mid-attempt ruling; 10:25 to 11:07 |
+| compliance | SHELL-F-102 | Feature | 0 | 0 | running | Parity PASS (one usage-limit stop); 11:07 to about 12:50 (est.) |
+| compliance | SHELL-F-108 | Feature | 0 | 0 | running | reviewed before 10:00; close-out pending |
+| advisor | ADVISOR-DASHBOARD-F-093 | Feature | 0 | 0 | 1 | Part 1 only (hub ruling); Parity PASS; 10:07 to 10:40 |
+| advisor | ADVISOR-DASHBOARD-F-094 | Feature | 1 | 0 | 1 | Parity FAIL (filter field order), then PASS; 10:42 to 11:15. Run 1 close-out 12:33 |
+| advisor | ADVISOR-DASHBOARD-B-008 | Bug | — | — | — | withdrawn at Phase 0: every part was planned work or by design |
+| advisor | ADVISOR-DASHBOARD-B-010 | Bug | 0 | 0 | — | in progress (Reviewer running) |
+| log viewer | F-025 | Feature | 3 | 1 | — | lost `main` landmark; Parity FAIL (icon 24 vs 20 px) then PASS; escalated at loop 3. Times est. |
+| log viewer | F-010 | Feature | 2 | 1 | — | spec compared against the function under test; Parity PASS after a usage-limit stop; about 25 min waiting on rulings. Times est. |
+| log viewer | F-011 | Feature | — | — | — | in progress; 2 rulings pending (calendar vs board, 911 kB bundle) |
+
+Open skill surprises, merged across sessions (who raised them):
+
+1. Parity offers outside differences as bugs without checking the PMBook's planned items and rulings
+   first (Hub, advisor: B-008 withdrawn whole).
+2. Parity compares the loaded state only; the board's other named states are missed (Hub).
+3. Parity calls a board wrong without checking the shared design kit or sibling builds (Hub).
+4. A needed mid-run pull meets reviewed but uncommitted work: commit by item, then pull, then
+   Integration, is not written down (Hub, compliance).
+5. The Reviewer runs only the packet's named tests, so a contract spec on a touched file slips to
+   Integration (Hub, compliance: SHELL-F-103).
+6. Who approves a drift-fix version bump to a governed doc (Hub).
+7. `-- --testPathPattern` does not narrow under Nx 23 + Jest 29; `--testFile` does. Step 0.2 still
+   says otherwise (compliance, advisor).
+8. A sub-agent stopped by the usage limit: resume it by message, don't respawn (compliance; ps, log
+   viewer did this).
+9. Close-out's `rm -rf` of run folders is denied; no named safe command (advisor, ps).
+10. A held packet's path points inside `runs/<run id>/`, which close-out deletes (ps).
+11. A baseline that fails for environmental reasons: re-run once, keep both logs; carry env pins
+    into the baseline command (ps, advisor).
+12. A restart lost the run's work folders (advisor).
+13. Background agents' output files read empty; outputs copied from notifications (log viewer).
+14. Stopping a dev server leaves its child process on the port (log viewer).
+15. Config changes need a server restart before parity; not said when (log viewer).
+16. Context7 is not callable inside a Developer sub-agent (log viewer).
+17. One-path bindings in a repo with two projects (revision and changelog files) (AI Form Filler).
+18. Moving a tool's port can need a new tracked config file (Karma) (AI Form Filler).
+
+Read of the snapshot:
+
+1. **Review is better.** First-review pass rate rose from 67% to 80%, and both finished Integration
+   blocks passed first time.
+2. **Parity is now the main cost.** 4 of 8 items failed their first parity run, and most of the
+   Hub's about 22 rulings were parity differences. Four sessions name it as the biggest pain: some
+   differences surface only after the build, and some reach the Hub as bugs or "board wrong" claims
+   that the backlog, the rulings or the design kit would have settled (open items 1–3).
+3. **The usage limit is a new cost.** Three stops, about 1.5 hours idle (est.). Resuming by message
+   worked every time; the skill doesn't say so yet.
+4. **Speed held.** Clean items still take 33–41 minutes; the slow ones are slow from waiting on
+   rulings or the limit, not from rework.
+5. **First escalation** (F-025, loop 3). One in 10 is within reason; watch it at 17:00.
+6. **Data quality:** the metrics log is written only at close-out, so open runs report estimated
+   times (log viewer's are all estimated). A row per gate would fix that.
 
 ## Snapshot 3 — 2026-11-11, 17:00 +11:00
 

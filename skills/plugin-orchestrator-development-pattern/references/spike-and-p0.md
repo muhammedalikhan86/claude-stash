@@ -14,13 +14,14 @@ spike on X" — never inferred from exploratory-sounding language.
    ("explore freely" is a valid answer). If the question is unclear, ask.
 2. **Assign a Spike ID.** Next number after the highest `<COMPONENT>-S-XXX` in the PMBook's `## Spike Log`
    or among the IDs run-state's queue or `heldForNextRun` already holds; start at `<COMPONENT>-S-001` if none.
-   IDs are stable once assigned. **A planned spike** — a PMBook row typed `Spike` (in the Feature Backlog or elsewhere) — keeps that row's ID; never mint a new one for it. Its question and done-when come from the row.
+   IDs are stable once assigned. **A planned spike** — a PMBook row typed `Spike` (in the Feature Backlog or elsewhere) — keeps that row's ID; never mint a new one for it. Its question and done-when come from the row. **Size it** as a spike (`~/.claude/skills/idea-triage/references/sizing.md`); a planned spike keeps its row's size. An 8 means the
+   question is too broad: narrow it with the user before going on.
 3. **Assign a Spike Directory.** Default repo-root `spikes/<ID>/`, outside every component's source
    roots and test discovery, unless the user says otherwise. Mandatory. No test config goes there; the
    full gate and Graphify exclude it. If `spikes/` is not in `.gitignore`, say so once and suggest the line (init adds it); until then stage every commit by path so the spike code never rides along.
 4. Go to Step 0.2. Steps 0.2–0.4 all run, including Step 0.4's `run-state-file` write (a mid-run intake
    skips that write, `SKILL.md` Step 0.1b item 7); only the announcement differs — one line in place of
-   Step 0.4's block, `Spike Mode — <COMPONENT>-S-XXX: <one-line question>`, then the
+   Step 0.4's block, `Spike Mode — <COMPONENT>-S-XXX (<size> pts): <one-line question>`, then the
    `⚠ Deferred Integration outstanding` line if Step 0.0 found any.
 
 ## Spike Flow
@@ -33,8 +34,8 @@ Reached instead of Step 1.3, right after the Spike's Developer spawn (always
 2. **No Reviewer, no retry loop, no Manual Verification Gate, no Integration, no escalation path.**
    `loop_count` never moves. This is a deliberate, accepted risk — it is what makes a Spike fast.
 3. Spawn one `orchestrated-finalizer`, Task = `Spike Log`, `model: "haiku"`, scoped to this Spike, its prompt carrying
-   `Scope: spike:<ID>`. It
-   writes one row to the PMBook's `## Spike Log` (`ID | Question | Recommendation | Spike Directory |
+   `Scope: spike:<ID>` and its `Size: <pts>`. It
+   writes one row to the PMBook's `## Spike Log` (`ID | Size | Question | Recommendation | Spike Directory |
    Follow-up`), creating the section if needed. **A planned spike** also gets Edit List lines for its
    own row: `Status → Done`, and each done-when its row names (e.g. `recorded in architecture §3.5` →
    a line for that file and section). No other Finalizer runs. It waits for any open PMBook writer (below).

@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.16.0"
+  version: "1.17.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -97,7 +97,8 @@ them from `init-adlc-repo upgrade` (plugin: `plugin-init-adlc-repo upgrade`), on
 1. **Phase 0** uses `make status`, then `make up` when the stack is needed and down.
 2. **The Integration gate is `make check`** (format check, lint, test, audit) when the target exists;
    pass it in the Integration Packet. `make test` printing `no test suite` is a gap to report, never a
-   pass.
+   pass. When the repo has an `e2e` target (suites that need the running stack), run it after
+   `make check`, with the stack up.
 3. **`make deploy` and `make rollback` are never run** by the Orchestrator or any sub-agent unless the
    user asks for that deploy or rollback in so many words. Never offer either as a next step; the
    settings `ask` rules prompt for them anyway.
@@ -170,7 +171,9 @@ generic agent.
 and pass `model` explicitly from **Model Assignment**. The agent's own frontmatter model is only its
 standalone default.
 
-Every spawn prompt also carries `Temp dir: <absolute path>`: the Orchestrator's own scratchpad, as its environment names it, written out in full. Sub-agents cannot discover it themselves, and one without it has written temp files into the Git install folder.
+Every spawn prompt also carries `Temp dir: <absolute path>`: the Orchestrator's own scratchpad, as its environment names it, written out in full. Sub-agents cannot discover it themselves, and one without it has written temp files into the Git install folder. Next to it goes the line `Build output: inside the repo (its gitignored build folders), never the
+Temp dir`: a test that finds the repo root by walking up from its own build folder breaks when the
+build lands outside the repo.
 
 ### Model Assignment
 
@@ -324,6 +327,15 @@ and dependencies.
 Step 1.2 writes a Build Record in place of the first Developer spawn. Include any item the user names as
 review-only, whatever its PMBook status. Save `mode: review-only` on the item in run-state.
 
+**Sizing** (`~/.claude/skills/idea-triage/references/sizing.md`). Every item the run builds needs a size. Size each `Planned` or `In Progress`
+row whose `Size` is blank (no `Size` column yet: add it after `Priority`, `—` on `Done` rows), write
+those cells into `project-management-doc` now (the Size cells only, no Version bump, as for a
+Status cell), and show every size in Step 0.4's plan. Never change a size already there. **An item
+sized 8 is held:** it joins no wave; Step 0.4 shows it with a proposed split, or a spike first,
+each part sized. On the user's yes, add the parts as new Feature Backlog rows (next free IDs, sized,
+`Depends on:` between them), set the old row's Status to `Split into <IDs>`, and queue the parts
+that belong to this phase. Save each item's size in run-state; its metrics row carries it.
+
 ### Step 0.1b — Bug Fix Intake (alternate entry point)
 
 1. **No PMBook row needed.** Take from the user: what's broken, how to reproduce, expected vs actual, and
@@ -332,7 +344,9 @@ review-only, whatever its PMBook status. Save `mode: review-only` on the item in
    row's description as the report. Otherwise: if the Bug Log states the next ID (e.g. "The next bug is
    `SHELL-B-005`"), use exactly that; else next after the highest `<COMPONENT>-B-XXX` in `## Bug Log`;
    `<COMPONENT>-B-001` if none. Either way, skip any ID run-state's queue or `heldForNextRun` already holds.
-   A grep for IDs also matches the "next ID" line itself — read the table, not the grep.
+   A grep for IDs also matches the "next ID" line itself — read the table, not the grep. **Size it** (`~/.claude/skills/idea-triage/references/sizing.md`); an open Bug Log row that has a size keeps it.
+   Save the size on the item in run-state. An 8 is held as in Step 0.1: propose a spike to find the
+   cause, or a split, and wait for the user's yes.
 3. **Several bugs at once** are queued in the order given. Step 1.0 decides which can share a wave.
 4. **A design mismatch on a built screen** (the screen differs from its board): find the work item that
    built that surface (the PMBook or `git log` on its files) and note it now; record its `Mismatch` row
@@ -340,7 +354,7 @@ review-only, whatever its PMBook status. Save `mode: review-only` on the item in
 5. **P0** only when the user actually says "P0", "hotfix", "prod is down" or equivalent → set
    `## Priority: P0` and read `references/spike-and-p0.md`.
 6. Go to Step 0.2. Steps 0.2–0.4 all run; the only difference is the announcement, which is one line
-   in place of Step 0.4's block: `Bug Fix Mode — <COMPONENT>-B-XXX: <description>` (or
+   in place of Step 0.4's block: `Bug Fix Mode — <COMPONENT>-B-XXX (<size> pts): <description>` (or
    `Bug Fix Mode [P0] — …`), then the `⚠ Deferred Integration outstanding` line if Step 0.0 found any.
    Step 0.4 still writes `run-state-file`.
 7. **Mid-run intake** (a new bug or spike while a run is open): same run id and `run-state-file` — skip
@@ -427,10 +441,11 @@ Platform:  <detected platform>
 Phase:     <current phase>
 Specialist skill: <name(s) or None>
 Work items (<N>), in waves:
-  Wave 1: <ID> — <name> | <ID> — <name>
-  Wave 2: <ID> — <name>   (depends on <ID>; shares <file/build unit> with <ID>)
+  Wave 1: <ID> — <name> (<pts>) | <ID> — <name> (<pts>)
+  Wave 2: <ID> — <name> (<pts>)   (depends on <ID>; shares <file/build unit> with <ID>)
   ...
 Held for design: <ID> — waits on <row IDs> (round <NNN>, open | sent <date>)   (or omit)
+Too big (8):     <ID> — proposed: <part> (<pts>) + <part> (<pts>) | spike first — waits for your yes   (or omit)
 
 Developer Quality Gate (per item):  Format: <command>  Lint: <command>
 Integration Quality Gate:           Test (full): <command>  Test (component): <command or none>
@@ -1306,10 +1321,10 @@ On a confirmed resume, read `references/resume.md` first; it says where the run 
 
 `metrics-log-file` (default `docs/<component>/orchestrator-metrics.md`) is the evidence for tuning models,
 retries and waves; the Close-out Checklist makes writing it a required step. Appended directly by the
-Orchestrator, never overwritten. One header for every row (17 cells):
+Orchestrator, never overwritten. One header for every row (18 cells):
 
 ```
-| Timestamp | Run ID | Item ID | Type | Wave | Started | Finished | Final loop_count | Escalated? | UNVERIFIED count | Verdict | Test scope | Divide-and-Conquer triggered? | Known-reds | Phase times | Parity mismatches caught | Mismatches reported after hand-over |
+| Timestamp | Run ID | Item ID | Type | Size | Wave | Started | Finished | Final loop_count | Escalated? | UNVERIFIED count | Verdict | Test scope | Divide-and-Conquer triggered? | Known-reds | Phase times | Parity mismatches caught | Mismatches reported after hand-over |
 ```
 
 **An older header.** If the log's last table has a different header (an earlier version of this skill, e.g. 14 columns), never rewrite, pad or re-order its rows. Append a heading `### From <YYYY-MM-DD>` and a new table with this header, then the row. Each table is read on its own.
@@ -1336,6 +1351,9 @@ never escalated).
   exception is the RUN row's commit ids, refreshed after a commit (below). Legs, second escalations,
   second mismatch reports and the `Paused` and `Complete` RUN rows have different event times, so all
   survive.
+- **Size** — the item's planned points (Step 0.1, or its intake); `—` on Integration, RUN and Mismatch
+  rows. Never re-sized once building starts, so it can be read against Final loop_count and
+  Started/Finished to see how well items were sized.
 - **Wave** is the wave number, not a model. **Escalated?** is `Yes` only for an escalation under
   `references/escalation.md`; a hub or user ruling goes in Verdict. **UNVERIFIED count** is
   `unverifiedTotal` as the row is written (the verdicts since the item's last row); it resets to 0 once
@@ -1367,7 +1385,7 @@ never escalated).
 Create the file with this header on first append. If it exists with a **different header**, never
 rewrite old rows or force new ones under it: add `### From <YYYY-MM-DD>` with the current header and
 append there. Before appending, re-read the header you are appending under and check every row has
-exactly 17 cells. The final summary's `Retries this run` line uses the item rows' loop_count and
+exactly 18 cells. The final summary's `Retries this run` line uses the item rows' loop_count and
 Escalated? counters.
 
 ---
@@ -1438,6 +1456,7 @@ Quality gate:     ✅  (test scope: <full|component>)
 Integration:      ✅ (or "Not run — <why: only P0 fast lanes / Spikes / escalated items>")
 Known-reds:       <test> — owner <component> — tracked by <ID> / accepted by the user (one per line; or "None")
 Retries this run: <N1>/<N2> items needed a retry, <N3> escalations
+Size vs actual:   <ID> — <pts> pts → <loop_count> retries, <minutes> min (one per line, from the item rows)
 Time:             P0 <t> · P1 <t> · MV <t> · P2 <t> · P3 <t>   (the RUN row's Phase times)
 Finalization:     ✅ (<N> parallel Finalizers + Orchestrator commits)
 Tranche:          every phase Done — run /plugin-idea-triage's Tranche Closeout (only on a Tranche boundary; omit otherwise)

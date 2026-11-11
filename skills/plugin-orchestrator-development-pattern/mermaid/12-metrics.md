@@ -1,7 +1,7 @@
 # 12 — Metrics rows
 
 `metrics-log-file` is appended by the Orchestrator — at Step 3.6, at the moment of an escalation or a drop,
-and at Bug Fix Intake for a mismatch — never overwritten. Every row has the same 17 cells; `—` where a
+and at Bug Fix Intake for a mismatch — never overwritten. Every row has the same 18 cells; `—` where a
 column does not apply.
 
 ## Which event writes which row
@@ -38,7 +38,7 @@ flowchart TD
     Same -->|"no"| Section["Add From YYYY-MM-DD<br/>section with the header,<br/>never rewrite old rows"]
     Same -->|"yes"| Check
     Create --> Check
-    Section --> Check["Re-read header, check<br/>every row has 17 cells"]
+    Section --> Check["Re-read header, check<br/>every row has 18 cells"]
     Check --> Write("Append the row")
 ```
 

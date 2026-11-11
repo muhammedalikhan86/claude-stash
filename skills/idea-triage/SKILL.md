@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code. G
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.12.0"
+  version: "1.13.0"
   domain: product-workflow
   triggers: idea, new feature, new product, new project, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
   role: product-engineer
@@ -1095,7 +1095,8 @@ Artboard column left as `— (artboards-directory not bound)`. Do not invent a p
 ## 3.1 On Entering Phase 3
 
 1. Re-read the approved PRD and Architecture.
-2. Decompose the work into phases, then features within each phase.
+2. Decompose the work into phases, then features within each phase. Size every row as you write it
+   (`~/.claude/skills/idea-triage/references/sizing.md`); split any 8 before drafting.
 3. Draft the PMBook immediately — no clarifying questions needed at this stage unless something is fundamentally ambiguous.
 4. Write to `project-management-doc` as **v1**, `Tranche: v1`, with a `## Version History` table
    whose first row is `v1 | <date> | Initial draft | —`. Omit `## Closed Tranches` entirely — it's
@@ -1130,12 +1131,15 @@ Artboard column left as `— (artboards-directory not bound)`. Do not invent a p
 
 ## Feature Backlog
 
-| ID | Feature | Phase | Priority | Status | Acceptance Criteria |
-|----|---------|-------|----------|--------|---------------------|
-| F-001 | ... | 1 | Must | Planned | ... |
-| F-002 | ... | 1 | Should | Planned | ... |
+| ID | Feature | Phase | Priority | Size | Status | Acceptance Criteria |
+|----|---------|-------|----------|------|--------|---------------------|
+| F-001 | ... | 1 | Must | 3 | Planned | ... |
+| F-002 | ... | 1 | Should | 2 | Planned | ... |
 
 (IDs must be stable — never renumber once assigned)
+
+(Size is in points, 1, 2, 3, 5 or 8, per `~/.claude/skills/idea-triage/references/sizing.md`. Every row is sized, spike rows too; no row is
+8 — split it, or put a spike row before it.)
 
 (A feature that changes what a user sees must also name where each field it shows comes from — `Data: <field> → <API / database read>` — and when a field has no source yet, add the work item that builds it now, with `Depends on:` on this row. Finding the gap at build time costs rulings and idle workers.)
 
@@ -1175,6 +1179,7 @@ Same triage pattern. On every change:
    ripple/upward-ripple label).
 3. State what changed.
 4. Check IDs are stable — never renumber.
+   Size every new row, and re-size a row whose scope changed; split any 8.
 5. Ask: "Anything else, or are you ready to hand off to build?"
 
 ## 3.4 Phase 3 Completion

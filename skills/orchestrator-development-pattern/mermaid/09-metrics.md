@@ -18,7 +18,7 @@ flowchart TD
     RowM["Append Mismatch row:<br/>Type Mismatch, count 1"]
     Hdr{"File header<br/>matches current?"}
     New["Add From date section<br/>with current header"]
-    App(["Timestamp = saved event time;<br/>same Run ID, Item ID, Timestamp<br/>already there: leave it, skip;<br/>else append; check 17 cells"])
+    App(["Timestamp = saved event time;<br/>same Run ID, Item ID, Timestamp<br/>already there: leave it, skip;<br/>else append; check 18 cells"])
 
     Item --> RowI
     Int --> RowInt

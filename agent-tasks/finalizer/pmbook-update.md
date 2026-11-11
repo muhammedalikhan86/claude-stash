@@ -5,7 +5,7 @@ Parallel-Safety, Git Restrictions, Output Template) still applies.
 
 Given the Features Completed list and the PMBook path:
 - Set each completed feature's Status to `Done`. This is the only place a feature becomes `Done` (the
-  Orchestrator writes nothing to the PMBook before Integration has passed), and it is written once. Take
+  Orchestrator writes nothing to the PMBook before Integration has passed, except Step 0.1's Size cells), and it is written once. Take
   each item's final status from the prompt's `## Final Status per Item` section, never a guess from other
   docs, then fill the row's other fields (phase, provenance, Fixed In).
 - Mark the current phase `Done` if every feature in it is now `Done`.
@@ -15,9 +15,10 @@ Given the Features Completed list and the PMBook path:
   belongs to the triage skill's Tranche Closeout (`idea-triage`, or `plugin-idea-triage` in a plugin
   repo). Record it plainly under Notes instead, so the Orchestrator can tell the user.
 - **Bug Log**: for each item in the Bugs Fixed list, write a row to `## Bug Log`
-  (`ID | Description | Reported | Status | Fixed In`), creating the section after `## Feature Backlog`
+  (`ID | Size | Description | Reported | Status | Fixed In`), creating the section after `## Feature Backlog`
   if it doesn't exist yet. If the bug already has a row (it was logged `Open` before it was fixed),
-  update that row in place — never add a second one. Write the bug's given `Regression test: <path>`
+  update that row in place — never add a second one. Write the bug's given `Size` in the Size column; a
+  table without one gets the column, `—` on rows already there that have no size. Write the bug's given `Regression test: <path>`
   into the row's Description, and its `Verified with: <measurements>` line, when given, word for word. A verified fixed bug's `Status` is `Fixed`, except a P0 fast-lane bug (see below). If
   the section keeps a "next ID" line, move it on past the highest ID now used. `Fixed In` is exactly the `Release label:` the prompt gives; never pick
   a version yourself.

@@ -4,7 +4,7 @@ description: Initialise a repo for the ADLC (AI Development Life Cycle) workflow
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.5.3"
+  version: "1.6.0"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project
   role: platform-engineer
@@ -197,9 +197,11 @@ Write, if absent, starting from this base (permissions + identity fields; no `ho
       "Bash(*make deploy*)",
       "Bash(*make rollback*)",
       "Bash(*deploy.ps1*)",
+      "Bash(*rollback.ps1*)",
       "PowerShell(*make deploy*)",
       "PowerShell(*make rollback*)",
-      "PowerShell(*deploy.ps1*)"
+      "PowerShell(*deploy.ps1*)",
+      "PowerShell(*rollback.ps1*)"
     ],
     "defaultMode": "auto",
     "additionalDirectories": []

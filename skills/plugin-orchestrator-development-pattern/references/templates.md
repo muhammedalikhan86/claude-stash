@@ -661,7 +661,7 @@ about each item's state; do not infer it from the docs.>
 <INSERT LIST: F-ID, name, files changed — or "N/A, this is a Spike Log Task">
 
 ## Bugs Fixed
-<INSERT LIST: B-ID, one-line description, files changed, repro steps, `Regression test: <path>` (from
+<INSERT LIST: B-ID, `Size: <pts>`, one-line description, files changed, repro steps, `Regression test: <path>` (from
 the Developer Output's Test Files Written), and `Verified with: <measurements>` when the user gave any — or "None this run" / "N/A">
 
 ## Spike Completed (only present when Task is Spike Log)

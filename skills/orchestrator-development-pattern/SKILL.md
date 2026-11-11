@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.19.0"
+  version: "2.20.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -94,7 +94,8 @@ them from `init-adlc-repo upgrade` (plugin: `plugin-init-adlc-repo upgrade`), on
 1. **Phase 0** uses `make status`, then `make up` when the stack is needed and down.
 2. **The Integration gate is `make check`** (format check, lint, test, audit) when the target exists;
    pass it in the Integration Packet. `make test` printing `no test suite` is a gap to report, never a
-   pass.
+   pass. When the repo has an `e2e` target (suites that need the running stack), run it after
+   `make check`, with the stack up.
 3. **`make deploy` and `make rollback` are never run** by the Orchestrator or any sub-agent unless the
    user asks for that deploy or rollback in so many words. Never offer either as a next step; the
    settings `ask` rules prompt for them anyway.
@@ -191,7 +192,9 @@ Every spawn — Developer, Reviewer, Integration, Reviewer-Integration, and each
 value matches the agent's default. That overrides the agent's own frontmatter `model:`, which is only its
 standalone default; model selection lives in this one table, with one plug-in point per role.
 
-Every spawn prompt also carries `Temp dir: <absolute path>`: the Orchestrator's own scratchpad, as its environment names it, written out in full. Sub-agents cannot discover it themselves, and one without it has written temp files into the Git install folder.
+Every spawn prompt also carries `Temp dir: <absolute path>`: the Orchestrator's own scratchpad, as its environment names it, written out in full. Sub-agents cannot discover it themselves, and one without it has written temp files into the Git install folder. Next to it goes the line `Build output: inside the repo (its gitignored build folders), never the
+Temp dir`: a test that finds the repo root by walking up from its own build folder breaks when the
+build lands outside the repo.
 
 ### Model Assignment
 
@@ -406,6 +409,15 @@ Read `project-management-doc`. Identify:
 
 Features must be processed in dependency order — never start a feature before all its dependencies are `Done` in the PMBook or passed review earlier in this run.
 
+**Sizing** (`~/.claude/skills/idea-triage/references/sizing.md`). Every item the run builds needs a size. Size each `Planned` or `In Progress`
+row whose `Size` is blank (no `Size` column yet: add it after `Priority`, `—` on `Done` rows), write
+those cells into `project-management-doc` now (the Size cells only, no Version bump, as for a
+Status cell), and show every size in Step 0.4's plan. Never change a size already there. **An item
+sized 8 is held:** it joins no batch; Step 0.4 shows it with a proposed split, or a spike first,
+each part sized. On the user's yes, add the parts as new Feature Backlog rows (next free IDs, sized,
+`Depends on:` between them), set the old row's Status to `Split into <IDs>`, and queue the parts
+that belong to this phase. Save each item's size in run-state; its metrics row carries it.
+
 ### Step 0.1b — Bug Fix Intake (alternate entry point)
 
 Triggered instead of Step 0.1 when the user has explicitly asked for the orchestrated pipeline on a bug —
@@ -420,7 +432,9 @@ this step only replaces *where the work item's content comes from*, not any down
 2. **Assign a Bug ID.** Scan `project-management-doc` for the highest existing `B-XXX` (in its `## Bug Log`
    table, if one exists yet — see Step 3.2) **and** run-state's queue and `decisions.heldForNextRun` (IDs
    already assigned, not yet logged), and assign the next free number. If none exists, start at `B-001`.
-   IDs are stable once assigned, same rule as `F-XXX`.
+   IDs are stable once assigned, same rule as `F-XXX`. **Size it** (`~/.claude/skills/idea-triage/references/sizing.md`); an open Bug Log row that has a size keeps it.
+   Save the size on the item in run-state. An 8 is held as in Step 0.1: propose a spike to find the
+   cause, or a split, and wait for the user's yes.
 3. **Multiple bugs reported at once** are processed in the order given. Bugs don't carry PMBook dependency
    edges the way features do, so no dependency-order analysis is needed — but if two reported bugs are
    likely to touch the same files, say so and serialize them rather than risking colliding Developer
@@ -433,7 +447,7 @@ this step only replaces *where the work item's content comes from*, not any down
    Manual Verification Gate stays identical to a normal Bug.
 5. Proceed straight to Step 0.2 (Detect Platform) and Phase 1, generating a Bug-type Task Packet (see
    **Task Packet Format**) for each item. Skip Step 0.4's feature-list announcement in favor of a one-line
-   equivalent: `Bug Fix Mode — B-XXX: <one-line description>` (or, for a P0, `Bug Fix Mode [P0] — B-XXX:
+   equivalent: `Bug Fix Mode — B-XXX (<size> pts): <one-line description>` (or, for a P0, `Bug Fix Mode [P0] — B-XXX:
    <one-line description>`). Still print Step 0.4's `⚠ Deferred Integration outstanding` line under it
    when Step 0.0 found a Pending row, and still write `run-state-file` as Step 0.4 would (mid-run, see
    **Mid-run intake** instead).
@@ -455,14 +469,15 @@ after the Developer Agent step instead of going to the Reviewer.
    question itself is unclear, ask; a Spike Task Packet built from a vague question produces vague findings.
 2. **Assign a Spike ID.** Scan `project-management-doc` for the highest existing `S-XXX` (in its `## Spike
    Log` table, if one exists yet — see Spike Flow's Finalizer step in `references/spike-and-p0.md`) **and**
-   run-state's queue and `decisions.heldForNextRun` (IDs already assigned), and assign the next free number. If none exists, start at `S-001`. IDs are stable once assigned, same rule as `F-XXX` / `B-XXX`. **A planned spike** — a PMBook row typed `Spike` (in the Feature Backlog or elsewhere) — keeps that row's ID; never mint a new one for it. Its question and done-when come from the row.
+   run-state's queue and `decisions.heldForNextRun` (IDs already assigned), and assign the next free number. If none exists, start at `S-001`. IDs are stable once assigned, same rule as `F-XXX` / `B-XXX`. **A planned spike** — a PMBook row typed `Spike` (in the Feature Backlog or elsewhere) — keeps that row's ID; never mint a new one for it. Its question and done-when come from the row. **Size it** as a spike (`~/.claude/skills/idea-triage/references/sizing.md`); a planned spike keeps its row's size. An 8 means the
+   question is too broad: narrow it with the user before going on.
 3. **Assign a Spike Directory.** Default to repo-root `spikes/S-XXX/` — outside every source root and test
    discovery path, with no test config of its own — unless the user specifies otherwise. The full gate and
    Graphify exclude it. This is not optional — see the Task Packet's `## Spike Directory` field and
    `orchestrated-developer`'s **Scoped Confinement for Spike-Type Packets** for why. If `spikes/` is not in `.gitignore`, say so once and suggest the line (init adds it); until then stage every commit by path so the spike code never rides along.
 4. Proceed straight to Step 0.2 (Detect Platform) and Phase 1, generating a Spike-type Task Packet — read
    `references/spike-and-p0.md` now for its shape. Skip Step 0.4's feature-list announcement in favor of a one-line equivalent:
-   `Spike Mode — S-XXX: <one-line question>`. As for a Bug, still print the `⚠ Deferred Integration
+   `Spike Mode — S-XXX (<size> pts): <one-line question>`. As for a Bug, still print the `⚠ Deferred Integration
    outstanding` line when one is Pending, and still write `run-state-file` (mid-run, see **Mid-run intake**).
 
 ### Step 0.2 — Detect Platform
@@ -579,8 +594,8 @@ draws the boards. A `Depends on:` item being done is not proof the data exists: 
 Platform:  <detected platform>
 Phase:     <current phase name from PMBook>
 Features   (<N> total, in dependency order):
-  1. F-XXX — <name>
-  2. F-XXX — <name>
+  1. F-XXX — <name> — <size> pts
+  2. F-XXX — <name> — <size> pts
   ...
 
 Developer Quality Gate (per feature):
@@ -590,6 +605,7 @@ Developer Quality Gate (per feature):
 Baseline: <N> red at start — <test (how)>, … | green | skipped — <why>   (Step 0.3b)
 Review-only: <IDs> — built outside the loop; reviewed first, no Developer unless it fails (or omit)
 Held for design: <ID> — waits on <row IDs> (round <NNN>, open | sent <date>) (Step 0.3c; or omit)
+Too big (8):     <ID> — proposed: <part> (<pts>) + <part> (<pts>) | spike first — waits for your yes (Step 0.1; or omit)
 
 Integration Quality Gate (after all features):
   Test:    <command>   ← Integration Agent owns this + fixes failures
@@ -1193,7 +1209,7 @@ Archiving itself is never performed here — `project-management-doc`'s format a
 header, the `## Closed Tranches` table) are owned by `idea-triage`, not this pipeline.
 
 **Bug logging:** for each item in the Bugs Fixed list, the Finalizer writes a row to a `## Bug Log` table
-in `project-management-doc` — `ID | Description | Reported | Status | Fixed In`, Status `Fixed`, the
+in `project-management-doc` — `ID | Size | Description | Reported | Status | Fixed In`, Status `Fixed`, the
 regression test path in the Description so a later Integration can run it — creating that section
 (after `## Feature Backlog`) if it doesn't exist yet. This applies whether the bug started as a PMBook
 entry or arrived through ad-hoc **Bug Fix Intake** (Step 0.1b): either way, once fixed it must exist in the
@@ -1703,7 +1719,7 @@ Scope: <INSERT lane:<ID> | phase3 | spike:<ID>>
 <INSERT LIST: F-ID, name, files changed — or "N/A, this is a Spike Log Task" if Task is Spike Log>
 
 ## Bugs Fixed
-<INSERT LIST: B-ID, one-line description, files changed, `Regression test: <path>`, and `Verified with:
+<INSERT LIST: B-ID, `Size: <pts>`, one-line description, files changed, `Regression test: <path>`, and `Verified with:
 <measurements>` when the user gave any — or "None this
 phase", or "N/A, this is a Spike Log Task" if Task is Spike Log>
 
@@ -1889,7 +1905,7 @@ is the evidence for tuning the Model Assignment table — models per role, when 
 does not analyze the log; it only writes it. **Written directly by the Orchestrator**, no sub-agent
 spawn, appended and never overwritten. Every row kind uses this one header:
 
-`| Timestamp | Run ID | Item ID | Type | Wave | Started | Finished | Final loop_count | Escalated? | UNVERIFIED count | Verdict | Test scope | Divide-and-Conquer triggered? | Known-reds | Phase times | Parity mismatches caught | Mismatches reported after hand-over |`
+`| Timestamp | Run ID | Item ID | Type | Size | Wave | Started | Finished | Final loop_count | Escalated? | UNVERIFIED count | Verdict | Test scope | Divide-and-Conquer triggered? | Known-reds | Phase times | Parity mismatches caught | Mismatches reported after hand-over |`
 
 **An older header.** If the log's last table has a different header (an earlier version of this skill, e.g. 14 columns), never rewrite, pad or re-order its rows. Append a heading `### From <YYYY-MM-DD>` and a new table with this header, then the row. Each table is read on its own.
 
@@ -1922,6 +1938,9 @@ appends a second `RUN` row, `Complete`.
 - `Run ID` — run-state's run id (format in **Run-State Checkpointing**).
   `Timestamp`, `Started`, `Finished` — ISO 8601 with offset (`2026-11-10T14:05:00+11:00`), read from the
   clock, never estimated; `Timestamp` is the saved event time. Before appending any metrics row, read the clock: no Timestamp, Started or Finished may be later than now — one that is was guessed, so write `(not recorded)` in its place.
+- `Size` — the item's planned points (Step 0.1, or its intake); `—` on Integration, RUN and Mismatch
+  rows. Never re-sized once building starts, so it can be read against Final loop_count and
+  Started/Finished to see how well items were sized.
 - `Wave` — `—`: this skill runs one item at a time.
 - `Final loop_count` — this leg's count, on every row (an Escalated row included): `loop_count` minus
   run-state's `loopCountAtEscalation` (0 when never escalated), read before an escalation overwrites it;
@@ -1952,7 +1971,7 @@ appends a second `RUN` row, `Complete`.
 
 **Header rule.** Create the file with the header on first append. If it exists with a different header,
 never rewrite old rows (beyond the RUN row's commit ids above): add `### From <YYYY-MM-DD>` with the current header and append there. Before
-appending, re-read that header and check each row you write has exactly 17 cells.
+appending, re-read that header and check each row you write has exactly 18 cells.
 
 **Immediate payoff independent of the log file itself:** reuse the same in-memory counters this section
 tracks to add one line to the final "🏁 Orchestrator Complete" summary (Output Format), e.g. `Retries this
@@ -2030,6 +2049,7 @@ Foreign paths:    <path> — foreign (another session or the user) (one per line
 Known-reds:       <test> — owner <module> — tracked by <ID> / accepted by the user (one per line; or "None")
 Tranche:          every phase is Done — run idea-triage's Tranche Closeout before new feature work (only when Step 3.2's Notes reported it; else omit)
 Retries this run: <N1>/<N2> items needed a retry, <N3> escalations
+Size vs actual:   <ID> — <pts> pts → <loop_count> retries, <minutes> min (one per line, from the item rows)
 Finalization:     ✅ (<N> parallel + 1 sequential Finalizer)
                   (+ 1 additional Finalization block per P0 hotfix above, run mid-loop — see its own
                   🚑 line; + 1 solo Spike Log Task per spike above — see its own 🔎 line)

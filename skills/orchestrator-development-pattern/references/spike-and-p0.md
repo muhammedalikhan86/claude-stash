@@ -72,9 +72,9 @@ the Feature/Bug loop:
    at least one human checkpoint before being final; Spike does not, because that's what makes it fast
    enough to be worth having.
 4. Spawn a single `orchestrated-finalizer` sub-agent, Task = `Spike Log`, `model: "sonnet"` (see **Model
-   Assignment**), scoped to this one Spike (`Scope: spike:<ID>`), with the `project-management-doc` path, once no P0 lane (with its
+   Assignment**), scoped to this one Spike (`Scope: spike:<ID>`), with its `Size: <pts>`, with the `project-management-doc` path, once no P0 lane (with its
    commit if any) is open (one PMBook writer at a time — P0 step 4). It writes exactly one row to the PMBook's `## Spike Log` table
-   (`ID | Question | Recommendation | Spike Directory | Follow-up`), creating that section if it doesn't
+   (`ID | Size | Question | Recommendation | Spike Directory | Follow-up`), creating that section if it doesn't
    exist yet. **A planned spike** (its own PMBook row) also gets that row's `Status → Done` and each
    done-when the row names (e.g. `recorded in architecture §3.5`), as extra Task-Specific Inputs. No other Finalizer task runs — no Graphify, no Handoff Update, no Revision+Changelog, no Test
    Runbook, no Commit Messages, since nothing was integrated or shipped.

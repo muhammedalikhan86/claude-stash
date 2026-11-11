@@ -129,17 +129,17 @@ for a packet with no `## Design Reference`.
 
 1. **Bring up** this checkout's stack (the Platform Profile's `Stack` commands) and the board
    (`artboard-server`), and check both answer. Fill `app-url` with this checkout's port offset.
-2. **Spawn** `subagent_type: "orchestrated-reviewer"`, `model: "sonnet"`, with the **Parity Prompt**
+2. **Spawn** `subagent_type: "orchestrated-reviewer"`, its `model` from **Model Assignment**, with the **Parity Prompt**
    (`references/templates.md`): the packet path (Step 1.1), the app URL, the board URL,
-   `parity-viewports`, `parity-command` (or `None`), and the folder `<gate log directory>/parity/<ID>[-legN][-retryN]/` (`-legN` from the second leg on) — the gate log
-   directory is `<work dir>/gate-logs/<run id>/`, fixed at Step 0.4. A separate spawn: the code
+   `parity-viewports`, `parity-command` (or `None`), and the folder `<work dir>/parity/<run id>/<ID>[-legN][-retryN]/` (`-legN` from the second leg on; the
+   run id is fixed at Step 0.4). A separate spawn: the code
    Reviewer stays narrow.
 3. **It measures** the elements this item changes, in every state in the packet's `States to compare`
    at every width in `parity-viewports`, running or extending the repo's parity harness when there is
    one, plus a quick pass that lists differences outside the item — per the Parity Prompt.
-4. **It returns a Parity Table**, one row per element: `element | board | built | match | ruling`.
+4. **It returns a Parity Table**, one row per element: `State | Width | Element | Board | Built | Match | Ruling`.
    Screenshots and measurements stay in the parity folder.
-5. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. A board value that is not a design-system token (a colour, size or font in no token file, or a redefined token; `sync-artboards` step 10b) is not a target: the check lists it under `Design defects` with the token the build uses, it is never a mismatch or a FAIL, and the build keeps the design-system value. The Orchestrator puts each in its summary for the user, as a question for the designer's next round. The mismatches go
+5. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. `Design defects` (Parity Prompt) are never mismatches; the build keeps the design-system value. The Orchestrator puts each in its summary for the user, as a question for the designer's next round. The mismatches go
    back into Step 1.4's loop as the issues list, under the same 3-strike rule: a Developer retry, then
    the code Reviewer (to whom they are marked `verified by Step 1.3b, not by you`), then this check
    again. UNVERIFIED (the app or board would not load) follows

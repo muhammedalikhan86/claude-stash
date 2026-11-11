@@ -24,18 +24,19 @@ once it is `done`, a FAIL that takes loop_count past 3 escalates at once with te
    issues), adding the line `Divide-and-Conquer: not applicable — one root cause spans every issue`.
    The Integration metrics row's `Divide-and-Conquer triggered?` is then `No (one root cause)`.
 2. Spawn one `orchestrated-integration` per sub-problem, in parallel (one message, several `Agent` calls),
-   each at the Escalated Model (`opus`), with the Integration Agent Prompt plus its `## Sub-problem`
+   each at the Escalated Model (**Model Assignment**), with the Integration Agent Prompt plus its `## Sub-problem`
    section (`references/templates.md`): the failing tests in scope and the files it may touch, and the
    run's `## Accepted Known-Reds`. Each fixes
    only its sub-problem, self-verifies only that, and never commits. Save each Output verbatim as
    `integration-output-pass<N>-sub<K>.md` (`SKILL.md` Step 2.1; N is the aggregate pass's number).
 3. Sort the results: clean self-verification → "Resolved (Divide-and-Conquer)"; the rest → "Still
-   Failing". If any is Still Failing, skip to escalation (template 3 below).
-4. **Aggregate pass.** Spawn **one** `orchestrated-integration` (`opus`) with the normal Integration Agent
+   Failing". Go on to the aggregate pass either way; Still Failing sub-problems are carried into the
+   escalation report if step 5 escalates.
+4. **Aggregate pass.** Spawn **one** `orchestrated-integration` at its Escalated Model with the normal Integration Agent
    Prompt plus `## Aggregate pass` and the run's `## Accepted Known-Reds`: it re-runs the full gate at the
    run's Test scope and writes a complete Integration Output, saved as its own
    `integration-output-pass<N>.md`. Then (after Step 2.2's untracked known-red
-   pause, if needed) spawn Reviewer-Integration **once** against that Output, `model: "opus"`, Retry
+   pause, if needed) spawn Reviewer-Integration **once** against that Output, at its Escalated Model, Retry
    kind `Normal retry` at loop_count 3 with the loop_count 3 issues as Previous Issues (run-state keeps
    them beside any later Unable to Verify report). Neither spawn
    increments loop_count.

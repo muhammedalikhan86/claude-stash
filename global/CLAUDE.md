@@ -5,20 +5,13 @@ The skill listing already describes each skill. These are the routing rules it d
 - **Plain or plugin variant.** In a repo whose `.claude/SKILLS.md` declares a `components:` table, use
   the `plugin-` variant of `idea-triage`, `orchestrator-development-pattern` and `init-adlc-repo`;
   otherwise the plain one.
-- **The orchestrator has a high bar.** Invoke `orchestrator-development-pattern` (or its plugin variant)
-  only when the user explicitly wants the full pipeline run end to end ("orchestrate a fix for X", "run
-  the orchestrator on this bug", "build this from the PMBook", "spike this", "this is a P0"). A plain
-  "debug X", "fix this" or "why is this failing" is a normal debugging conversation.
 - **Sticky within a conversation.** Once the orchestrator has run in this conversation, a plain "debug
   X" or "fix X" goes straight back into it as a new Bug Fix Intake item (Step 0.1b). In the plugin
   variant, "let me iterate on the UI", "tweak mode", or a plain look-and-feel ask opens a UI Iteration.
   This resets with each new conversation.
-- **New ideas** ("I want to build X", a product concept) start with `idea-triage` (or its plugin
-  variant), not code.
 - **`/graphify`**: invoke the `graphify` skill before doing anything else.
 - **`dont-lie`** is on demand only: `/dont-lie`, or when the user asks for facts, citations, statistics,
   quotes, or a fact-check.
-- **Shaw & Partners work**: load the `shaw-estate` skill first (see `rules/global-memory.md`).
 
 # Project memory vs governed docs
 

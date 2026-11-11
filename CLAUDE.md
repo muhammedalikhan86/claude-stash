@@ -11,8 +11,8 @@ to the shared folder that `create-symlinks.bat` links other machines to. `README
    overwritten by the next install. Edit the repo, then run `install.ps1` when the user says so.
 3. **`global/CLAUDE.md` is the global instruction file** (installed as `~/.claude/CLAUDE.md`). This file
    is only this repo's own instructions.
-4. **`rules/global-memory.md` keeps the `<DB_PASSWORD>` placeholder.** The installer carries the real
-   password over from the installed copy; never write it into a tracked file or into chat.
+4. **No DB password in the repo, ever.** It lives only in each user's `~/.claude/rules/shaw-db.md`
+   (created once from `shaw-db.template.md`, which keeps `<DB_PASSWORD>`). Never put it in chat.
 5. **After an install,** compare `~/.claude/settings.stash.json` with `settings.json`; delete the stash
    file when nothing in it is missing from `settings.json`, else list what is.
 

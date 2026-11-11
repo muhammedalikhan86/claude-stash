@@ -31,7 +31,7 @@ You can switch between them any time; each one backs up what it replaces.
 ```
 
 1. It refuses to run if the repo has uncommitted changes, the generated developer agents are stale,
-   or `rules/global-memory.md` holds a real password instead of the `<DB_PASSWORD>` placeholder.
+   or any published file holds a real DB password.
 2. It copies everything to a staging folder on the share, then swaps each item in, moving the old
    one into `\\sic2tfs1\Claude\Backups\publish-<date-time>\`. An item someone has open is skipped and
    reported; run it again later.
@@ -72,8 +72,8 @@ What the installer does:
 4. Deletes items listed in `retired.txt` (renamed or retired; backed up first).
 5. Copies `global/CLAUDE.md` to `~/.claude/CLAUDE.md`. If yours is a hard link shared with another
    account's folder, yours gets its own copy and the other one keeps its text.
-6. Keeps your Shaw database password from your old `rules/global-memory.md` (or the retired
-   `rules/shaw-estate.md`).
+6. Creates `~/.claude/rules/shaw-db.md` once (the Shaw DB login, this machine only, never in git),
+   with the password from your old `rules/global-memory.md` if it had one. It never overwrites it.
 7. Writes `settings.json` from `settings.template.json` if you have none. If you have one, it
    writes `settings.stash.json` beside it for you to merge by hand.
 
@@ -94,8 +94,8 @@ Then do these by hand:
 
 1. **Context7 key**: if you did not pass `-Context7Key`, put it in `settings.json` under
    `env.CONTEXT7_API_KEY`. Get a free key at https://context7.com.
-2. **Shaw database password**: ask the team lead, then replace `<DB_PASSWORD>` in
-   `~/.claude/rules/global-memory.md`. It is kept out of git on purpose.
+2. **Shaw database password**: if `~/.claude/rules/shaw-db.md` still shows `<DB_PASSWORD>`, ask the
+   team lead and replace it. That file is never in git and the installer never overwrites it.
 3. **graphify**: `uv tool install graphifyy` (or `pip install graphifyy`).
 4. **Public skills**: see below.
 5. Restart Claude Code.

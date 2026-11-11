@@ -43,7 +43,9 @@ Parity command: <INSERT parity-command, or "None">
      the repo: `const { chromium } = require(require.resolve('playwright', { paths: ['<repo root>'] }));`
    Output (screenshots, measurements) goes to the parity folder only. If the repo has no Playwright, say so as UNVERIFIED — never
    install packages into the repo.
-2. For each width, and each state in States to compare, open the board's drawing of that state and the
+2. **First list every state the board draws** (its state labels, frames and toggles). A state this
+   item's elements appear in that States to compare leaves out is compared too: name it under `States
+   added`. Then, for each width and each of those states, open the board's drawing of that state and the
    app in the same state. Reach app states with `page.route` stubs: an empty response for empty, an
    error status for error, a held response for loading. Open every dialog and menu the packet touches.
 3. Measure **the elements this item changes** — those rendered or styled by a file in the packet's
@@ -68,6 +70,11 @@ Parity command: <INSERT parity-command, or "None">
   system's token files, or a token the board's screen CSS redefines) is a design defect, not a target.
   List it under `Design defects` (state, element, board value, the design-system token the build uses);
   it is never a row, a mismatch or a FAIL.
+- **Before calling the board wrong** (a design defect, or `board may be wrong` on an outside row), check
+  the shared design kit (the design system's component files and examples, not only its token files)
+  and how sibling surfaces already built render the same element. If the kit or a built sibling uses
+  the board's value, the board is right: it is a target, not a defect. Name what you checked in the
+  row's `Checked` cell.
 - Every difference of this item is a row. A difference covered by a Ruled deviations line is a match
   with its ruling named. Any **unruled** difference of this item is a FAIL.
 - A difference outside this item goes under `Outside this item`, never in the Parity Table. It never
@@ -86,8 +93,9 @@ Issues (if FAIL): one per unruled mismatch — state, width, element, board valu
 Outside this item (or "None"):
 | State | Width | Element | Board | Built | Why outside |
 Design defects (or "None"):
-| State | Element | Board value | Design-system token the build uses |
+| State | Element | Board value | Design-system token the build uses | Checked |
 Unable to Verify (if UNVERIFIED): what and why.
+States added (or "None"): <state> — <where the board draws it>
 Harness: <parity-command | existing spec <path> | parity.cjs> — and any spec written or extended
 Files: <the parity folder's contents>
 ```

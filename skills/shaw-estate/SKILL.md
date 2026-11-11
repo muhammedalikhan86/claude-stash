@@ -9,7 +9,7 @@ The one place for Shaw facts. Other skills, rules and repos point here instead o
 Read the reference a task needs; don't load them all.
 
 **Credentials are not here.** The `DatabaseReader` connection strings and password live in
-`~/.claude/rules/global-memory.md`, which is copied per user. This skill is shared, so it holds none.
+`~/.claude/rules/shaw-db.md`, which lives only on each user's machine. This skill is shared, so it holds none.
 
 ## References
 
@@ -33,7 +33,7 @@ For a new Angular + .NET app on the intranet, these are settled. Don't ask the u
 again; ask only where the product genuinely needs something different, and record a departure in an
 ADR. The precedent is `shaw-plugin-dashboard` (Shaw Portal).
 
-1. **Front end:** Angular with Angular Material, served at `/<AppFolder>/` on `sic2iws1`;
+1. **Front end:** Angular (preferred) with Angular Material components, custom only when requested, served at `/<AppFolder>/` on `sic2iws1`;
    `apiBaseUrl` set in `environment.prod.ts`; charts with Apache ECharts via `ngx-echarts` (`ui.md`,
    `hosting-and-deployment.md`).
 2. **API:** .NET (Gen 3, SDK-style), its own IIS application at `/api/<api-slug>` with its own
@@ -63,9 +63,3 @@ Keep these apart when asking or designing:
 1. **How do users sign in?** → Windows sign-in plus AD groups (`sign-in-and-ad.md`).
 2. **What account does the app itself use to reach SQL?** → the pool's gMSA plus Integrated
    Security (`app-identity-and-sql.md`).
-
-## Always-on rules
-
-These are also in `~/.claude/rules/global-memory.md`, so they apply even before this skill loads:
-Angular Material house standard (charts: ECharts via ngx-echarts); `Shaw.DataAccess`, not EF Core; `Shaw.*` library changes need
-Muhammed's review; query output rules; no schema copies in a repository.

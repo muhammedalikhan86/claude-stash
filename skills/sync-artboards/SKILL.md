@@ -17,7 +17,7 @@ repo's design README says otherwise.
 `design-rows-directory`, `design-rounds-directory`, `design-source`, `artboard-server`,
 `design-validate-command`, `design-row-tests`, `design-post-sync`, `ui-contract`. A missing
 `design-source` is asked for once (it cannot be guessed). For any other missing one, **look in the
-repo first** — the root `CLAUDE.md`, the run skill (`.claude/skills/run/`), the design README, and the
+repo first** — the root `CLAUDE.md`, the run skill (`.claude/skills/run-app/`), the design README, and the
 README and `package.json` scripts of whatever tests the boards (e.g. `business-tests/`; a
 `test:business` script is a `design-validate-command`). Use what is found, say where it came from, and
 offer once, at the end of the report, to write it into `.claude/SKILLS.md`. Only a binding the repo
@@ -93,9 +93,8 @@ layout. Never move anything without the user's yes.
    4. A control with no accessible name is a design defect: raise a row, never work around it.
    5. Mark the row `Done <date>`, or leave it `Open` and raise a follow-up. A row the change log marks
       "Not done" stays `Open`, with the designer's reason in the findings.
-9. **Raise new rows** (full mode), in the open round, by the rules in `references/design-files.md`:
-   next unused number for the screen's letter, never renumber; never against an ask the user sent the
-   designer directly; no invented client-facing wording. With `design-row-tests` bound, each new row
+9. **Raise new rows** (full mode), in the open round, by the rules in `references/design-files.md`.
+   With `design-row-tests` bound, each new row
    gets its waiting test in the same commit, and so does **every Open row in scope that has none**
    (rows other sessions raised included); list those rows in the findings. Rewrite the open round's **Summary** and **Detailed
    prompt**, and paste both in the reply, Summary first.

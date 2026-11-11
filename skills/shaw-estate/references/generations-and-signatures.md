@@ -105,15 +105,11 @@ Four live examples exist: `WebApis\PhoenixV3WebAPI\Phoenix.WebAPI\` (multi-proje
 
 A further Gen-3 signature to look for: a **`.slnx`** solution file instead of `.sln`. Three of the four use it (`PersonalContactUpdatePIS`, `BpayLoaderInstructionsGenerator`, `LowBrokerageReportV2`); `PhoenixV3WebAPI` still has a `.sln` because its Gen-2 sibling shares it.
 
-Note: `WebApis\PhoenixV3WebAPI\Phoenix.WebAPI\` still calls the legacy `Shaw.Configuration.ConfigurationManager.GetConfiguration(...)` static bootstrap at startup even though everything else about the project is modern — that config-loading mechanism hasn't been replaced yet, so keep calling it in new Gen-3 projects too.
-
 ## A parallel note on Websites specifically
 
 - Older `Websites\*` projects (e.g. `ShawOnline`, `StatementOfAdvice\SOA`) are AngularJS 1.x SPAs hosted inside a legacy non-SDK Web Application project with almost no C# — they call out to the matching legacy WebApi rather than referencing any `Shaw.*` library client-side.
 - `Websites\PhoenixV3\` is the closest thing to a Gen-3 website: a `Microsoft.NET.Sdk.Web`, `net8.0` project whose real content is an embedded Angular app (`angular.json`, `package.json`), with ASP.NET Core used purely as a static-file host/build wrapper — not a C#-heavy rewrite the way `Phoenix.WebAPI` is on the API side.
 
-## Other one-off outliers seen (context only, not patterns to follow)
+## One-off outliers
 
-- `ShawApplications\PhoenixDataSync\` still has a VSS-style `_main`/`development` branch-folder layout — a pre-Git artifact.
-- `ShawApplications\RemoteExec\` dates to Visual Studio 2008 and uses `.NET Remoting` (`ChannelManager.cs`) — obsolete, unrelated to the `Shaw.*` stack.
-- `ShawApplications\UBSTradeFile\` is an empty folder (0 files) — not a real project to reference.
+`PhoenixDataSync`, `RemoteExec` and `UBSTradeFile`: `code-and-libraries.md` §Do not copy.

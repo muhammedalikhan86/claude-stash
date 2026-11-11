@@ -4,7 +4,7 @@ description: Initialise a PLUGIN-BASED repo for the ADLC (AI Development Life Cy
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.6.1"
+  version: "1.6.2"
   forked-from: "init-adlc-repo@1.0.0 (2026-09-10)"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project, add component, add plugin, new plugin
@@ -15,23 +15,11 @@ metadata:
 
 # Initialise Plugin-Based ADLC Repo
 
-> **Forked from `init-adlc-repo` v1.0.0 on 2026-09-10.** Everything in that skill still applies
-> except where this document says otherwise. The differences: a second **add-a-component** mode, a
+> **Plugin-repo variant of `init-adlc-repo`** (forked at v1.0.0, 2026-09-10). Self-contained: read
+> this file, not that one. The differences: a second **add-a-component** mode, a
 > per-component `docs/<component>/` scaffold with `history/` and `archive/`, a `components:` table
 > with templated bindings in `.claude/SKILLS.md` wired to the `plugin-*` skills, and a CLAUDE.md
 > shape that reflects all of it. Use plain `init-adlc-repo` for a single-component repo.
-
-## Two modes
-
-**`/plugin-init-adlc-repo`** — initialise the repo. Runs Steps 0–9 below.
-
-**`/plugin-init-adlc-repo add <component>`** — scaffold one further component in a repo already
-initialised. Runs **only** Step 5b, then reports. This is the mode `plugin-idea-triage` Step 0
-calls when a new plugin is triaged. It never touches `.claude/settings.json`, `CLAUDE.md`, or any
-existing component.
-
-**`/plugin-init-adlc-repo upgrade`** — bring a repo initialised from an older template up to the
-current one. Lists each drift and changes only what the user approves (see *Upgrade mode*).
 
 ## What a component is
 
@@ -68,6 +56,7 @@ a skill and *generates* a skill rather than a command.
 | `.gitignore` | Knowledge-graph ignore block appended — created only if absent, never overwritten |
 | `scripts/graph.ps1` | The standard knowledge-graph build script, copied in — reads the `components:` table, so it has no list of its own |
 | `CLAUDE.md` | Operating guidance, written only from verified facts |
+| `Makefile` | The standard targets (`~/.claude/skills/init-adlc-repo/references/makefile.md`, Step 3e) |
 | `docs/adr/` | **Shared** ADR home (`.gitkeep`'d) - one folder, component-prefixed IDs |
 | `docs/<component>/` | One governed-doc folder per component, each with `history/` and `archive/` |
 | `docs/design/` | UI repos only: shared `rounds/`, per-component `rows/<component>/` and `artboards/<component>/` (`.gitkeep`'d), and a short `README.md` pointer |
@@ -276,36 +265,15 @@ wildcard. Never wrap an allow rule in `*…*` — `Bash(*cd*)` matches any comma
 safe direction. Validate the file parses as JSON before moving on.
 
 **`git stash`, `git checkout` and branch-creating `git switch` (`-c`, `-C`, `--create`,
-`--force-create`) are denied, deliberately — do not "fix" this by moving any of them back to
-`allow`.** The first two discard uncommitted work silently, and a sub-agent has no way to signal
-that it did so: the only trace is a `git status` that comes back cleaner than it should. This is
-not hypothetical, and it matters more here than in a single-component repo, because
-`plugin-orchestrator-development-pattern` runs five sub-agent roles against one working tree. On
-2026-09-11, during that pipeline's first run, a Developer sub-agent finished a bug fix and a
-Reviewer sub-agent executed its regression test and confirmed it passed; one of them then ran a
-bare `git stash` — most plausibly to demonstrate the new test failed against the pre-fix code —
-and never restored it. The entire fix vanished and had to be redone. It was caught only because
-the Orchestrator noticed `git status --porcelain` was clean when two files should have been
-modified.
-
-`git switch -c` is denied for a related reason: it silently relocates the working tree onto a
-branch the human never asked for, carrying their uncommitted changes with it, so the next commit,
-push or PR lands somewhere they did not choose. In a plugin repo that also crosses a component
-boundary — work is meant to stay on one branch per component — so an agent inventing a branch can
-strand a fix where no one is looking for it. Creating a branch is the user's decision: an agent
-asks for it rather than taking it. Plain `git switch <existing-branch>` is not in the deny list
-only because `git checkout` already covers moving between existing branches; do not read its
-absence as permission to add a switch-based workaround.
-
-A prompt-level prohibition does not hold here, which is why this belongs in `deny`. A sub-agent is
-a cold spawn that reasons independently, and "temporarily revert the file to prove the test is
-coupled to the fix" is a reasonable-sounding thing for a careful agent to invent unprompted. The
-deny list is the only layer that holds regardless of what any individual agent concludes.
-
-The supported alternative, worth stating wherever agents are told to verify a regression test:
-copy the file to the session scratchpad, edit the copy, and run the assertion against both. Every
-read-only git command — `git status`, `git diff`, `git log`, `git rev-parse` — stays allowed, and
-verification should lean on those.
+`--force-create`) are denied on purpose — never move them to `allow`.** Stash and checkout discard
+uncommitted work with no trace but a too-clean `git status` (2026-09-11: a sub-agent's bare
+`git stash` erased a finished, reviewed fix). A branch switch carries the user's uncommitted work onto
+a branch they never chose; creating a branch is the user's call. In a plugin repo a stray
+branch also strands a fix outside its component's branch. Plain
+`git switch <branch>` is absent only because `git checkout` covers it, not as a loophole. A prompt
+rule doesn't bind a cold-spawned sub-agent; `deny` does. To prove a regression test fails without the
+fix, copy the file to the session scratchpad, edit the copy and run the assertion against both;
+read-only git (`status`, `diff`, `log`, `rev-parse`) stays allowed.
 
 ### Step 3a — No `hooks` block in the project
 
@@ -414,9 +382,6 @@ everything; git will not look inside an excluded directory, so the two `!` direc
 re-admit the path far enough for the fourth line to match the report itself. Drop either and nothing
 is committed at all.
 
-Tell the user in the Step 9 summary that `scripts/graph.ps1` (Step 3d) is what regenerates these, and
-that a fresh clone has no graph until it runs.
-
 ## Step 3d — `scripts/graph.ps1`: the graph build script
 
 Copy `~/.claude/skills/init-adlc-repo/templates/graph.ps1` to `scripts/graph.ps1` in the target repo,
@@ -452,9 +417,8 @@ its output in the Step 9 summary — it proves the table parses.
 
 ## Step 3e — `Makefile`: the standard targets
 
-Every repo gets a root `Makefile` with the standard targets in `~/.claude/skills/init-adlc-repo/references/makefile.md`: `help`, `install`, `up`, `down`,
-`restart`, `status`, `logs`, `build`, `test`, `lint`, `format`, `audit`, `check`, `publish`, `deploy`,
-`rollback`, `ports`, `graph`, `docs-check`, `clean`. Read that file before writing one: it says what
+Every repo gets a root `Makefile` with the standard targets in
+`~/.claude/skills/init-adlc-repo/references/makefile.md`. Read that file before writing one: it says what
 each target must do, how `deploy` ships only the app's own files (tag, local copy, dry run, keep list)
 and how `rollback` works by tag.
 
@@ -1017,6 +981,7 @@ Explicitly call out:
   wired in the user's global `~/.claude/settings.json`.
 - **That `scripts/graph.ps1` builds the knowledge graphs** (or why it was not copied), with its
   `-DryRun` output, and that a fresh clone has no graph until it runs.
+- The `make help` output, and which targets print `not used in this repo`.
 - That `.mcp.json` was created with `playwright` and `context7`, and that `CONTEXT7_API_KEY` needs
   to be set in the user's environment before the Context7 server will authenticate.
 - **The suggested next command:** `/plugin-idea-triage <shell>` — the shell is triaged first,
@@ -1029,11 +994,8 @@ Explicitly call out:
 Diagrams are **fenced `mermaid` code blocks written directly in the governed docs.** GitHub, GitLab,
 Azure DevOps, and VS Code all render them natively.
 
-This scaffold deliberately creates **no** `docs/diagrams/` directories and **no** render script. The
-earlier `.mmd` → PNG pipeline required a global `mmdc` (`@mermaid-js/mermaid-cli`) install plus a
-headless Chromium via Puppeteer — a heavy dependency, an extra build step, and a stale-image failure
-mode where a doc cites a PNG that no longer matches its source. Inlining removes all three: the
-source *is* the render, so it cannot go stale.
+This scaffold creates **no** `docs/diagrams/` directories and **no** render script: the source *is*
+the render, so it cannot go stale.
 
 Consequently `diagrams-mmd-dir`, `diagrams-img-dir`, and `diagram-render-script` are **not** bound in
 `SKILLS.md`. The orchestrator's Documentation Drift Check treats unset diagram paths as "skip the
@@ -1043,41 +1005,8 @@ Diagram *type* selection still matters and is unchanged — that guidance lives 
 
 ---
 
-## Guardrails
+## Scope
 
-- Never overwrite an existing `.claude/` file or `CLAUDE.md` without explicit confirmation.
-- Never invent identity details in `memory.md` — leave `<TODO>`s.
-- Never add a decision, architecture, status, or open-question entry to `memory.md`. It is a pointer
-  file. That content belongs in the PRD / Architecture / ADRs / PMBook / handoff doc; putting it in
-  both places creates two versions of one fact with no way to tell which is current.
-- Never add a permission allow-pattern for tooling the repo doesn't use.
-- Never write a build, test, or run command into `CLAUDE.md` that you did not read out of a manifest
-  or receive from the user.
-- Never describe the architecture in `CLAUDE.md` beyond one orienting paragraph — it belongs in
-  `docs/<component>/architecture.md`.
-- Never create a `docs/diagrams/` tree or a render script.
-- **Never overwrite an existing `.gitignore`.** Step 3c appends its block or creates the file; it
-  does not replace one. The rules already in there were put there deliberately, and losing them is
-  invisible until something secret or enormous shows up in a commit.
-- **Never write `scripts/graph.ps1` from memory or edit the copy.** Copy the standard template
-  (Step 3d); a component list or root written into the script is a second copy of the `components:`
-  table that drifts from it silently. Never replace an existing script without the user's yes.
-- **Never stub a component's governed documents.** Step 5b creates `history/` and `archive/` and
-  stops. `plugin-idea-triage` writes the PRD, architecture doc and PMBook from a real conversation.
-- **Never run anything but Step 5b in add mode.** Settings, MCP config, `memory.md`, `CLAUDE.md`,
-  `docs/adr/` and every other component's folder are shared or already correct; rewriting them to
-  add one plugin clobbers work that is not yours.
-- **Never re-scaffold over a component already in the `components:` table.** Stop and say so.
-- **Never bind a `default-component`.** A skill that cannot resolve the component must ask. A wrong
-  guess writes a feature into another component's PMBook, changelog, handoff and graph — silently.
-- **Never emit the Scope-subheading convention into `CLAUDE.md`.** The folder split replaces it.
-- **Never create a second ADR directory per component.** One shared `docs/adr/`, component-prefixed
-  IDs (`<COMPONENT>-ADR-NNN`).
-- Generate a project **skill**, not a slash command, for app launch.
-- **Never wire a `~/.claude/hooks` script in the project's `settings.json`.** The user's global settings
-  already run it, so a project copy makes it run twice (Step 3a). A project `hooks` block holds only
-  hooks whose scripts live in the repo.
-- Never write a real Context7 API key (or any other secret) into `.mcp.json` — it's a committed
-  file. Use `${VAR}` environment-variable expansion and tell the user to set the variable locally.
-- This skill touches `.claude/`, `.mcp.json`, `.gitignore`, `scripts/graph.ps1`, `CLAUDE.md`,
-  `docs/adr/` and `docs/<component>/`. It does not modify application code.
+This skill touches `.claude/`, `.mcp.json`, `.gitignore`, `scripts/graph.ps1`, `Makefile`, `CLAUDE.md`,
+`docs/adr/`, `docs/design/` and `docs/<component>/`, and registers ports in `~/.claude/ports.md`. It does not modify
+application code.

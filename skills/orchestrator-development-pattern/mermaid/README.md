@@ -1,6 +1,6 @@
 # Orchestrator Development Pattern — diagrams
 
-Reference only; SKILL.md is the source of truth. Matches v2.20.1.
+Reference only; SKILL.md is the source of truth. Matches v2.21.0.
 
 | File | What it shows |
 |---|---|

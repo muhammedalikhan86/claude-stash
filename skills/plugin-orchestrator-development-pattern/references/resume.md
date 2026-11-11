@@ -6,6 +6,8 @@ when the user types "resume" at an escalation pause. A run that never pauses or 
 
 ---
 
+**Task bar first.** Before anything below, send the task list as `SKILL.md`'s **Task bar** says for a resume, so the user sees where the run stands.
+
 **Resuming:** on explicit confirmation, read `references/templates.md` first — a resumed run never
 reaches Phase 1's "read once, now" line. If a UI packet is unfinished and run-state lacks `app-url` or
 `artboard-server`, look in the repo again, then ask, before Step 1.3b. Then rebuild the position from the file — PMBook items persisted by ID
@@ -19,8 +21,6 @@ Verify report, and the latest
 Integration Output there too (at its saved name, `integration-output-pass<N>.md`, the last of
 `integration.outputPaths`) — Previous Issues, a Verification Blocked Reviewer respawn, Integration's
 Retry Context and the Phase 2/3 inputs all read from them. A packet or output missing from both the work dir and run-state is read from the item's `parkedAt` folder; with no `parkedAt` either, re-derive the packet from the item's PMBook row and say so in the resume announcement.
-
-**Task bar first.** Before anything below, send the task list as `SKILL.md`'s **Task bar** says for a resume, so the user sees where the run stands.
 
 **Where a resumed run rejoins.** Phase 0 is not re-run: print Step 0.0a's block, announce any
 `heldForNextRun` items, then take the Platform Profile, waves and queue from the file. Take the first

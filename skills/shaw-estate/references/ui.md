@@ -1,6 +1,7 @@
 # Building a user interface: Angular Material
 
-**Shaw & Partners builds its user interfaces with Angular Material.** This holds for any Shaw work,
+**Angular is the preferred UI framework, and when Angular is used, Angular Material components are
+mandatory unless a custom component was requested.** This holds for any Shaw work,
 in any repository, whether or not the request says so — it is the house standard, not a per-project
 preference, and it does not need restating in a brief to be in force. (The one-line version is also
 an always-on rule in `~/.claude/rules/global-memory.md`.)
@@ -15,8 +16,8 @@ an always-on rule in `~/.claude/rules/global-memory.md`.)
    `section`, `article`, `header`, `footer`, `nav`, `main`, `aside`, `img`, a real `a` link, and the
    `<canvas>` or `<svg>` a chart draws into (charts themselves: §Charts). These carry no behaviour and Material has no component
    for them.
-3. **Anything else in plain HTML needs Muhammed Ali Khan's sign-off, before it is built, recorded in
-   writing.** A hand-built control re-implements focus management, keyboard behaviour, ARIA, density
+3. **Anything else in plain HTML, or hand-built, only when a custom component was requested, and
+   that request is recorded in writing (the PMBook row, a design row or an ADR) before it is built.** A hand-built control re-implements focus management, keyboard behaviour, ARIA, density
    and the theme's token wiring, and it does so invisibly — it looks right on the day it ships and
    costs for the life of the product. An exception that is not written down is a defect.
 4. **Two things this does not apply to.** An existing non-Material user interface that the work
@@ -59,7 +60,7 @@ in the brief's `## Build rules`:
    - a set of toggle buttons → `mat-button-toggle-group`;
    - section tabs → `mat-tab-nav-bar` + `mat-tab-link`.
 4. **A control Material does not have is a question, not a drawing.** The designer asks in the change
-   log; the exception needs Muhammed Ali Khan's written sign-off (point 3 above) before it is drawn.
+   log; it is drawn only once a custom component is requested in writing (point 3 above).
 5. **The hand-back says which component each control is.** The sync checks the boards for plain
    controls (`<button>`, `<input>`, `<label>`, `<select>` with no Material attribute or `mat-` parent)
    and raises each as a finding with its Material replacement; the build always uses the Material

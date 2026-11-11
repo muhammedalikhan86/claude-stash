@@ -39,7 +39,7 @@ Record rejoins at its review; its first FAIL still does not count toward `loop_c
 
 ## Resuming after an escalation
 
-**Resuming after an escalation:** first set the item's status back to `in progress` (or clear the
+First set the item's status back to `in progress` (or clear the
 `integration` block's `escalated` flag) and save run-state at once. A **Verification Blocked** escalation
 (Report 2: the UNVERIFIED limit, or two missing Outputs) reads run-state's `blockedGate` and respawns
 the role it names, with its saved inputs — `reviewer`, `parity` or `reviewer-integration` (during

@@ -26,9 +26,8 @@ tolerance or threshold that decides the answer (e.g. "within 0.5%"). With none n
 states its own under Assumptions.>
 
 ## Spike Directory
-<mandatory — default repo-root spikes/S-XXX/, outside every source root and test discovery path. Every
-file the Developer creates or modifies must fall under this path — see orchestrated-developer's Scoped
-Confinement for Spike-Type Packets. The full gate and Graphify exclude it.>
+<mandatory — default repo-root spikes/S-XXX/, outside every source root and test discovery path. The
+full gate and Graphify exclude it.>
 
 ## Approaches to Try
 <optional — specific candidates to try, or "explore freely" if there's no starting hypothesis>
@@ -42,8 +41,6 @@ Confinement for Spike-Type Packets. The full gate and Graphify exclude it.>
 - Run:    <with no formatter or linter: each script runs as saved, read-only for a data spike>
 
 ## Constraints
-- Never create or modify a file outside `## Spike Directory`.
-- Never touch the real test suite's discovery path, and add no test config in the Spike Directory.
 - Do not run the test suite. Format and Lint only, scoped to the Spike Directory.
 <other constraints from Architecture/PRD that apply, if any>
 
@@ -71,15 +68,16 @@ the Feature/Bug loop:
    considered final. This is a deliberate, accepted risk — every other work-item type in this pipeline has
    at least one human checkpoint before being final; Spike does not, because that's what makes it fast
    enough to be worth having.
-4. Spawn a single `orchestrated-finalizer` sub-agent, Task = `Spike Log`, `model: "sonnet"` (see **Model
-   Assignment**), scoped to this one Spike (`Scope: spike:<ID>`), with its `Size: <pts>`, with the `project-management-doc` path, once no P0 lane (with its
+4. Spawn a single `orchestrated-finalizer` sub-agent, Task = `Spike Log`, its `model` from **Model
+   Assignment**, scoped to this one Spike (`Scope: spike:<ID>`), with its `Size: <pts>`, with the `project-management-doc` path, once no P0 lane (with its
    commit if any) is open (one PMBook writer at a time — P0 step 4). It writes exactly one row to the PMBook's `## Spike Log` table
    (`ID | Size | Question | Recommendation | Spike Directory | Follow-up`), creating that section if it doesn't
    exist yet. **A planned spike** (its own PMBook row) also gets that row's `Status → Done` and each
    done-when the row names (e.g. `recorded in architecture §3.5`), as extra Task-Specific Inputs. No other Finalizer task runs — no Graphify, no Handoff Update, no Revision+Changelog, no Test
    Runbook, no Commit Messages, since nothing was integrated or shipped.
 5. **Commit the docs, never the spike code.** The Orchestrator commits the governed-doc edits the Spike
-   Log Finalizer made (Step 3.6's rules and trailers), plus any query files the findings rest on, kept
+   Log Finalizer made (Step 3.6's rules and trailers; the Orchestrator writes that one docs commit
+   message itself, since no Commit Messages Finalizer runs), plus any query files the findings rest on, kept
    in a tracked work folder (Shaw work: record the query a finding rests on). Spike code stays exactly
    where the Developer left it, inside its Spike Directory, uncommitted — the Orchestrator neither
    commits it (see **Git Restrictions**) nor deletes it. What happens to it next —

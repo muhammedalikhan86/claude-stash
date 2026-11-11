@@ -24,8 +24,9 @@
        if you have one, settings.stash.json is written beside it (the old stash is backed up first).
   Everything else in ~/.claude (your own skills, public skills, links to ~/.agents) is left alone.
 
-  The Shaw database password in rules/global-memory.md is carried over from your old copy (or from the
-  retired rules/shaw-estate.md) if it had one.
+  ~/.claude/rules/shaw-db.md (the Shaw DB login, this machine only) is created once from
+  shaw-db.template.md, with the password carried over from your old rules/global-memory.md (or the
+  retired rules/shaw-estate.md) if it had one. It is never overwritten and never in git.
 
   -Link (what create-symlinks.bat runs): instead of copying from this repo, links ~/.claude to the
   team's shared copies on the PROD share (-ProdDir), which publish-to-prod.ps1 fills from this repo:
@@ -33,8 +34,7 @@
       your folder holds items of your own, each shared item is linked one by one instead and yours stay.
     - skills, memory, rules: each shared item is linked one by one; your own items stay.
     - CLAUDE.md: linked, so every account on the machine reads the same file.
-    - Copied, not linked: rules/global-memory.md (it holds your DB password) and mods (they write into
-      their own folder).
+    - Copied, not linked: mods (they write into their own folder).
   Same backup, manifest and rollback as above. Making a symlink needs an administrator window. Nothing
   on the share is ever written; this mode only reads it.
 
@@ -70,9 +70,9 @@ $Merged = "skills", "agents", "agent-notes", "agent-tasks", "commands", "hooks",
 $KeepGenerated = ".claude-plugin\types", ".last_update_check"
 # -Link: folders linked whole; items copied rather than linked.
 $LinkFolders = "agents", "agent-notes", "agent-tasks", "hooks", "output-styles", "commands"
-$CopyItemsInLinkMode = @("rules\global-memory.md")
+$CopyItemsInLinkMode = @()
 $CopyFoldersInLinkMode = @("mods")
-$DbFile = "rules\global-memory.md"   # the one rules file that holds the per-user DB password
+$DbFile = "rules\shaw-db.md"          # local only: the per-user DB login; created once, never overwritten
 # Tests only: this account can't make symlinks, so the sandbox uses junctions (folders) and hard links (files).
 $TestLinks = $env:CLAUDE_STASH_TEST_LINKS -eq '1'
 
@@ -275,26 +275,33 @@ function Restore-Generated([string]$Rel, $Info) {
     }
 }
 
-function Restore-DbPassword($Info) {
-    # Carries the Shaw DB password from the old rules/global-memory.md (or, once, from the retired
-    # rules/shaw-estate.md, still in place because retired items are deleted after this) into the new one.
-    $new = Join-Path $ClaudeDir $DbFile
-    if (-not (Test-Path -LiteralPath $new)) { return }
-    $olds = @()
-    if ($Info -and $Info.contentCopied) { $olds += $(if ($WhatIf) { $new } else { Join-Path $script:BackupDir $Info.backup }) }
-    $olds += Join-Path $ClaudeDir "rules\shaw-estate.md"
-    $m = $null
-    foreach ($old in $olds) {
-        if (-not (Test-Path -LiteralPath $old -PathType Leaf)) { continue }
-        $m = [regex]::Match((Read-Text $old), 'Password=([^;<\s"]+);')
-        if ($m.Success) { break }
+function Read-OldDbPassword {
+    # Reads the Shaw DB password from the old rules/global-memory.md (or the retired rules/shaw-estate.md)
+    # before the install replaces them. Read only; Install-ShawDb writes it into rules/shaw-db.md.
+    foreach ($old in "rules\global-memory.md", "rules\shaw-estate.md") {
+        $p = Join-Path $ClaudeDir $old
+        if (-not (Test-Path -LiteralPath $p -PathType Leaf)) { continue }
+        $m = [regex]::Match((Read-Text $p), 'Password=([^;<\s"]+);')
+        if ($m.Success) { return $m.Groups[1].Value }
     }
-    $text = if ($WhatIf) { Read-Text (Join-Path $Src $DbFile) } else { Read-Text $new }
-    if ($m -and $m.Success -and $text.Contains('<DB_PASSWORD>')) {
-        if (-not $WhatIf) { Write-Text $new $text.Replace('<DB_PASSWORD>', $m.Groups[1].Value) }
-        Write-Host "[KEEP]   $($DbFile): DB password carried over from your old copy" -ForegroundColor DarkGray
-        $script:PasswordKept = $true
+    return $null
+}
+
+function Install-ShawDb {
+    # Creates ~/.claude/rules/shaw-db.md once, from shaw-db.template.md, with the old password if there
+    # was one. A file already there is the user's own and is never overwritten.
+    $target = Join-Path $ClaudeDir $DbFile
+    if (Test-Path -LiteralPath $target -PathType Leaf) {
+        $script:PasswordKept = -not (Read-Text $target).Contains('<DB_PASSWORD>')
+        Say "KEEP  " "$DbFile (this machine only, yours)" DarkGray
+        return
     }
+    $text = Read-Text (Join-Path $Src "shaw-db.template.md")
+    if ($script:OldDbPassword) { $text = $text.Replace('<DB_PASSWORD>', $script:OldDbPassword); $script:PasswordKept = $true }
+    Add-Action @{ action = 'create'; path = $DbFile }
+    if (-not $WhatIf) { Write-Text $target $text }
+    $note = if ($script:OldDbPassword) { ", DB password carried over" } else { "" }
+    Say "NEW   " "$DbFile (this machine only$note)" Green
 }
 
 function Install-RepoItem([string]$Rel, [string]$SrcRel = $Rel) {
@@ -316,7 +323,6 @@ function Install-RepoItem([string]$Rel, [string]$SrcRel = $Rel) {
         Say "NEW   " $Rel Green
     }
     Restore-Generated $Rel $info
-    if ($Rel -eq $DbFile) { Restore-DbPassword $info }
 }
 
 function Test-LinkedTo([string]$Path, [string]$To) {
@@ -470,6 +476,7 @@ $commit = ""
 if (-not $Link) { try { $commit = (& git -C $Repo rev-parse --short HEAD 2>$null) } catch { } }
 $script:Manifest = [pscustomobject]@{ created = (Get-Date).ToString("o"); mode = $modeName; claudeDir = $ClaudeDir; source = $Src; repoCommit = $commit; actions = @() }
 $script:PasswordKept = $false
+$script:OldDbPassword = Read-OldDbPassword
 
 if ($Link) { Write-Host "Linking $ClaudeDir to the shared copies in $ProdDir" }
 else { Write-Host "Installing claude-stash into $ClaudeDir" }
@@ -622,6 +629,8 @@ foreach ($folder in $Merged) {
     }
 }
 
+Install-ShawDb
+
 # Global instructions: global/CLAUDE.md in the repo (the repo-root CLAUDE.md is the repo's own);
 # CLAUDE.md at the root of a published copy.
 $globalSrc = if (Test-Path -LiteralPath (Join-Path $Src "global\CLAUDE.md")) { "global\CLAUDE.md" } else { "CLAUDE.md" }
@@ -670,7 +679,7 @@ if (-not $Context7Key) {
     Write-Host "[TODO]   Put your Context7 API key in settings.json (CONTEXT7_API_KEY) if it is not there. Free key: https://context7.com" -ForegroundColor Cyan
 }
 if (-not $script:PasswordKept) {
-    Write-Host "[TODO]   Shaw database password: if $ClaudeDir\rules\global-memory.md still shows <DB_PASSWORD>, ask the team lead and replace it." -ForegroundColor Cyan
+    Write-Host "[TODO]   Shaw database password: if $ClaudeDir\rules\shaw-db.md still shows <DB_PASSWORD>, ask the team lead and replace it." -ForegroundColor Cyan
 }
 
 Write-Host @"

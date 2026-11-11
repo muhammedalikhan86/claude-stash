@@ -2,7 +2,7 @@
 
 Read by `orchestrator-development-pattern` only when a work item or Integration is about to escalate to
 a human: a FAIL takes `loop_count` past 3, a Reviewer or Reviewer-Integration returns `UNVERIFIED` a third time
-in a row, or the Reviewer-Integration `FAIL` that takes Integration's loop_count past 3 (which runs
+in a row, any spawn returns no Output twice in a row, or the Reviewer-Integration `FAIL` that takes Integration's loop_count past 3 (which runs
 Divide-and-Conquer first). Step numbers, **Model Assignment** and **Git Restrictions** below refer to
 `SKILL.md`.
 
@@ -35,7 +35,7 @@ IF the Reviewer-Integration FAIL takes loop_count past 3 (loop_count == 3, stays
      `integration-output-pass<N>-sub<K>.md` (`SKILL.md` Step 2.1; N is the aggregate pass's number).
 
   3. Aggregate: when every sub-problem spawn has returned, spawn ONE `orchestrated-integration`
-     (`model: "opus"`) with the normal Integration Agent Prompt (its `## Accepted Known-Reds` included)
+     (`model:` the Escalated Model) with the normal Integration Agent Prompt (its `## Accepted Known-Reds` included)
      plus its `## Aggregate pass` section — it
      re-runs the full gate at the run's Test scope and writes a complete Integration Output, saved as
      its own `integration-output-pass<N>.md`. Sub-problems
@@ -44,7 +44,7 @@ IF the Reviewer-Integration FAIL takes loop_count past 3 (loop_count == 3, stays
      **Known-reds** in SKILL.md).
 
   4. Set `divideAndConquer: confirmation pass`, save run-state, and spawn Reviewer-Integration ONCE more
-     against that aggregate Integration Output, at loop_count 3's Escalated Model (`sonnet`). This single confirmation pass does not increment loop_count and is not
+     against that aggregate Integration Output, at loop_count 3's Escalated Model. This single confirmation pass does not increment loop_count and is not
      itself a new retry cycle — it either resolves the run or feeds directly into step 5. An UNVERIFIED
      here follows **Handling an UNVERIFIED Verdict**, counted on Integration's own `unverified_count` and
      `unverifiedTotal` (the Integration metrics row's UNVERIFIED count); the spawn repeated is this
@@ -82,11 +82,9 @@ once with the event time: it is terminal, excluded from Phase 2's entry rule and
 and listed in the 🏁 summary. Write its one metrics row then, Verdict `Dropped`, Timestamp that saved
 event time; close-out's "a row for each item" rule counts it.
 
-**Spike work items never reach any of these three.** There is no retry loop, no Reviewer, and no Manual
-Verification Gate in Spike Flow to fail or stall in the first place — see Spike Flow
-(`references/spike-and-p0.md`) on this being a deliberate, accepted risk, not a gap.
+**Spike work items never reach any of these three** (Spike Flow).
 
-**1. A FAIL takes `loop_count` past 3 for any feature or integration step** (a real FAIL, not a verification
+**Report 1 — A FAIL takes `loop_count` past 3 for any feature, bug or integration step** (a real FAIL, not a verification
 failure; Integration: only after Divide-and-Conquer, or when its failures can't be split):
 
 ```
@@ -112,7 +110,7 @@ Recommended actions:
 ⏸ Orchestrator is PAUSED. Waiting for instruction.
 ```
 
-**2. A Reviewer or Reviewer-Integration spawn returns `UNVERIFIED` more than twice in a row, or any
+**Report 2 — A Reviewer or Reviewer-Integration spawn returns `UNVERIFIED` more than twice in a row, or any
 spawn returns no Output twice in a row** (see **Handling an UNVERIFIED Verdict** and **A spawn that
 returns no Output** in SKILL.md, under Step 1.3b) — this means verification itself is blocked, not that
 the implementation is wrong. For missing Outputs, replace the `Consecutive UNVERIFIED` and `Unable to
@@ -138,14 +136,10 @@ all. Recommended actions:
 ⏸ Orchestrator is PAUSED. Waiting for instruction.
 ```
 
-On "resume", this one respawns the role `blockedGate` names, with the same saved inputs and
-`unverified_count` reset to 0: for UNVERIFIED, the blocked Reviewer, Parity Check or Reviewer-Integration
-— never the Developer or Integration agent; for missing Outputs, that role itself (Developer, Integration
-agent or Finalizer). `blockedGate` is cleared only after that respawn. Before posting it, save
-`blockedGate: reviewer | parity | reviewer-integration | developer | integration | finalizer` in
-run-state (see **Resuming after an escalation** in `references/resume.md`).
+Before posting it, save `blockedGate: reviewer | parity | reviewer-integration | developer | integration
+| finalizer` in run-state. Resume: `references/resume.md` §Resuming after an escalation.
 
-**3. Divide-and-Conquer's confirmation pass still fails** (see **Divide-and-Conquer** above) — scope the
+**Report 3 — Divide-and-Conquer's confirmation pass still fails** (see **Divide-and-Conquer** above) — scope the
 report to only what's still broken; resolved sub-problems are context, not part of the ask:
 
 ```

@@ -12,7 +12,7 @@ flowchart TD
     Ann --> Wave["Joins a wave: passes the<br/>overlap rules, counts<br/>toward the limit of 3"]
     Wave --> Dev{{"Developer<br/>developer-high, opus,<br/>never escalates"}}
     Dev --> Out["Output is the deliverable:<br/>Findings + recommendation"]
-    Out --> Fin{{"Spike Log Finalizer, haiku;<br/>waits for any open<br/>PMBook writer"}}
+    Out --> Fin{{"Spike Log Finalizer, sonnet;<br/>waits for any open<br/>PMBook writer"}}
     Fin --> Row["One Spike Log row<br/>in the PMBook"]
     Row --> Keep["Code stays uncommitted;<br/>save run-state"]
     Keep --> More{"Other items<br/>left?"}

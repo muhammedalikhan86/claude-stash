@@ -32,7 +32,6 @@ Layered into sibling projects: `Phoenix.WebAPI` (host), `Phoenix.Business`, `Pho
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
     <PackageReference Include="scalar.aspnetcore" Version="2.16.3" />
     <PackageReference Include="Shaw.ActiveDirectory" Version="2.0.2.4" />
-    <PackageReference Include="Shaw.Configuration" Version="2.0.0" />
     <PackageReference Include="Shaw.DataAccess" Version="2.0.1" />
   </ItemGroup>
   <ItemGroup>
@@ -47,12 +46,6 @@ Notable choices to copy:
 - **`appsettings.json` / `appsettings.Development.json` / `appsettings.Production.json`** — standard ASP.NET Core config, not `Web.config` transforms.
 - **Auth via Windows/Negotiate**: `Microsoft.AspNetCore.Authentication.Negotiate` rather than the OWIN `Microsoft.Owin.Security.OAuth`/cookie stack Gen 2 uses.
 - **API docs via `scalar.aspnetcore`** (OpenAPI-based) rather than Swashbuckle.
-- **Still bootstraps the legacy config mechanism** even though everything else is modern — this hasn't been replaced yet, so keep doing it in new Gen-3 work too:
-```csharp
-using ConfigurationManager = Shaw.Configuration.ConfigurationManager;
-...
-ConfigurationManager.GetConfiguration("PhoenixWebAPI", false);
-```
 
 ## API template (single-project): `WebApis\PersonalContactUpdatePIS\`
 
@@ -72,7 +65,7 @@ Properties\launchSettings.json, Properties\PublishProfiles\FolderProfile.pubxml
 PersonalContactUpdatePIS.http
 ```
 
-Packages: `Shaw.ActiveDirectory` 2.0.2.4, `Shaw.Configuration` 2.0.0, `Shaw.DataAccess` 2.0.1, `Shaw.Diagnostics` 2.0.0, `Shaw.Models` 2.0.0.
+Packages: `Shaw.ActiveDirectory` 2.0.2.4, `Shaw.DataAccess` 2.0.1, `Shaw.Diagnostics` 2.0.0, `Shaw.Models` 2.0.0.
 
 `WebApis\BpayLoaderInstructionsGeneratorWebAPI\BpayLoaderInstructionsGenerator\` is the same shape, smaller still: `Domain\`, `Application\Workflow.cs`, `Controllers\WorkflowController.cs`, and only `Shaw.Configuration` + `Shaw.Mail` — no data access at all. It also keeps a template asset under `App_Data\` (an `.xlsx`), which is a reasonable place for one.
 
@@ -111,4 +104,4 @@ Console project (`LowBrokerageReport.Console\Program.cs`):
 
 ## When neither template fits exactly
 
-If the new project doesn't cleanly map to "API" or "console/service job" (e.g. a new website), there is no clean Gen-3 website example in the estate yet — the closest is `Websites\PhoenixV3\` (an ASP.NET Core `net8.0` host wrapping an Angular SPA, see `generations-and-signatures.md`). In that case, default to a plain modern ASP.NET Core (`net10.0`, SDK-style, `PackageReference` to `Shaw.*` v2.x, `appsettings.json`) host and pick a frontend approach with the user rather than assuming Angular — Angular was this one team's choice, not an estate-wide convention.
+If the new project doesn't cleanly map to "API" or "console/service job" (e.g. a new website), there is no clean Gen-3 website example in the estate yet — the closest is `Websites\PhoenixV3\` (an ASP.NET Core `net8.0` host wrapping an Angular SPA, see `generations-and-signatures.md`). In that case, default to a plain modern ASP.NET Core (`net10.0`, SDK-style, `PackageReference` to `Shaw.*` v2.x, `appsettings.json`) host, with an Angular + Angular Material front end per the Standard architecture defaults in `SKILL.md` (`ui.md`).

@@ -29,8 +29,7 @@ and internals (e.g. the config-loading mechanism). Match the line to the project
 - Classic .NET Framework project (net45/net472/net48) → pin `Shaw.*` **v1.x**.
 - Modern SDK-style project (net8.0+/net10.0) → pin `Shaw.*` **v2.x** (`netstandard2.0`, versioned 2.0.x).
 
-v2.x targets `netstandard2.0`, so a net48 project *can* consume it (`ShawApplications\ValidateACN\`
-does). Per-library detail, naming traps and observed pins: `shaw-libraries.md`.
+Per-library detail, naming traps and observed pins: `shaw-libraries.md`.
 
 ## Changing a Shaw.* library (Muhammed's standing rule)
 

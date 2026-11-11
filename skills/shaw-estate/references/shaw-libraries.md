@@ -8,8 +8,6 @@ All are built as SDK-style `netstandard2.0` class libraries versioned `2.0.x`, e
 
 Two naming traps: the folder `Shaw.ConfigurationManager\` contains `Shaw.Configuration.csproj` and ships as package **`Shaw.Configuration`**; and `Shaw.Exception` ships as package id **`Shaw.Exceptions`** on the v1 line but **`Shaw.Exception`** on the v2 line, so it is not a straight version bump.
 
-The `PushNuGet` command uses `-skipduplicate`, so **pushing without bumping `<Version>` silently does nothing** — that is the usual reason a consumer doesn't see a library change.
-
 | Package | Version line seen | Depends on | Purpose | Key API |
 |---|---|---|---|---|
 | **Shaw.Common** | v2.0.1 | none (zero-dependency foundation) | Null-safe conversions, string templating, and the attributes that drive `Shaw.DataAccess`'s SQL generation. | `ConversionExtensions` (`object.ToBoolean()/ToInt32()/ToDecimal()/ToDateTime()/ToGuid()/IsNullorEmpty()`); `StringFunctions.ReplaceTags`/`IsTemplateValid` (`{{Token}}` merge-field templating); attributes `[SchemaName]`, `[TableName]`, `[PrimaryKey]`, `[CompositeKey]`, `[IdentityInsert]`, `[ForeignKey]`, `[Unused]`; shared enums (`EntityState`, `CommunicationType`, `PaymentType`, etc.). |

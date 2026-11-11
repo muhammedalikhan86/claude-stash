@@ -15,7 +15,7 @@ docs/design/                         design-directory
   artboards/<component>/changes/     the designer's change logs, synced in with the boards
 ```
 
-A single-component repo uses one artboards folder; name it after the app. Rows files are per page —
+A single-component repo puts its boards directly in `artboards/` (and `artboards/changes/`). Rows files are per page —
 a page is one board file (one screen, or one screen family drawn together).
 
 ## `brief.md` — the standing rules
@@ -122,10 +122,7 @@ check, the files to open, and the change-log instruction from brief.md, restated
 | `design-post-sync` | — | anything run after a sync (e.g. refresh a demo repo), and whether Claude may push it |
 | `ui-contract` | `brief.md` §Build rules | the full UI contract, if the repo has one |
 
-Unbound and not found in the repo (its `CLAUDE.md`, run skill, design README, or the README and
-`package.json` scripts of whatever tests the boards — `sync-artboards` §Bindings used): `design-source` is asked for once
-(it cannot be guessed), then offered for `SKILLS.md`; every other one skips its step and the report
-says so. The folder bindings fall back to the defaults above.
+Unbound: see `sync-artboards` §Bindings used. The folder bindings fall back to the defaults above.
 
 ## Old layout
 

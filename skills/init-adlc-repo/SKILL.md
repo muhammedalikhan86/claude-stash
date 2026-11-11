@@ -4,7 +4,7 @@ description: Initialise a repo for the ADLC (AI Development Life Cycle) workflow
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.6.1"
+  version: "1.6.2"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project
   role: platform-engineer
@@ -36,6 +36,7 @@ a skill and *generates* a skill rather than a command.
 | `.gitignore` | Knowledge-graph ignore block appended — created only if absent, never overwritten |
 | `scripts/graph.ps1` | The standard knowledge-graph build script, copied from this skill's `templates/` |
 | `CLAUDE.md` | Operating guidance, written only from verified facts |
+| `Makefile` | The standard targets (`~/.claude/skills/init-adlc-repo/references/makefile.md`, Step 3e) |
 | `docs/adr/` | ADR home (`.gitkeep`'d) |
 | `docs/design/` | UI repos only: `rows/`, `rounds/`, `artboards/` (`.gitkeep`'d) and a short `README.md` pointer |
 
@@ -219,30 +220,14 @@ wildcard. Never wrap an allow rule in `*…*` — `Bash(*cd*)` matches any comma
 safe direction. Validate the file parses as JSON before moving on.
 
 **`git stash`, `git checkout` and branch-creating `git switch` (`-c`, `-C`, `--create`,
-`--force-create`) are denied, deliberately — do not "fix" this by moving any of them back to
-`allow`.** The first two discard uncommitted work silently, and a sub-agent has no way to signal
-that it did so: the only trace is a `git status` that comes back cleaner than it should. This is
-not hypothetical. On 2026-09-11 an orchestrated Developer sub-agent finished a bug fix, a Reviewer
-executed its regression test and confirmed it passed, and one of them then ran a bare `git stash`
-— most plausibly to demonstrate the new test failed against the pre-fix code — and never restored
-it. The entire fix vanished and had to be redone.
-
-`git switch -c` is denied for a related reason: it silently relocates the working tree onto a
-branch the human never asked for, carrying their uncommitted changes with it, so the next commit,
-push or PR lands somewhere they did not choose. Creating a branch is the user's decision — an
-agent asks for it rather than taking it. Plain `git switch <existing-branch>` is not in the deny
-list only because `git checkout` already covers moving between existing branches; do not read its
-absence as permission to add a switch-based workaround.
-
-A prompt-level prohibition does not hold here, which is why this belongs in `deny`. A sub-agent is
-a cold spawn that reasons independently, and "temporarily revert the file to prove the test is
-coupled to the fix" is a reasonable-sounding thing for a careful agent to invent unprompted. The
-deny list is the only layer that holds regardless of what any individual agent concludes.
-
-The supported alternative, worth stating wherever agents are told to verify a regression test:
-copy the file to the session scratchpad, edit the copy, and run the assertion against both. Every
-read-only git command — `git status`, `git diff`, `git log`, `git rev-parse` — stays allowed, and
-verification should lean on those.
+`--force-create`) are denied on purpose — never move them to `allow`.** Stash and checkout discard
+uncommitted work with no trace but a too-clean `git status` (2026-09-11: a sub-agent's bare
+`git stash` erased a finished, reviewed fix). A branch switch carries the user's uncommitted work onto
+a branch they never chose; creating a branch is the user's call. Plain
+`git switch <branch>` is absent only because `git checkout` covers it, not as a loophole. A prompt
+rule doesn't bind a cold-spawned sub-agent; `deny` does. To prove a regression test fails without the
+fix, copy the file to the session scratchpad, edit the copy and run the assertion against both;
+read-only git (`status`, `diff`, `log`, `rev-parse`) stays allowed.
 
 ### Step 3a — No `hooks` block in the project
 
@@ -378,9 +363,8 @@ The `Makefile`'s `graph` target calls it (Step 3e). After the copy, run it once 
 
 ## Step 3e — `Makefile`: the standard targets
 
-Every repo gets a root `Makefile` with the standard targets in `~/.claude/skills/init-adlc-repo/references/makefile.md`: `help`, `install`, `up`, `down`,
-`restart`, `status`, `logs`, `build`, `test`, `lint`, `format`, `audit`, `check`, `publish`, `deploy`,
-`rollback`, `ports`, `graph`, `docs-check`, `clean`. Read that file before writing one: it says what
+Every repo gets a root `Makefile` with the standard targets in
+`~/.claude/skills/init-adlc-repo/references/makefile.md`. Read that file before writing one: it says what
 each target must do, how `deploy` ships only the app's own files (tag, local copy, dry run, keep list)
 and how `rollback` works by tag.
 
@@ -762,6 +746,7 @@ these are project conventions meant to be committed, not local config. Explicitl
 - **That `scripts/graph.ps1` builds the knowledge graph** (or why it was not copied), with its
   `-DryRun` output, the `graphify-directories` it read, and that a fresh clone has no graph until it
   runs.
+- The `make help` output, and which targets print `not used in this repo`.
 
 ---
 
@@ -770,11 +755,8 @@ these are project conventions meant to be committed, not local config. Explicitl
 Diagrams are **fenced `mermaid` code blocks written directly in the governed docs.** GitHub, GitLab,
 Azure DevOps, and VS Code all render them natively.
 
-This scaffold deliberately creates **no** `docs/diagrams/` directories and **no** render script. The
-earlier `.mmd` → PNG pipeline required a global `mmdc` (`@mermaid-js/mermaid-cli`) install plus a
-headless Chromium via Puppeteer — a heavy dependency, an extra build step, and a stale-image failure
-mode where a doc cites a PNG that no longer matches its source. Inlining removes all three: the
-source *is* the render, so it cannot go stale.
+This scaffold creates **no** `docs/diagrams/` directories and **no** render script: the source *is*
+the render, so it cannot go stale.
 
 Consequently `diagrams-mmd-dir`, `diagrams-img-dir`, and `diagram-render-script` are **not** bound in
 `SKILLS.md`. The orchestrator's Documentation Drift Check treats unset diagram paths as "skip the
@@ -784,28 +766,8 @@ Diagram *type* selection still matters and is unchanged — that guidance lives 
 
 ---
 
-## Guardrails
+## Scope
 
-- Never overwrite an existing `.claude/` file or `CLAUDE.md` without explicit confirmation.
-- Never invent identity details in `memory.md` — leave `<TODO>`s.
-- Never add a decision, architecture, status, or open-question entry to `memory.md`. It is a pointer
-  file. That content belongs in the PRD / Architecture / ADRs / PMBook / handoff doc; putting it in
-  both places creates two versions of one fact with no way to tell which is current.
-- Never add a permission allow-pattern for tooling the repo doesn't use.
-- Never write a build, test, or run command into `CLAUDE.md` that you did not read out of a manifest
-  or receive from the user.
-- Never describe the architecture in `CLAUDE.md` beyond one orienting paragraph — it belongs in
-  `docs/architecture.md`.
-- Never create a `docs/diagrams/` tree or a render script.
-- **Never overwrite an existing `.gitignore`.** Step 3c appends its block or creates the file.
-- **Never write `scripts/graph.ps1` from memory or put roots in it.** Copy the template (Step 3d);
-  the roots live in `graphify-directories`, and a second list in the script drifts from it silently.
-  Never bind `graphify-directories` to the repo root.
-- Generate a project **skill**, not a slash command, for app launch.
-- **Never wire a `~/.claude/hooks` script in the project's `settings.json`.** The user's global settings
-  already run it, so a project copy makes it run twice (Step 3a). A project `hooks` block holds only
-  hooks whose scripts live in the repo.
-- Never write a real Context7 API key (or any other secret) into `.mcp.json` — it's a committed
-  file. Use `${VAR}` environment-variable expansion and tell the user to set the variable locally.
-- This skill touches `.claude/`, `.mcp.json`, `.gitignore`, `scripts/graph.ps1`, `CLAUDE.md`, and
-  `docs/adr/`. It does not modify application code.
+This skill touches `.claude/`, `.mcp.json`, `.gitignore`, `scripts/graph.ps1`, `Makefile`, `CLAUDE.md`,
+`docs/adr/` and `docs/design/`, and registers ports in `~/.claude/ports.md`. It does not modify
+application code.

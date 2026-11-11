@@ -11,14 +11,15 @@
     Into the PROD folder (-Target):
       skills/<x>, agents/<x>, agent-notes/<x>, agent-tasks/<x>, commands/<x>, hooks/<x>,
       output-styles/<x>, rules/<x>, memory/<x>, mods/<x>, claude-plugin-marketplace, CLAUDE.md,
-      plus what the link step needs: install.ps1, retired.txt, settings.template.json.
+      plus what the link step needs: install.ps1, retired.txt, settings.template.json,
+      shaw-db.template.md.
     Into the share root (-ShareRoot):
       create-symlinks.bat, and docs/share/README.md as README.md.
 
   How:
     1. Checks first, before anything changes: the repo has no uncommitted changes (unless -AllowDirty),
-       the generated developer agents are current, rules/global-memory.md still holds the <DB_PASSWORD>
-       placeholder and no real password, and the share can be read.
+       the generated developer agents are current, no published file holds a real DB password, and
+       the share can be read.
     2. Every item is copied to a staging folder on the share first.
     3. Then, one item at a time, the old item is moved into the backup folder and the staged one is
        moved into its place. On the same share a move is a rename, so each item is missing for only a
@@ -136,9 +137,13 @@ $global:LASTEXITCODE = 0
 & (Join-Path $Repo "scripts\build-developer-agents.ps1") -Check *> $null
 if ($LASTEXITCODE -ne 0) { $stop += "Generated developer agents are stale. Run scripts\build-developer-agents.ps1 and commit." }
 
-$estate = [IO.File]::ReadAllText((Join-Path $Repo "rules\global-memory.md"), $Utf8)
-if (-not $estate.Contains('<DB_PASSWORD>') -or [regex]::IsMatch($estate, 'Password=(?!<DB_PASSWORD>)[^;\s]+;')) {
-    $stop += "rules\global-memory.md must hold the <DB_PASSWORD> placeholder and no real password."
+# No published file may hold a real DB password (the login lives in each user's ~/.claude/rules/shaw-db.md).
+foreach ($f in $files) {
+    if ($f -notmatch '\.(md|ps1|json|txt|bat|py|sh)$') { continue }
+    $body = [IO.File]::ReadAllText((Join-Path $Repo $f), $Utf8)
+    if ([regex]::IsMatch($body, 'Password=(?!<DB_PASSWORD>)[^;\s<]+;') -or [regex]::IsMatch($body, 'DatabaseReader -P "(?!<DB_PASSWORD>)[^"]+"')) {
+        $stop += "$f holds a real DB password. Put <DB_PASSWORD> back; the real one lives only in ~/.claude/rules/shaw-db.md."
+    }
 }
 
 try { $null = Get-ChildItem -LiteralPath $Target -Force -ErrorAction Stop } catch { $stop += "Can't read $Target. Connect to the network (or VPN)." }
@@ -163,7 +168,7 @@ foreach ($folder in $Merged) {
     $names = @($files | Where-Object { $_.StartsWith("$folder/") } | ForEach-Object { ($_ -split '/')[1] } | Sort-Object -Unique)
     foreach ($n in $names) { Add-Item "$folder/$n" (Join-Path $Target "$folder\$n") }
 }
-foreach ($f in "claude-plugin-marketplace", "install.ps1", "retired.txt", "settings.template.json") { Add-Item $f (Join-Path $Target $f) }
+foreach ($f in "claude-plugin-marketplace", "install.ps1", "retired.txt", "settings.template.json", "shaw-db.template.md") { Add-Item $f (Join-Path $Target $f) }
 # The global instructions live in global/ here (the repo-root CLAUDE.md is the repo's own) and at the share's root.
 Add-Item "global/CLAUDE.md" (Join-Path $Target "CLAUDE.md")
 if ($ShareRoot) {

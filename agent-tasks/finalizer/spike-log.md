@@ -10,6 +10,6 @@ is the `Size:` the prompt gives; tag the row `(run <run id>, spike:<ID>)` at the
 `Follow-up` cell. `Recommendation` is one of: promote to Feature backlog / abandon /
 needs more investigation, taken directly from the Developer's Findings — never inferred or embellished.
 Always a solo invocation: never co-spawned with the batch Tasks, and never followed by a Commit
-Messages invocation — Spike code is left uncommitted, so there is nothing to draft a commit message for.
+Messages invocation — the Orchestrator commits the doc edits itself; Spike code stays uncommitted.
 No Graphify, Handoff, Revision+Changelog, or Test Runbook writes accompany it, since nothing was actually
 integrated or shipped.

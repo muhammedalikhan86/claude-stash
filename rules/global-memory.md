@@ -14,8 +14,9 @@
 
 ## Shaw hard rules (apply before the skill loads)
 
-1. **UI is Angular Material.** If Material or the CDK has a component, use it; any other plain-HTML
-   control needs Muhammed Ali Khan's written sign-off. Charts: Apache ECharts via `ngx-echarts`.
+1. **Angular is the preferred UI framework.** When Angular is used, Angular Material (or CDK)
+   components are mandatory, unless a custom component was requested. Charts: Apache ECharts via
+   `ngx-echarts`.
 2. **Data access is `Shaw.DataAccess`, never EF Core.**
 3. **A `Shaw.*` library change goes branch → Muhammed's review → merge.** No check-in, push, Release
    build or `nuget push` before that.
@@ -26,20 +27,10 @@
 
 ## Shaw live data: the DatabaseReader login
 
-Read-only SQL login, approved for analysis and design; never a deployed app's identity (apps use
-their pool's gMSA). How to use it: the skill's `references/databases-and-querying.md`. The password
-is never in git: ask the team lead and put it in place of the placeholder in each line below, in your own
-`~/.claude/rules/global-memory.md`. The installer carries it over on each re-install.
-
-```
-DataWarehouse: Data Source=idb_ag.shawstock.com.au,4433;Initial Catalog=DataWarehouse;User ID=DatabaseReader;Password=<DB_PASSWORD>;TrustServerCertificate=true
-PowerBI:       Data Source=idb_ag.shawstock.com.au,4433;Initial Catalog=PowerBI;User ID=DatabaseReader;Password=<DB_PASSWORD>;TrustServerCertificate=true
-ShawCentral:   Data Source=idb_ag.shawstock.com.au,4433;Initial Catalog=ShawCentral;User ID=DatabaseReader;Password=<DB_PASSWORD>;TrustServerCertificate=true
-FeeDisclosure: Data Source=idb_ag.shawstock.com.au,4433;Initial Catalog=FeeDisclosure;User ID=DatabaseReader;Password=<DB_PASSWORD>;TrustServerCertificate=true
-IS:            Data Source=idb_ag.shawstock.com.au,4433;Initial Catalog=IS;User ID=DatabaseReader;Password=<DB_PASSWORD>;TrustServerCertificate=true
-```
-
-Shell: `sqlcmd -S "idb_ag.shawstock.com.au,4433" -U DatabaseReader -P "<DB_PASSWORD>" -d <Database> -C`
+Claude may use the read-only `DatabaseReader` SQL login for analysis and design reads. Its connection
+strings, `sqlcmd` line and password are in `~/.claude/rules/shaw-db.md`, which lives only on this
+machine (the installer creates it once and never overwrites it). If it is missing or still shows
+`<DB_PASSWORD>`, ask the team lead.
 
 ## Memory notes (`~/.claude/memory/`)
 

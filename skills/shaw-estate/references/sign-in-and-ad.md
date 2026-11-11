@@ -33,16 +33,7 @@ Reference: `WebApis\PhoenixV3WebAPI\Phoenix.WebAPI\Program.cs` and its `Configur
    `UseAuthentication`/`UseAuthorization` (the same ordering, in-process). Source: AI Form Filler's
    API `CLAUDE.md`, *IIS deployment notes*.
 
-**Don't copy one thing from Phoenix.WebAPI:** its `Program.cs` still calls
-`Shaw.Configuration ... GetConfiguration("PhoenixWebAPI")`. That central config is legacy for new
-work (`code-and-libraries.md`). Copy the auth wiring, not that call.
+## Who is who
 
-## Who is who: data that mirrors AD
-
-1. `ShawCentral.dbo.Users` mirrors Active Directory (`DisplayName`, `EmailAddress`, `Branch`,
-   `JobTitle`, `Status`, `NetworkUsername`).
-2. `DataWarehouse.dbo.AdvisorAccess` maps a person's email to their advisor codes; the advisor
-   dashboard reads it. `AdvisorAccessProper` is its nightly rebuild with branch managers cut down to
-   their own branch.
-
-See `databases-and-querying.md` for reading them.
+Tables that mirror AD (`ShawCentral.dbo.Users`, `DataWarehouse.dbo.AdvisorAccess`):
+`databases-and-querying.md`, *Handy starting points*.

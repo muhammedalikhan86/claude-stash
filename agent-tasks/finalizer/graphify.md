@@ -43,10 +43,9 @@ first `>` breaks the blockquote):
 > Code roots: <the roots that were scanned, comma-separated>
 ```
 
-`git rev-parse HEAD` is the one allowed git command (see **Git Restrictions**). Keep the
-`+ uncommitted working tree` suffix: the graph is built before the run's commit, so it describes the tree
-about to be committed, not the stamped commit. Drop the suffix only when `git status` would show the
-code roots clean (you may not run it; the Orchestrator tells you when that is the case).
+Read-only git is allowed (agent **Git Restrictions**). Keep the `+ uncommitted working tree` suffix:
+the graph is built before the run's commit, so it describes the tree about to be committed, not the
+stamped commit. Drop the suffix only when `git status` shows the code roots clean.
 
 Report the graph and report files you actually wrote, by their real paths, under Files Created or
 Modified so the commit messages stage them — and list as committable only what the repository's

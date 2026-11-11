@@ -76,8 +76,9 @@ It was brought in line with the intended design at Step 1.1b, before you were sp
 Do not change it — the design was settled, and the Reviewer checks the built result against it.
 Components: <each surface → its Angular Material / CDK component, from Step 1.1b point 5>
 Styling: <each surface → shared theme / existing class vocabulary / new shared class / local CSS>
-States to compare: <the board states this item must match — populated, empty, loading, error, full
-  view, and each dialog and menu it touches>
+States to compare: <every state the board draws that this item's elements appear in — read the board's
+  state labels and frames, not only the loaded view: populated, empty, loading, error, full view, and
+  each dialog and menu it touches>
 Ruled deviations: <each accepted difference from the board, with its source: a design row ID, or a
   hub or user ruling with its date — or "None". Only these may differ; anything else fails>
 Data sources: <each field the board shows → its API field and database read, or "added by this item"
@@ -228,9 +229,7 @@ strict prefix of its retry's prompt and prompt caching can reuse it.
 ### Developer Agent Prompt
 
 ```
-You are a senior software developer implementing a single feature or bug fix defined by the Task Packet
-below (see its `Type` field). You are operating in **orchestrated mode** (see your own **Orchestrated Mode**
-section) — you were spawned with a Task Packet, not a live human request.
+You are operating in **orchestrated mode**.
 
 ## Task Packet
 <INSERT FULL TASK PACKET>
@@ -292,13 +291,7 @@ Developer retry. A file outside every component's roots (e.g. root `package.json
 tagged: check it as a deviation — it passes only when the Developer Output records it with a
 justification the work needs.
 
-Cite an ID, file, document section or tracking item only after opening it and seeing it say what you
-claim. If you cannot find it, write "not tracked" — never name an ID from memory.
-
-A real defect you find **outside this packet's scope** (in code this item did not change and its
-criteria do not cover) is not an issue of this item: list it under your Output Template's `Outside this item`
-section and do not let it change your verdict. A defect in a file this item changed is
-always this item's.
+A defect in a file this item changed is always this item's.
 
 If the Developer Output is a Build Record (`Source: built outside the loop`), review the code as it
 stands against the packet exactly as you would a Developer's work; Format/Lint were not run by a
@@ -331,7 +324,7 @@ App URL: <INSERT app-url, filled with this checkout's port offset>
 Board URL: <INSERT the board's URL from artboard-server>
 Compared against: <"Board <file>" | "Acceptance Criteria — <surface> not drawn">
 Widths: <INSERT parity-viewports, at least 1440>
-Parity folder: <INSERT <gate log directory>/parity/<ID>[-legN][-retryN]/>
+Parity folder: <INSERT <work dir>/parity/<run id>/<ID>[-legN][-retryN]/>
 Repo root: <INSERT>
 Parity command: <INSERT parity-command, or "None">
 
@@ -348,7 +341,9 @@ Parity command: <INSERT parity-command, or "None">
      from the repo: `const { chromium } = require(require.resolve('playwright', { paths: ['<repo root>'] }));`
      Run it with `node <parity folder>/parity.cjs`.
    Output (screenshots, measurements) goes to the parity folder only.
-2. For each width, and each state in States to compare, open the board's drawing of that state and the
+2. **First list every state the board draws** (its state labels, frames and toggles). A state this
+   item's elements appear in that States to compare leaves out is compared too: name it under `States
+   added`. Then, for each width and each of those states, open the board's drawing of that state and the
    app in the same state. Reach app states with `page.route` stubs: an empty response for empty, an
    error status for error, a held response for loading. Open every dialog and menu the packet touches.
 3. Measure **the elements this item changes** — those rendered or styled by a file in the packet's
@@ -369,6 +364,15 @@ Parity command: <INSERT parity-command, or "None">
   Criterion, or changed between the board and the built screen because of this item. Otherwise — an
   element the item does not touch, on a surface it happens to share — it is outside this item. When
   unsure, it is this item's.
+- A board value that is not a design-system token (a colour, size or font found in none of the design
+  system's token files, or a token the board's screen CSS redefines) is a design defect, not a target.
+  List it under `Design defects` (state, element, board value, the design-system token the build uses);
+  it is never a row, a mismatch or a FAIL.
+- **Before calling the board wrong** (a design defect, or `board may be wrong` on an outside row), check
+  the shared design kit (the design system's component files and examples, not only its token files)
+  and how sibling surfaces already built render the same element. If the kit or a built sibling uses
+  the board's value, the board is right: it is a target, not a defect. Name what you checked in the
+  row's `Checked` cell.
 - Every difference of this item is a row. A difference covered by a Ruled deviations line is a match
   with its ruling named. Any **unruled** difference of this item is a FAIL.
 - A difference outside this item goes under `Outside this item`, never in the Parity Table. It never
@@ -386,7 +390,10 @@ Parity Table:
 Issues (if FAIL): one per unruled mismatch — state, width, element, board value, built value.
 Outside this item (or "None"):
 | State | Width | Element | Board | Built | Why outside |
+Design defects (or "None"):
+| State | Element | Board value | Design-system token the build uses | Checked |
 Unable to Verify (if UNVERIFIED): what and why.
+States added (or "None"): <state> — <where the board draws it>
 Harness: <parity-command | existing spec <path> | parity.cjs> — and any spec written or extended
 Files: <the parity folder's contents>
 ```
@@ -394,9 +401,7 @@ Files: <the parity folder's contents>
 ### Integration Agent Prompt
 
 ```
-You are a senior integration engineer. You run the quality gate at the scope given below, fix test or
-build failures, and validate the system after all work items in this run were implemented. You are
-operating in **orchestrated mode**.
+You are operating in **orchestrated mode**.
 
 ## Platform Profile
 <INSERT PLATFORM PROFILE, including the Test scope line:
@@ -451,8 +456,7 @@ Read the documents above yourself — you were given paths, not contents.
 
 ## Cross-Component Diff Guard
 Before anything else, check only the files this run changed — the work items' files above (for a UI
-Iteration, its file set: the tweak log's files, the artboard edits, the updated assertion files and the
-Reviewer-fix files) and your own fixes; ignore paths under docs-directory and graphify-out. Check
+Iteration, its file set) and your own fixes; ignore paths under docs-directory and graphify-out. Check
 each of this run's files against the component table:
 - inside this component's roots — fine;
 - outside every component's roots — allowed when `Out-of-root files` above lists it with a
@@ -467,10 +471,7 @@ On a FAIL, list each file under Unresolvable Issues as
 work item in the owning component, then re-runs this pass.
 
 ## Deferred Integration
-<INSERT per Pending Bug ID from PMBook's "## Deferred Integration" section: the ID, its files changed
-and its commit ids — this run's P0: files = the Bug's run-state `files` (every
-attempt) + its lane Finalizers' files, commit ids from `git log --grep "Run-Id: <run id>"` only if any exist; an earlier run's ID:
-`git log --grep "<ID>" --name-only` — or "None provided">
+<INSERT Step 2.1's Deferred Integration entries (ID, files changed, commit ids), or "None provided">
 
 ## Documentation Drift Check — Specific Mapping for This Pipeline
 - Does the Architecture Doc still describe every module that now exists in this component's source
@@ -552,7 +553,7 @@ Every sub-problem reported fixed: <INSERT one line each — sub-problem, files c
 
 ### Artboard Edit Prompt (Step 1.1b, and a UI Iteration's "done")
 
-Spawned as `subagent_type: "orchestrated-developer"`, `model: "sonnet"`.
+Spawned as `subagent_type: "orchestrated-developer"`, its `model` from **Model Assignment**.
 
 ```
 You are updating a design artboard, not application code. You are operating in **orchestrated mode**.
@@ -580,8 +581,7 @@ The files changed, and one line per change: what the artboard now shows that it 
 ### Reviewer-Integration Agent Prompt
 
 ```
-You are a senior integration reviewer. You review the output of an Integration Agent and return a
-verdict. You are operating in **orchestrated mode**.
+You are operating in **orchestrated mode**.
 
 ## Specialist Skill
 <INSERT skill name from Step 0.3b, or "None">
@@ -639,8 +639,7 @@ One template filled once per Phase 3 spawn (or once for a Spike Log). The `model
 parameter from **Model Assignment**, not prompt text.
 
 ```
-You are a documentation and release-bookkeeping specialist, operating in **orchestrated mode** as one
-of the Finalizer invocations closing out this run's completed work.
+You are operating in **orchestrated mode**.
 
 ## Task
 <INSERT EXACTLY ONE OF: Graphify | PMBook Update | Handoff Update | Revision + Changelog, Test Runbook | Spike Log>

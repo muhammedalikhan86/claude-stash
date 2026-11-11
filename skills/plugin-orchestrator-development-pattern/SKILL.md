@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.17.1"
+  version: "1.18.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -98,7 +98,7 @@ them from `init-adlc-repo upgrade` (plugin: `plugin-init-adlc-repo upgrade`), on
 
 1. **Phase 0** uses `make status`, then `make up` when the stack is needed and down.
 2. **The Integration gate is `make check`** (format check, lint, test, audit) when the target exists;
-   pass it in the Integration Packet. `make test` printing `no test suite` is a gap to report, never a
+   pass it as the Platform Profile's Test command in the Integration Agent Prompt. `make test` printing `no test suite` is a gap to report, never a
    pass. When the repo has an `e2e` target (suites that need the running stack), run it after
    `make check`, with the stack up.
 3. **`make deploy` and `make rollback` are never run** by the Orchestrator or any sub-agent unless the
@@ -194,7 +194,7 @@ Edit this table to change a model; nothing else needs to change. Values are tier
 | Finalizer — PMBook Update | `haiku`; `sonnet` when it also runs the Version Pointer Sweep | — |
 | Finalizer — Handoff Update | `haiku` | — |
 | Finalizer — Revision + Changelog, Test Runbook (bundle) | `haiku` | — |
-| Finalizer — Spike Log | `haiku`; `sonnet` when it also runs the Version Pointer Sweep or writes a governed doc beyond the Spike Log row | — |
+| Finalizer — Spike Log | `sonnet` | — (no retry loop) |
 
 - **The Developer escalates by effort (`subagent_type`), not model.** Still pass `model: "opus"`.
   `xhigh` needs extended thinking on; without it, it runs as `high`.
@@ -469,10 +469,8 @@ spawns) + 2 × 4 (Integration) + 4 (Finalizers), plus Divide-and-Conquer.
 **A planned packet touches a user interface** → read `references/ui-packets.md` now, and check its UI
 bindings before Phase 1.
 
-Fix the run id (see **Run-State Checkpointing**) and, from it, two work-dir folders used for the rest
-of the run: `<work dir>/runs/<run id>/` for packets, Developer Outputs and Integration Outputs, and the
-**gate log directory** `<work dir>/gate-logs/<run id>/` for the Parity Check (Step 1.3b) and Integration
-logs. **The work dir** is `<folder of run-state-file>/.orchestrator-work/` — gitignored beside run-state, and it survives a session restart, which the scratchpad does not. Every file the run must keep goes under it: `runs/<run id>/` (packets, Developer Outputs, Integration Outputs), `gate-logs/<run id>/` (gate and Integration logs, raw before/after outputs) and `parity/<run id>/` (Parity Check folders), beside the `<ID>/` park folders. The scratchpad is only for throwaway files, such as a before-side worktree.
+Fix the run id (see **Run-State Checkpointing**); the **gate log directory** is
+`<work dir>/gate-logs/<run id>/`. **The work dir** is `<folder of run-state-file>/.orchestrator-work/` — gitignored beside run-state, and it survives a session restart, which the scratchpad does not. Every file the run must keep goes under it: `runs/<run id>/` (packets, Developer Outputs, Integration Outputs), `gate-logs/<run id>/` (gate and Integration logs, raw before/after outputs) and `parity/<run id>/` (Parity Check folders), beside the `<ID>/` park folders. The scratchpad is only for throwaway files, such as a before-side worktree.
 Write `run-state-file` now (held intakes: Step 0.0). A mid-run intake
 skips both (Step 0.1b, item 7).
 
@@ -562,7 +560,7 @@ you have not), **before spawning the Developer**. Skip for packets that touch no
 
 ### Step 1.2 — Invoke Developer Agent
 
-`subagent_type: "plugin-orchestrated-developer-high"`, `model: "opus"`, Developer Agent Prompt with the
+`subagent_type: "plugin-orchestrated-developer-high"`, its `model` from **Model Assignment**, Developer Agent Prompt with the
 full packet. At loop_count 3, `plugin-orchestrated-developer-xhigh` instead — that swap is the
 escalation.
 
@@ -602,7 +600,7 @@ the change, the ruling's source) — Phase 3's **Design rows owed** writes it.
 
 ### Step 1.3 — Invoke Reviewer Agent
 
-`subagent_type: "orchestrated-reviewer"`, `model: "sonnet"`, Reviewer Agent Prompt with the packet path and
+`subagent_type: "orchestrated-reviewer"`, its `model` from **Model Assignment**, Reviewer Agent Prompt with the packet path and
 the path of the verbatim Developer Output file (Step 1.2), plus any Orchestrator ruling. Returns `PASS`, `FAIL` (numbered, actionable issues tied to criteria) or `UNVERIFIED`
 (what couldn't be checked and why).
 
@@ -653,8 +651,8 @@ WHILE verdict == FAIL:
   loop_count += 1
 
   developer_agent = (loop_count == 3) ? "plugin-orchestrated-developer-xhigh"
-                                      : "plugin-orchestrated-developer-high"     # model always "opus"
-  reviewer_model  = (loop_count == 3) ? "opus" : "sonnet"
+                                      : "plugin-orchestrated-developer-high"     # model: Model Assignment
+  reviewer_model  = (loop_count == 3) ? Escalated : Base                       # Model Assignment
 
   Spawn Developer: original packet + issues list ("Reviewer Issues") + previous Files Created or
     Modified ("Previous Attempt"). Fix only the listed issues.
@@ -717,7 +715,7 @@ B-XXX <title>
   Steps:    1. <from the Bug Report>  2. ...
   Expected: <from the Bug Report>
   Parity (UI bugs only): what was compared, before you look —
-    <the Step 1.3b Parity Table: element | board | built | match | ruling>
+    <the Step 1.3b Parity Table: State | Width | Element | Board | Built | Match | Ruling>
     Screenshots: <parity folder path>
 
 B-YYY <title>
@@ -779,13 +777,14 @@ change test outcomes). Then:
   shared `libs/`, CI config); `Test (component)` is `none`; a `## Deferred Integration` row is being
   re-validated; or the user asked for a full run.
 
+- **`component`** otherwise — use `Test (component)` from Step 0.2, plus this component's scenarios in
+  `test-cases-doc`, plus any contract or conformance tests `platform-architecture-file` names.
+
 **`git status --porcelain` is only a cross-check.** A path changed in the tree but in no file set of
 this run belongs to another session or the user: list it as **foreign** (`<path> — foreign (another
 session or the user)`) in run-state's `foreignPaths`, in the Integration prompt's `## Foreign Paths`
 section, and in the final summary. A foreign path never forces `full`, and the Integration Agent neither
 fixes nor reverts it.
-- **`component`** otherwise — use `Test (component)` from Step 0.2, plus this component's scenarios in
-  `test-cases-doc`, plus any contract or conformance tests `platform-architecture-file` names.
 
 This does not weaken the gate: the Cross-Component Diff Guard proves no other component's code changed,
 and every change that could reach another component forces `full`. Write the result into the Platform
@@ -793,13 +792,12 @@ Profile as `Test scope: <full|component> — <command> — <reason>`, and print 
 
 ### Step 2.1 — Invoke Integration Agent
 
-`subagent_type: "orchestrated-integration"`, `model: "sonnet"`, Integration Agent Prompt, passing the
+`subagent_type: "orchestrated-integration"`, its `model` from **Model Assignment**, Integration Agent Prompt, passing the
 Platform Profile with its Test scope line, the specialist skill, the component and its roots, completed
 features and verified non-P0 bugs with their files (run-state `files`, every attempt; a fast-laned P0
 comes only as a Deferred ID), and
 per item each file outside every component's roots with its Developer Output's justification (a UI
-Iteration: the one-line justification step 6 or 9 recorded; its file set — the tweak log's files, the
-artboard edits, the updated assertion files and the Reviewer-fix files, `references/ui-iteration.md`
+Iteration: the one-line justification step 6 or 9 recorded; its file set, `references/ui-iteration.md`
 step 3), the full
 `components:` table from `.claude/SKILLS.md` (every component → its `code` roots — for the Diff Guard and
 a failing file's owner), and the **paths** (never the contents) of `test-cases-doc`,
@@ -890,7 +888,7 @@ Then record the skip in run-state as this step's verdict, print `Reviewer-Integr
 first pass, no fixes, tree unchanged` and go to Phase 3.
 If any condition fails, or you are unsure, spawn it.
 
-**Otherwise spawn it:** `subagent_type: "orchestrated-reviewer-integration"`, `model: "sonnet"`, with the
+**Otherwise spawn it:** `subagent_type: "orchestrated-reviewer-integration"`, its `model` from **Model Assignment**, with the
 Integration Output's file path (Step 2.1), the condensed packets of only the Features and Bugs passed as this run's at Step
 2.1 (never a P0's: it is a Deferred ID), the Test scope line, the doc paths that were given to the
 Integration Agent, the gate log directory, the accepted known-red list with the owning component's
@@ -900,8 +898,8 @@ the entries given at Step 2.1, or `None`. Returns `PASS` / `FAIL` /
 
 ### Step 2.3 — Integration Loop
 
-Same as Step 1.4: loop_count 1–2 at base models, loop_count 3 at the Escalated Model (Integration and
-Reviewer-Integration both `opus`). On a retry the Integration Agent gets loop_count, the issues, and its
+Same as Step 1.4: loop_count 1–2 at base models, loop_count 3 at the Escalated Model (**Model
+Assignment**). On a retry the Integration Agent gets loop_count, the issues, and its
 prior Output, and does not redo drift sections already cleared. A retry, or a pass resumed after an
 escalation, is never a skip candidate for Step 2.2 — Reviewer-Integration always checks it.
 
@@ -916,7 +914,7 @@ after its fixes.
 
 Prefer **resuming the same Integration spawn** (`SendMessage` to its ID) with the issues for a doc-only
 retry — it already holds the docs and logs, so a cold re-read is wasted. A resumed spawn keeps the model
-it started on, so a doc-only retry at loop_count 3 does not move Integration to `opus` (its
+it started on, so a doc-only retry at loop_count 3 does not move Integration to its Escalated Model (its
 Reviewer-Integration still does). If it is no longer available, spawn fresh with the Retry Context, at
 the model for its loop_count.
 
@@ -938,7 +936,12 @@ Pointer Sweep's permitted header edits; none touches `platform-architecture-file
 
 **Outside items — asked before the Finalizers.** When any item's run-state `outsideItem` list
 (Steps 1.3 and 1.3b) is not empty, ask the user once, now, before spawning a Finalizer, so a yes lands
-in this run's PMBook. List every entry, and offer to log them as new Bugs: **one Bug per surface** (a
+in this run's PMBook. **First sift them**, so only new defects reach the user: an entry a `Planned` or `In
+Progress` PMBook item will build, or an open Bug Log row already covers, is `planned: <ID>`; one a
+ruling covers (run-state's `decisions.rulings`, a packet's Ruled deviations, a design round's rows,
+an ADR) is `ruled: <source>`; a `board may be wrong` entry that the design kit or a built sibling
+contradicts is `board right: <what was checked>`. Show each sifted entry in one line and never offer
+it as a Bug. List every remaining entry, and offer to log them as new Bugs: **one Bug per surface** (a
 screen, or a file) **or one Bug grouping them all** — say which you propose and why. A board
 difference where the board itself may be wrong is still a Bug, with `board may be wrong — needs a design
 ruling` in its description. Save the answer in run-state's `decisions` as `outsideItemLog` (the grouping,
@@ -993,7 +996,7 @@ carries `Scope: phase3` (a P0 lane's: `Scope: lane:<ID>`) next to its `Run ID:`,
 `OFA-F-013 — passed review → Done`, `OFA-B-007 — verified`, `OFA-S-002 — findings recorded`,
 `OFA-F-014 — dropped`), so no Finalizer has to guess an item's state from the docs.
 
-### Step 3.1 — Graphify (Finalizer, `haiku`)
+### Step 3.1 — Graphify (Finalizer)
 
 **Runs only when this run changed code in the component's `code` roots.** Before Phase 3, decide from
 **the run's own file set** (Step 2.0's: every item's run-state `files`, every attempt, plus the
@@ -1030,7 +1033,7 @@ Graphify procedure holds the mechanics):
   the stamp carries `+ uncommitted working tree` and the only later commit is the one it was built for
   (the commit that also changed `GRAPH_REPORT.md`). That graph is fresh.
 
-### Step 3.2 — PMBook Update (Finalizer, `haiku`; `sonnet` with the sweep)
+### Step 3.2 — PMBook Update (Finalizer)
 
 **Task-Specific Inputs:** the Edit List for the PMBook; `project-management-doc` path; features completed (to `Done`); verified non-P0 bugs (a fast-laned P0 only as a Deferred ID), each with
 `Regression test: <path>` from its Developer Output's Test Files Written; the
@@ -1062,12 +1065,12 @@ A Tranche boundary (every phase `Done`) comes back under **Notes**. Put the `Tra
 summary telling the user to run `plugin-idea-triage`'s Tranche Closeout. Never archive from this
 pipeline.
 
-### Step 3.3 — Handoff Update (Finalizer, `haiku`)
+### Step 3.3 — Handoff Update (Finalizer)
 
 **Task-Specific Inputs:** the Edit List for the handoff doc; features completed with implementation notes, bugs fixed with root-cause notes,
 `handoff-doc` path.
 
-### Step 3.4 — Revision + Changelog, Test Runbook (one Finalizer, `haiku`)
+### Step 3.4 — Revision + Changelog, Test Runbook (one Finalizer)
 
 One spawn, bundled Task `Revision + Changelog, Test Runbook` — three disjoint files, no reason for two
 cold starts.
@@ -1223,7 +1226,8 @@ The Orchestrator's only git writes are `git add <exact paths>` and `git commit` 
 current branch, after Reviewer-Integration has passed, or was skipped under Step 2.2's rule, or at the
 end of a P0 fast lane. Apart from a push or
 pull on a go (below), it never runs `git merge`, `git checkout`, `git switch`, `git branch`, `git stash`, `git reset`,
-`git commit --amend`, or anything else that changes git state. Read-only `git status` / `git diff` /
+`git commit --amend`, or anything else that changes git state, except `git worktree add`/`remove` of a
+temporary detached worktree in the scratchpad (Steps 0.4b, 1.5). Read-only `git status` / `git diff` /
 `git log` are fine at any time. Never create or switch branches. Never push or pull on its own
 initiative — give the command instead, except on a go.
 
@@ -1250,8 +1254,7 @@ when the item starts, on any FAIL or rejection that sends it back (Reviewer FAIL
 1.5 rejection) and on an escalation resume; a Feature's final PASS (a UI packet: after its Parity PASS)
 → `passed review`; a Bug's PASS → `awaiting verification` (a Bug never sits at `passed review`), and its
 Step 1.5 confirmation → `verified`; a Spike Log row → `findings recorded`; an escalation → `escalated`;
-the user's explicit "drop" or "defer" of an item → `dropped`, saved at once — terminal, outside Phase
-2's entry rule and the resume rules, listed in the 🏁 summary. Terminal for resume: a Feature at
+the user's explicit "drop" or "defer" of an item → `dropped` (`references/escalation.md`). Terminal for resume: a Feature at
 `passed review`, a Bug at `verified`, a Spike at `findings recorded`, and `dropped` (a legacy `done` from an older run-state file counts as terminal too)), `orchestratorFiles` (every governed file the Orchestrator itself writes — a drafted
 test-cases doc, a known-red tracking item, a linked item's PMBook row — appended when written; Step
 3.5's file list reads it), each unit's current `step` and
@@ -1315,8 +1318,6 @@ item reuses an `## Open Items` row already naming that test; metrics rows are wr
 Telemetry**). **Git is the commit record** (the `Run-Id:` / `Items:` trailers, Step 3.5). A commit step
 itself checks only `git status`.
 
-On a confirmed resume, read `references/resume.md` first; it says where the run rejoins.
-
 ---
 
 ## Pipeline Telemetry
@@ -1328,8 +1329,6 @@ Orchestrator, never overwritten. One header for every row (18 cells):
 ```
 | Timestamp | Run ID | Item ID | Type | Size | Wave | Started | Finished | Final loop_count | Escalated? | UNVERIFIED count | Verdict | Test scope | Divide-and-Conquer triggered? | Known-reds | Phase times | Parity mismatches caught | Mismatches reported after hand-over |
 ```
-
-**An older header.** If the log's last table has a different header (an earlier version of this skill, e.g. 14 columns), never rewrite, pad or re-order its rows. Append a heading `### From <YYYY-MM-DD>` and a new table with this header, then the row. Each table is read on its own.
 
 **Three row kinds:** one per work item that reached a terminal state; one with `Item ID: Integration`,
 only if Phase 2 ran; one with `Item ID: RUN`, always. Every cell is filled — `—` where a column does not
@@ -1384,8 +1383,8 @@ never escalated).
   after hand-over `1`, Verdict `mismatch reported after hand-over`, every other cell `—`. This
   count should trend to zero; if not, the Parity Check is missing something — raise it with the user.
 
-Create the file with this header on first append. If it exists with a **different header**, never
-rewrite old rows or force new ones under it: add `### From <YYYY-MM-DD>` with the current header and
+Create the file with this header on first append. If it exists with a **different header** (e.g. an earlier
+14-column table), never rewrite, pad or re-order old rows or force new ones under it; each table is read on its own: add `### From <YYYY-MM-DD>` with the current header and
 append there. Before appending, re-read the header you are appending under and check every row has
 exactly 18 cells. The final summary's `Retries this run` line uses the item rows' loop_count and
 Escalated? counters.

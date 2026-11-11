@@ -124,7 +124,7 @@ On "done", "I'm happy" or "that's it", record `doneAt` (ISO date-time with the z
      from 5 and assertion files from 6 (step 9 adds its fix files here).
 
    Save it as Step 1.1 says.
-8. **One Reviewer** (`orchestrated-reviewer`, `sonnet`) over the whole change. There is no Developer
+8. **One Reviewer** (`orchestrated-reviewer`, its `model` from **Model Assignment**) over the whole change. There is no Developer
    Output: write the tweak log (number, ask, files), the artboard edits from 5 and the assertion files
    from 6 to `<work dir>/runs/<run id>/devout-<ID>[-legN][-retryN].md` and pass that path in its
    place. Add these to the Reviewer prompt, with step 3's `not this run's` list:
@@ -139,7 +139,7 @@ On "done", "I'm happy" or "that's it", record `doneAt` (ISO date-time with the z
 9. **On a FAIL, the Orchestrator fixes the issues itself**, adds any new file it touched to the file
    set (the packet's Files to Create or Modify and the stand-in Developer Output; one outside every
    component's roots with its one-line justification, step 3), then respawns the Reviewer. `loop_count`
-   counts as in Step 1.4, and at loop_count 3 the Reviewer is `opus`. The FAIL that takes loop_count
+   counts as in Step 1.4, and at loop_count 3 the Reviewer takes its Escalated Model. The FAIL that takes loop_count
    past 3 escalates; its resume comes back to this step. If a fix would
    change the look the user approved, ask the user first.
 10. **Board Parity Check, once** (Step 1.3b, `references/ui-packets.md`), after the Reviewer's PASS. The

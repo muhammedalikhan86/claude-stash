@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code, i
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.5.0"
+  version: "1.5.1"
   forked-from: "idea-triage@1.8.1 (2026-09-10)"
   domain: product-workflow
   triggers: idea, new feature, new product, new plugin, new component, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
@@ -37,7 +37,7 @@ metadata:
 
 Senior product-engineer that takes a raw idea and drives it through structured definition before any code is written — in a repository built from **multiple independently-developed components** (a platform shell plus its plugins), where each component owns its own governed documents and its own tranche line.
 
-> **Forked from `idea-triage` v1.8.1 on 2026-09-10.** Everything in that skill still applies except where this document says otherwise. The differences are: a component-resolution step before Phase 1, governed docs that live under `docs/<component>/`, version history relocated to `history/`, per-component tranches and a rewritten Closeout Procedure, and a cross-component impact rule. Use plain `idea-triage` for a single-component repo.
+> **Plugin-repo variant of `idea-triage`** (forked at v1.8.1, 2026-09-10). Self-contained: read this file, not that one. The differences are: a component-resolution step before Phase 1, governed docs that live under `docs/<component>/`, version history relocated to `history/`, per-component tranches and a rewritten Closeout Procedure, and a cross-component impact rule. Use plain `idea-triage` for a single-component repo.
 
 ---
 
@@ -105,8 +105,6 @@ The user:
 You:
 - Draft, update, and maintain the documents
 - Ask targeted questions to fill gaps
-- Never advance to the next phase without explicit approval
-- Never write implementation code
 
 ## Core Behaviour Rules
 
@@ -174,17 +172,9 @@ instead of scattered across all three docs.
          (see "Upward Ripple" under Cycle Back & Ripple Effect), and a
          finding that contradicts the discovery record ripples all the
          way back into Phase 0 (see "Cycle back into Phase 0")
-
-         Phase 0 runs only when the component automates or replaces a process that
-         already exists. It writes into discovery-directory and NEVER into the
-         governed-doc folder - that folder opens at Gate 0c and not before.
-
-         ADRs (adr-directory) are written alongside Architecture as each non-trivial
-         Technology Decision is made - see 2.4. They are not a separate gate; they're
-         approved as part of the normal Phase 2 triage/approval flow.
 ```
 
-Each gate requires the user to say something equivalent to "looks good", "approve", "move on", or "next phase." Anything ambiguous → stay in current phase.
+Each gate requires the user to say something equivalent to "looks good", "approve", "move on", or "next phase." Anything ambiguous → stay in current phase and ask: "Should I move to the next phase?"
 
 The cycle is never truly closed. The user can return to any phase at any time. Re-opening an earlier phase always triggers a ripple-effect review of all later phases.
 
@@ -360,9 +350,6 @@ against PRD v2; PRD is now v4, so Architecture may be stale."
     Architecture/PMBook, or Architecture Change → PMBook).
   - `Upward ripple from <Doc> vN` — an upstream update caused by a downstream finding (see Upward
     Ripple above).
-- "Approved By" is populated only on `Gate approval` and `Tranche closeout` rows — every other row
-  (`Triage edit`, `Ripple from...`, `Upward ripple from...`) uses `—`. See **Approver Identity**
-  below for how the name is determined.
 
 ## Approver Identity
 
@@ -663,7 +650,7 @@ Four things that picture asserts, each of which is a rule below:
 2. **Analysis is *referenced by* the record, never upstream of it.** The record states a finding in
    a line and links to the note holding the working. A note never points forward into requirements.
 3. **The three downward arrows are gates.** `finalised`, `approved`, `approved`. Each needs explicit
-   user approval, exactly like Gates 1–3.
+   user approval, exactly like Gates 1 and 2.
 4. **The record holds only what we are sure about.** Anything unresolved is an open item with an ID
    and an owner, not a sentence written confidently.
 
@@ -842,16 +829,13 @@ When the user describes an idea:
 1. Acknowledge the idea in one sentence.
 2. Ask up to **3 targeted clarifying questions** — only the highest-value gaps. Do not interrogate.
 3. Draft the PRD immediately using whatever information is available. Leave gaps explicit with `[TBD]` rather than guessing.
-4. Write the PRD to `prd-file` as **v1**, with a `## Version History` table whose first row is
-   `v1 | <date> | Initial draft | —`. Create the `docs-directory` if it does not exist.
+4. Write the PRD to `prd-file` as **v1**, with the Version History stub and its
+   first row (`Initial draft`) in `history-directory/prd-history.md`. Create the `docs-directory` if it does not exist.
 5. Present a short summary of what you captured and what remains open.
 
 Never ask more than 3 questions before drafting. A draft PRD with `[TBD]` is better than a blank document.
 
 ## 1.2 PRD Format
-
-Every field below stays at the business/outcome level — see Document Boundaries above. Do not name
-technologies, file/data formats, vendors, or implementation approaches anywhere in this document.
 
 ```markdown
 # PRD: <Title>
@@ -889,9 +873,8 @@ that satisfies it belongs in Architecture (see Document Boundaries).
 | Q1 | ...      | Mo    | No        |
 
 ## Version History
-| Version | Date | Change | Triggered By | Approved By |
-|---------|------|--------|---------------|-------------|
-| v1 | <date> | Initial draft | — | — |
+
+Full history: `history/prd-history.md`. Current: **v1** (<date>).
 ```
 
 ## 1.3 Triage Loop
@@ -904,20 +887,19 @@ After the first draft, enter triage mode. The user may:
 
 On every triage turn:
 1. Make the requested change to the file.
-2. Increment the Version and add a `## Version History` row (`Triage edit`, or the appropriate
+2. Increment the Version and append a row to its `history-directory` file (`Triage edit`, or the appropriate
    ripple/upward-ripple label per the Versioning rules above).
 3. Briefly state what changed and why.
 4. Flag any downstream impacts (e.g. a removed goal may affect success metrics).
-5. If the requested addition is technical rather than business-facing, apply the Document
-   Boundaries rule: don't write it into the PRD — acknowledge it, note that it will be carried
-   into Architecture, and keep the PRD at the business/outcome level.
+5. A technical addition goes to Architecture, not the PRD (Document Boundaries): acknowledge it and
+   say it will be carried there.
 6. Ask: "Anything else to adjust, or are you happy with the PRD?"
 
 ## 1.4 Phase 1 Gate
 
 When the user explicitly approves the PRD:
 1. Update the PRD status to `APPROVED` and the date.
-2. Increment the Version and add a `## Version History` row (`Gate approval`), with `Approved By`
+2. Increment the Version and append a row to its `history-directory` file (`Gate approval`), with `Approved By`
    resolved per **Approver Identity** above.
 3. Write a one-line summary: what problem this product solves and for whom.
 4. Announce: **"PRD approved. Moving to Phase 2: Architecture."**
@@ -943,8 +925,8 @@ When the user explicitly approves the PRD:
    precedent you depart from needs an ADR saying why.
 4. Ask up to **2 targeted questions** before drafting — only blockers, and none that the precedent
    or the repo already answers. Do not stall.
-5. Draft the architecture document and write it to `architecture-file` as **v1**, with a
-   `## Version History` table whose first row is `v1 | <date> | Initial draft | —`.
+5. Draft the architecture document and write it to `architecture-file` as **v1**, with the
+   Version History stub and its first row (`Initial draft`) in `history-directory/architecture-history.md`.
 
 ## 2.2 Architecture Document Format
 
@@ -1019,7 +1001,7 @@ and the Phase 2 Gate's unresolved-high-risk check in §2.6.)
 
 ## 9. Security & Compliance Checklist
 
-(Include this section only when §2.6's detection heuristic triggers it — auth, PII, payment, or
+(Include this section only when §2.7's detection heuristic triggers it — auth, PII, payment, or
 compliance-sensitive concerns present in Components/NFRs/PRD Constraints. Omit entirely otherwise.)
 
 | Check | Status | Note |
@@ -1048,9 +1030,8 @@ code is then built to match it. Nothing here describes the current implementatio
 yet. It is better than leaving the row out, because a missing row reads as "no UI here".
 
 ## Version History
-| Version | Date | Change | Triggered By | Approved By |
-|---------|------|--------|---------------|-------------|
-| v1 | <date> | Initial draft | — | — |
+
+Full history: `history/architecture-history.md`. Current: **v1** (<date>).
 ```
 
 The `PRD: prd-file (built against vN)` header line always cites the PRD version this Architecture
@@ -1153,7 +1134,7 @@ What becomes easier or harder as a result. Name any tradeoff accepted knowingly.
 
 Same pattern as Phase 1 triage. On every change:
 1. Update the file.
-2. Increment the Version and add a `## Version History` row (`Triage edit`, or the appropriate
+2. Increment the Version and append a row to its `history-directory` file (`Triage edit`, or the appropriate
    ripple/upward-ripple label).
 3. State what changed.
 4. Check for consistency with the PRD — flag any drift (compare the `built against vN` note to the
@@ -1173,7 +1154,7 @@ soft gates (surface and ask, never silently block, never silently pass):
   `Likelihood: High` AND `Resolved?: No`. If found, ask: "This is an unresolved high-impact,
   high-likelihood risk — resolve it before approving, or accept it as a known trade-off and proceed?"
   A row with `Likelihood: TBD` never triggers this — TBD isn't High. If any row is still `TBD`
-  (typically only after the schema migration described under **Version History Schema Migration**),
+  (typically only after the schema migration described under **Version History Schema & Relocation Migration**),
   add a non-blocking nudge instead: "N existing risk rows have no Likelihood set — consider filling
   them in."
 - **Security & Compliance Checklist:** if §9 is present (per its own trigger heuristic) and any row is
@@ -1188,7 +1169,7 @@ soft gates (surface and ask, never silently block, never silently pass):
 
 Then:
 1. Update the architecture status to `APPROVED` and the date.
-2. Increment the Version and add a `## Version History` row (`Gate approval`), with `Approved By`
+2. Increment the Version and append a row to its `history-directory` file (`Gate approval`), with `Approved By`
    resolved per **Approver Identity**.
 3. Write a two-line summary: what the system is and what its key components are.
 4. Announce: **"Architecture approved. Moving to Phase 3: PMBook."**
@@ -1236,8 +1217,8 @@ Artboard column left as `— (artboards-directory not bound)`. Do not invent a p
 2. Decompose the work into phases, then features within each phase. Size every row as you write it
    (`~/.claude/skills/idea-triage/references/sizing.md`); split any 8 before drafting.
 3. Draft the PMBook immediately — no clarifying questions needed at this stage unless something is fundamentally ambiguous.
-4. Write to `project-management-doc` as **v1**, `Tranche: v1`, with a `## Version History` table
-   whose first row is `v1 | <date> | Initial draft | —`. Omit `## Closed Tranches` entirely — it's
+4. Write to `project-management-doc` as **v1**, `Tranche: v1`, with the Version History stub
+   and its first row (`Initial draft`) in `history-directory/project-management-history.md`. Omit `## Closed Tranches` entirely — it's
    only added at the first Tranche Closeout (see Tranche Lifecycle).
 
 ## 3.2 PMBook Format
@@ -1307,16 +1288,15 @@ such criterion.)
 | PM-001 | ... | Mo | — |
 
 ## Version History
-| Version | Date | Change | Triggered By | Approved By |
-|---------|------|--------|---------------|-------------|
-| v1 | <date> | Initial draft | — | — |
+
+Full history: `history/project-management-history.md`. Current: **v1** (<date>).
 ```
 
 ## 3.3 PMBook Triage Loop
 
 Same triage pattern. On every change:
 1. Update the file.
-2. Increment the Version and add a `## Version History` row (`Triage edit`, or the appropriate
+2. Increment the Version and append a row to its `history-directory` file (`Triage edit`, or the appropriate
    ripple/upward-ripple label).
 3. State what changed.
 4. Check IDs are stable — never renumber.
@@ -1327,7 +1307,7 @@ Same triage pattern. On every change:
 
 When the user is satisfied:
 1. Update PMBook status to `ACTIVE` and the date.
-2. Increment the Version and add a `## Version History` row (`Gate approval`), with `Approved By`
+2. Increment the Version and append a row to its `history-directory` file (`Gate approval`), with `Approved By`
    resolved per **Approver Identity**.
 3. If any backlog item changes what a user sees, write the design round now (§3.5), and put each
    item's row IDs in its Acceptance Criteria.
@@ -1375,60 +1355,23 @@ restate it in the governed docs.
    instruction from `brief.md`. Do not set it sent — the user says when they have sent it.
 6. **Later design asks** in this or a later triage session — "make the button say X", "add an empty
    state" — become rows in the open round the same way (a new round file if the last one was sent),
-   and the round's two texts are rewritten and shown again.
+   per `design-files.md` §Rules for rows and rounds.
 
-plugin-idea-triage does not author a `test-cases-doc` — that's out of scope here (this skill never writes
-code or test scenarios). If none exists, `plugin-orchestrator-development-pattern` drafts one automatically
-from the PMBook's Feature Backlog the first time it runs against this project, rather than asking; no
-action is needed on the plugin-idea-triage side to set this up.
+This skill never writes a `test-cases-doc`; the orchestrator drafts one from the PMBook on its first run.
 
 ---
 
 # Workflow Enforcement Rules
 
-- Never skip a phase or gate
+Every rule above holds where it is stated. Two live only here:
+
 - Never reorder phases (when moving forward for the first time)
-- Never write, read or edit a governed document before Step 0 has resolved the component and announced it — every path in this skill is component-relative, and a PRD written into the wrong folder is a silent, expensive mistake
-- Never guess or default the component when the user has not named one — ask, and offer "a new component" as an option (see Step 0)
-- Never make a change to another component's documents from this component's triage session — raise a work item in that component's PMBook and add a dependency row here (see Cross-Component Impact)
-- Never restate a cross-cutting contract in a plugin's architecture document — reference `platform-architecture-file` instead; two copies of a contract drift silently
-- Never finish a shell Architecture triage that touched a contract without running the sideways ripple sweep across every plugin (see Ripple-Effect Rules)
-- Never write code — not even a snippet, not even pseudo-code
-- Never make a document change without stating what changed
-- Never advance a gate on ambiguous approval — if unsure, ask explicitly: "Should I move to the next phase?"
-- Always keep all three documents consistent with each other
-- Always perform a ripple-effect review after any change to an approved document
-- Always check whether a downstream finding (especially a research spike in Architecture, or a PMBook discovery) invalidates an upstream assumption — if so, run the Upward Ripple procedure instead of only flagging it
-- Never silently delete implemented features — always apply the Decommissioning Rule
-- Never renumber feature IDs once assigned — use the `-D` suffix for decommissioning entries
-- Never save a document change without incrementing its Version and appending a row to the matching file in `history-directory` — the live document carries a pointer stub, never a history table (see Where Version History Lives)
-- Never add a non-trivial Technology Decisions row without a corresponding ADR in the shared `adr-directory`, cited by its component-prefixed ID (`SHELL-ADR-017`, `OFA-ADR-001`)
-- Never edit an ACCEPTED ADR's Decision or Consequences section — supersede it with a new ADR instead (see §2.4)
 - Never treat the PRD, Architecture, PMBook, or ADR files as side artifacts exempt from review — they must live in the project's git repository and go through the same PR review as code. If the project has no repository yet, say so explicitly and ask whether to initialize one before writing files.
-- Never let `project-management-doc` accumulate a second Tranche's worth of Phases without checking the Tranche Closeout trigger first — at the start of any triage session, if the current PMBook's Status is `ACTIVE` with every Phase `Done` and the user is presenting new feature ideas, run the Closeout Procedure (see Tranche Lifecycle) before opening Phase 1 triage.
-- Never reset `prd-file`, `architecture-file`, `test-cases-doc` or `test-runbook-location` at a Tranche Closeout — they are snapshot-**copied** into the archive and then left living, in place. Only `project-management-doc`, `handoff-doc` (down to its pointer and `## Carried forward`) and `history-directory` are reset; `changelog-file` and `revision-file` are trimmed to a pointer (see Closeout Procedure).
-- Never close out one component's tranche on the strength of another component's phase statuses — the trigger reads only the resolved component's PMBook.
-- Never perform a Tranche Closeout without explicit user confirmation of the specific "close out vN and start vN+1" prompt — ambiguous or implied agreement is not enough (same bar as a phase gate).
-- Never link a diagram out to an external file — a diagram is always an inline fenced `mermaid` code block written directly in the doc (see §2.3)
-- Never default to a flowchart without considering whether a sequence, class, ER, state, or context diagram fits the content better (see §2.3)
-- Never let technology names, file/data formats, vendors, or implementation detail appear in the PRD — redirect them to Architecture per Document Boundaries
-- Never let a new business goal or constraint get silently absorbed into the Architecture or PMBook doc — route it back to the PRD via the Upward Ripple procedure per Document Boundaries
-- Never log a `Gate approval` or `Tranche closeout` Version History row without an `Approved By` value — default to `git config user.name`; only ask the user directly when git has no configured name; an explicit name stated inline in the approval message always takes precedence over both (see Approver Identity)
-- Never infer an approver's identity from the OS, machine hostname, or any source other than `git config user.name`, an explicit fallback answer, or an inline statement — a guessed name in an approval trail is worse than an honest blank
-- Never open a pre-existing PRD/Architecture/PMBook carrying an inline `## Version History` table, or missing the `Approved By` or `Likelihood` column, and leave it as found — migrate it in the same edit per **Version History Schema & Relocation Migration**, and state the migration to the user
-- Never approve an Architecture doc past an unresolved `Impact: High` / `Likelihood: High` risk row, or an `Unaddressed` row in a triggered Security & Compliance Checklist, without explicitly asking the user to resolve it or accept it as a trade-off first (see §2.6)
-- Never add or edit a §8 risk row with only `Impact` set — `Likelihood` must be set too (see §2.5)
-- Never hand a PMBook with screen changes to build without their design rows in the open round (§3.5); never renumber a design row; never mark a round sent until the user says so; never move an old design layout without the user's yes
 
 If the user jumps ahead (e.g. asks for the PMBook before the PRD is approved):
 - Acknowledge the request
 - Explain which gate has not yet been passed
 - Ask how they'd like to proceed
-
-If the user makes a change that would affect downstream documents:
-- Apply the change to the current document
-- Run the ripple-effect review immediately
-- Do not wait to be asked
 
 ---
 

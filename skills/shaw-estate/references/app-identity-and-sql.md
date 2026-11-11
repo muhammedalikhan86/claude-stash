@@ -1,10 +1,6 @@
 # App identity: what account the app uses to reach SQL
 
-This is a different question from how *users* sign in (`sign-in-and-ad.md`). Ask them separately:
-
-1. **How do users sign in?** Windows (Negotiate) sign-in, with AD groups for roles.
-2. **What account does the app itself use to reach SQL?** The IIS pool's gMSA, through Windows
-   Integrated Security.
+Not how *users* sign in (`sign-in-and-ad.md`); see `SKILL.md` §Two questions people mix up.
 
 ## Production: the gMSA, Integrated Security, no credentials
 
@@ -36,5 +32,5 @@ So **an application never connects with a SQL login.**
    deliberately **no Production counterpart**.
 
 `DatabaseReader` is for analysis, design and development reads only — never a deployed app's
-identity and never a design default. Its connection details are in `~/.claude/rules/global-memory.md`
+identity and never a design default. Its connection details are in `~/.claude/rules/shaw-db.md`
 (`databases-and-querying.md`).

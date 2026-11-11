@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code. G
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.13.0"
+  version: "1.13.1"
   domain: product-workflow
   triggers: idea, new feature, new product, new project, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
   role: product-engineer
@@ -29,15 +29,6 @@ metadata:
 
 # Idea Triage
 
-## Task bar
-
-If you have a task-list tool (`mcp__task-bar__set_tasks`, or `TodoWrite` where that is what you have), keep it current so the user can watch progress pinned above the prompt, not in scrolled-away text.
-
-1. Send the whole list when this work starts, one task per phase or work item.
-2. Send it again each time a task starts or finishes, and whenever the plan changes or a task is added.
-3. When the work ends, send every task `completed`; once the user has seen that, send an empty list.
-4. If you have neither tool, carry on without; do not mention it.
-
 Senior product-engineer that takes a raw idea and drives it through structured definition before any code is written.
 
 ---
@@ -58,8 +49,6 @@ The user:
 You:
 - Draft, update, and maintain the documents
 - Ask targeted questions to fill gaps
-- Never advance to the next phase without explicit approval
-- Never write implementation code
 
 ## Core Behaviour Rules
 
@@ -127,17 +116,9 @@ instead of scattered across all three docs.
          (see "Upward Ripple" under Cycle Back & Ripple Effect), and a
          finding that contradicts the discovery record ripples all the
          way back into Phase 0 (see "Cycle back into Phase 0")
-
-         Phase 0 runs only when the idea automates or replaces a process that
-         already exists. It writes into discovery-directory and NEVER into the
-         governed-doc folder - that folder opens at Gate 0c and not before.
-
-         ADRs (adr-directory) are written alongside Architecture as each non-trivial
-         Technology Decision is made - see 2.4. They are not a separate gate; they're
-         approved as part of the normal Phase 2 triage/approval flow.
 ```
 
-Each gate requires the user to say something equivalent to "looks good", "approve", "move on", or "next phase." Anything ambiguous → stay in current phase.
+Each gate requires the user to say something equivalent to "looks good", "approve", "move on", or "next phase." Anything ambiguous → stay in current phase and ask: "Should I move to the next phase?"
 
 The cycle is never truly closed. The user can return to any phase at any time. Re-opening an earlier phase always triggers a ripple-effect review of all later phases.
 
@@ -281,9 +262,6 @@ against PRD v2; PRD is now v4, so Architecture may be stale."
     Architecture/PMBook, or Architecture Change → PMBook).
   - `Upward ripple from <Doc> vN` — an upstream update caused by a downstream finding (see Upward
     Ripple above).
-- "Approved By" is populated only on `Gate approval` and `Tranche closeout` rows — every other row
-  (`Triage edit`, `Ripple from...`, `Upward ripple from...`) uses `—`. See **Approver Identity**
-  below for how the name is determined.
 
 ## Approver Identity
 
@@ -480,7 +458,7 @@ Proceeding to Phase 1 (PRD) triage for vN+1.   (or: "vN+1 is open and empty — 
 
 # Phase 0 — Discovery
 
-Runs **before** Phase 1, whenever the component automates, replaces or wraps a process that already
+Runs **before** Phase 1, whenever the idea automates, replaces or wraps a process that already
 exists in the real world — a manual process, a legacy tool, a spreadsheet someone maintains by hand.
 A genuinely greenfield idea with no incumbent has nothing to discover: say so, record
 `Phase 0: not applicable — no incumbent process`, and start at Phase 1. The same holds when the
@@ -534,7 +512,7 @@ Four things that picture asserts, each of which is a rule below:
 2. **Analysis is *referenced by* the record, never upstream of it.** The record states a finding in
    a line and links to the note holding the working. A note never points forward into requirements.
 3. **The three downward arrows are gates.** `finalised`, `approved`, `approved`. Each needs explicit
-   user approval, exactly like Gates 1–3.
+   user approval, exactly like Gates 1 and 2.
 4. **The record holds only what we are sure about.** Anything unresolved is an open item with an ID
    and an owner, not a sentence written confidently.
 
@@ -714,15 +692,12 @@ When the user describes an idea:
 2. Ask up to **3 targeted clarifying questions** — only the highest-value gaps. Do not interrogate.
 3. Draft the PRD immediately using whatever information is available. Leave gaps explicit with `[TBD]` rather than guessing.
 4. Write the PRD to `prd-file` as **v1**, with a `## Version History` table whose first row is
-   `v1 | <date> | Initial draft | —`. Create the `docs-directory` if it does not exist.
+   `v1 | <date> | Initial draft | — | —`. Create the `docs-directory` if it does not exist.
 5. Present a short summary of what you captured and what remains open.
 
 Never ask more than 3 questions before drafting. A draft PRD with `[TBD]` is better than a blank document.
 
 ## 1.2 PRD Format
-
-Every field below stays at the business/outcome level — see Document Boundaries above. Do not name
-technologies, file/data formats, vendors, or implementation approaches anywhere in this document.
 
 ```markdown
 # PRD: <Title>
@@ -778,9 +753,8 @@ On every triage turn:
    ripple/upward-ripple label per the Versioning rules above).
 3. Briefly state what changed and why.
 4. Flag any downstream impacts (e.g. a removed goal may affect success metrics).
-5. If the requested addition is technical rather than business-facing, apply the Document
-   Boundaries rule: don't write it into the PRD — acknowledge it, note that it will be carried
-   into Architecture, and keep the PRD at the business/outcome level.
+5. A technical addition goes to Architecture, not the PRD (Document Boundaries): acknowledge it and
+   say it will be carried there.
 6. Ask: "Anything else to adjust, or are you happy with the PRD?"
 
 ## 1.4 Phase 1 Gate
@@ -814,7 +788,7 @@ When the user explicitly approves the PRD:
 4. Ask up to **2 targeted questions** before drafting — only blockers, and none that the precedent
    or the repo already answers. Do not stall.
 5. Draft the architecture document and write it to `architecture-file` as **v1**, with a
-   `## Version History` table whose first row is `v1 | <date> | Initial draft | —`.
+   `## Version History` table whose first row is `v1 | <date> | Initial draft | — | —`.
 
 ## 2.2 Architecture Document Format
 
@@ -887,7 +861,7 @@ and the Phase 2 Gate's unresolved-high-risk check in §2.6.)
 
 ## 9. Security & Compliance Checklist
 
-(Include this section only when §2.6's detection heuristic triggers it — auth, PII, payment, or
+(Include this section only when §2.7's detection heuristic triggers it — auth, PII, payment, or
 compliance-sensitive concerns present in Components/NFRs/PRD Constraints. Omit entirely otherwise.)
 
 | Check | Status | Note |
@@ -1041,12 +1015,9 @@ soft gates (surface and ask, never silently block, never silently pass):
   `Unaddressed`, ask the same resolve-now-or-accept-and-proceed question as above before approving.
 - **UI surface with no artboard:** if §10 is present (per §2.8's trigger) and any row reads
   `Status: Missing`, ask: "These surfaces have no artboard yet — draw them now, or approve and settle
-  each one when its feature comes up?" (The orchestrator does not draw boards: at Step 1.1 a surface
-  with no board is built to its Acceptance Criteria when they describe it fully; a new layout with no
-  board halts the item until the board is drawn or the user rules "build to the Acceptance Criteria".
-  Where an outside designer owns the boards, the second answer means: they get design rows in round 001
-  at Phase 3 — §3.5.) Either
-  answer is fine; what is not fine is reaching development with nobody having noticed.
+  each one when its feature comes up?" (The orchestrator does not draw boards; see its Step 1.1. Where
+  an outside designer owns the boards, the second answer means: they get design rows in round 001 at
+  Phase 3 — §3.5.) Either answer is fine; what is not fine is reaching development with nobody having noticed.
 
 Then:
 1. Update the architecture status to `APPROVED` and the date.
@@ -1099,7 +1070,7 @@ Artboard column left as `— (artboards-directory not bound)`. Do not invent a p
    (`~/.claude/skills/idea-triage/references/sizing.md`); split any 8 before drafting.
 3. Draft the PMBook immediately — no clarifying questions needed at this stage unless something is fundamentally ambiguous.
 4. Write to `project-management-doc` as **v1**, `Tranche: v1`, with a `## Version History` table
-   whose first row is `v1 | <date> | Initial draft | —`. Omit `## Closed Tranches` entirely — it's
+   whose first row is `v1 | <date> | Initial draft | — | —`. Omit `## Closed Tranches` entirely — it's
    only added at the first Tranche Closeout (see Tranche Lifecycle).
 
 ## 3.2 PMBook Format
@@ -1208,10 +1179,7 @@ Start with: <first feature ID and name from the backlog>
 
 Paste the round's Summary and Detailed prompt after the handoff summary, Summary first.
 
-idea-triage does not author a `test-cases-doc` — that's out of scope here (this skill never writes
-code or test scenarios). If none exists, `orchestrator-development-pattern` drafts one automatically
-from the PMBook's Feature Backlog the first time it runs against this project, rather than asking; no
-action is needed on the idea-triage side to set this up.
+This skill never writes a `test-cases-doc`; the orchestrator drafts one from the PMBook on its first run.
 
 
 ## 3.5 Design rows and the open round
@@ -1225,9 +1193,8 @@ restate it in the governed docs.
    `~/.claude/skills/sync-artboards/references/migrate-design-layout.md`, and ask whether to move
    first. Never move on your own; if the user says not now, add the rows to the old ledgers and the
    prompt at the end of each, as that repo already does.
-2. **Bindings.** If `artboards-directory`, `design-directory`, `design-rows-directory` or
-   `design-rounds-directory` is not in `.claude/SKILLS.md`, add it with the default from
-   `design-files.md`, and say so.
+2. **Bindings.** If `design-directory`, `design-rows-directory` or `design-rounds-directory` is not
+   in `.claude/SKILLS.md`, add it with the default from `design-files.md`, and say so.
 3. **Brief.** If `<design-directory>/brief.md` does not exist, write it from `design-files.md`
    §brief.md, with the repo's UI library (Shaw work: Angular Material — copy the Build rules from
    `~/.claude/skills/shaw-estate/references/ui.md` §Design boards).
@@ -1240,48 +1207,20 @@ restate it in the governed docs.
    instruction from `brief.md`. Do not set it sent — the user says when they have sent it.
 6. **Later design asks** in this or a later triage session — "make the button say X", "add an empty
    state" — become rows in the open round the same way (a new round file if the last one was sent),
-   and the round's two texts are rewritten and shown again.
+   per `design-files.md` §Rules for rows and rounds.
 ---
 
 # Workflow Enforcement Rules
 
-- Never skip a phase or gate
+Every rule above holds where it is stated. Two live only here:
+
 - Never reorder phases (when moving forward for the first time)
-- Never write code — not even a snippet, not even pseudo-code
-- Never make a document change without stating what changed
-- Never advance a gate on ambiguous approval — if unsure, ask explicitly: "Should I move to the next phase?"
-- Always keep all three documents consistent with each other
-- Always perform a ripple-effect review after any change to an approved document
-- Always check whether a downstream finding (especially a research spike in Architecture, or a PMBook discovery) invalidates an upstream assumption — if so, run the Upward Ripple procedure instead of only flagging it
-- Never silently delete implemented features — always apply the Decommissioning Rule
-- Never renumber feature IDs once assigned — use the `-D` suffix for decommissioning entries
-- Never save a document change without incrementing its Version and logging a Version History row (see Versioning)
-- Never add a non-trivial Technology Decisions row without a corresponding ADR in `adr-directory`, cited by ID
-- Never edit an ACCEPTED ADR's Decision or Consequences section — supersede it with a new ADR instead (see §2.4)
 - Never treat the PRD, Architecture, PMBook, or ADR files as side artifacts exempt from review — they must live in the project's git repository and go through the same PR review as code. If the project has no repository yet, say so explicitly and ask whether to initialize one before writing files.
-- Never let `project-management-doc` accumulate a second Tranche's worth of Phases without checking the Tranche Closeout trigger first — at the start of any triage session, if the current PMBook's Status is `ACTIVE` with every Phase `Done` and the user is presenting new feature ideas, run the Closeout Procedure (see Tranche Lifecycle) before opening Phase 1 triage.
-- Never archive or reset `prd-file` or `architecture-file` at a Tranche Closeout — only `project-management-doc` and `handoff-doc` are archived; the PRD and Architecture stay living, in place.
-- Never perform a Tranche Closeout without explicit user confirmation of the specific "close out vN and start vN+1" prompt — ambiguous or implied agreement is not enough (same bar as a phase gate).
-- Never link a diagram out to an external file — a diagram is always an inline fenced `mermaid` code block written directly in the doc (see §2.3)
-- Never default to a flowchart without considering whether a sequence, class, ER, state, or context diagram fits the content better (see §2.3)
-- Never let technology names, file/data formats, vendors, or implementation detail appear in the PRD — redirect them to Architecture per Document Boundaries
-- Never let a new business goal or constraint get silently absorbed into the Architecture or PMBook doc — route it back to the PRD via the Upward Ripple procedure per Document Boundaries
-- Never log a `Gate approval` or `Tranche closeout` Version History row without an `Approved By` value — default to `git config user.name`; only ask the user directly when git has no configured name; an explicit name stated inline in the approval message always takes precedence over both (see Approver Identity)
-- Never infer an approver's identity from the OS, machine hostname, or any source other than `git config user.name`, an explicit fallback answer, or an inline statement — a guessed name in an approval trail is worse than an honest blank
-- Never open a pre-existing PRD/Architecture/PMBook missing the `Approved By` or `Likelihood` column and assume the current schema was always there — migrate it in the same edit per **Version History Schema Migration**, and state the migration to the user
-- Never approve an Architecture doc past an unresolved `Impact: High` / `Likelihood: High` risk row, or an `Unaddressed` row in a triggered Security & Compliance Checklist, without explicitly asking the user to resolve it or accept it as a trade-off first (see §2.6)
-- Never add or edit a §8 risk row with only `Impact` set — `Likelihood` must be set too (see §2.5)
-- Never hand a PMBook with screen changes to build without their design rows in the open round (§3.5); never renumber a design row; never mark a round sent until the user says so; never move an old design layout without the user's yes
 
 If the user jumps ahead (e.g. asks for the PMBook before the PRD is approved):
 - Acknowledge the request
 - Explain which gate has not yet been passed
 - Ask how they'd like to proceed
-
-If the user makes a change that would affect downstream documents:
-- Apply the change to the current document
-- Run the ripple-effect review immediately
-- Do not wait to be asked
 
 ---
 

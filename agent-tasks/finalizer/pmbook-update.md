@@ -22,9 +22,11 @@ Given the Features Completed list and the PMBook path:
   into the row's Description, and its `Verified with: <measurements>` line, when given, word for word. A verified fixed bug's `Status` is `Fixed`, except a P0 fast-lane bug (see below). If
   the section keeps a "next ID" line, move it on past the highest ID now used. `Fixed In` is exactly the `Release label:` the prompt gives; never pick
   a version yourself.
-- **Flaky tests**: for each test named in the Task-Specific Inputs' flaky-test list, add, or update the
-  existing, `## Open Items` row — `Owner: unassigned | Item: Investigate flaky test <name>` — creating the section
-  if needed.
+- **Flaky tests**: for each entry in the Task-Specific Inputs' flaky-test list, add, or update the
+  existing, `## Open Items` row — `Owner: unassigned | Item: Investigate flaky test <name>`, carrying the
+  entry's wording verbatim (`<test>: failed in full run, passed in isolated re-run of <command>;
+  locators/waits read, no cause found`) — creating the section if needed. A flaky test is never logged
+  anywhere else, and never left unlogged.
 - **Version Pointer Sweep**: only when your Task-Specific Inputs say this run bumped a `> Version:`
   header, carry out the sweep exactly as the orchestrator's prompt describes it (repointing
   `built against vN` header lines, and in a plugin repo the sideways sweep across other components).

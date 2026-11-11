@@ -33,7 +33,7 @@ Reached instead of Step 1.3, right after the Spike's Developer spawn (always
    Backlog / abandon / needs more investigation), with every file inside the Spike Directory. The Developer returns its findings in its Output and writes no report file; the Orchestrator saves them verbatim as `findings.md` in the Spike Directory from the saved Developer Output.
 2. **No Reviewer, no retry loop, no Manual Verification Gate, no Integration, no escalation path.**
    `loop_count` never moves. This is a deliberate, accepted risk — it is what makes a Spike fast.
-3. Spawn one `orchestrated-finalizer`, Task = `Spike Log`, `model: "haiku"`, scoped to this Spike, its prompt carrying
+3. Spawn one `orchestrated-finalizer`, Task = `Spike Log`, its `model` from **Model Assignment**, scoped to this Spike, its prompt carrying
    `Scope: spike:<ID>` and its `Size: <pts>`. It
    writes one row to the PMBook's `## Spike Log` (`ID | Size | Question | Recommendation | Spike Directory |
    Follow-up`), creating the section if needed. **A planned spike** also gets Edit List lines for its
@@ -58,7 +58,7 @@ Triggered only from Step 1.5's `verified` branch, and only for a packet with `##
 Developer, the full retry loop, the Manual Verification Gate — is unchanged from a normal Bug; only what
 happens after a genuine `verified` differs.
 
-**One PMBook writer at a time.** A P0 lane's Finalizers, a Spike Log Finalizer and another Spike Log
+**One PMBook writer at a time.** A P0 lane's Finalizers, a Spike Log Finalizer and another P0 lane
 never run concurrently: each waits until the open one has finished (a lane, with its commit if any), then
 starts.
 
@@ -78,7 +78,7 @@ starts.
    and no non-P0 Bug, and no other P0 still to fast-lane) — before Phase 2 has validated this item, an
    accepted, named exception to "graphify only after Integration passes". Otherwise skip it here: the
    run's own Phase 3 (or the last P0 lane) builds the graph once, over everything, with Step 3.1's
-   change check (which counts this run's committed files from git).
+   change check (over the run's own file set, committed or not).
 4. **Then move to the next work item; when none remain and the run has no Feature and no non-P0 Bug,
    go to Step 3.6's close-out (otherwise Phase 2).** A lane resumed after a crash does the same: once it
    is `done`, the resume carries on with the remaining items (`references/resume.md`, **Where a resumed run rejoins**,

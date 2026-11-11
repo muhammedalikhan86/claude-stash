@@ -58,6 +58,15 @@ The estate shows three generations of style. **Identify which generation a repo 
 - **Data access is `Shaw.DataAccess`, never EF Core** (Muhammed's standing rule, for estate consistency: every database-touching solution uses it). It is a thin raw-ADO.NET wrapper — no change tracking, no LINQ provider, no migrations — so any design leaning on an EF Core feature has to be re-argued early and hand-written. API surface: `shaw-libraries.md`.
 - **Configuration:** `appsettings.{Environment}.json`. Never `Shaw.Configuration` /
   `SP_GETCONFIGURATION` (legacy, per the server administrator, 2026-10-12).
+- **Mail settings (`Shaw.Mail`).** v2.0.0.1 has one constructor, `new Mail()`. It reads `MailServer`,
+  `MailPort` and `ClientDomain` from classic `appSettings` (`System.Configuration.ConfigurationManager`),
+  not from `appsettings.json`, and throws if one is missing (`Shaw.Mail\Mail.cs`). `Shaw.Configuration`
+  used to fill those in. Without it, the route that works today is an `App.config` (shipped as
+  `<App>.dll.config`) holding those three `appSettings`. A constructor that takes the values, so they can
+  come from `appsettings.{Environment}.json`, is a planned `Shaw.Mail` change, not yet on the feed.
+  **When a project uses `Shaw.Mail`, ask the user which approach to take**: the `.dll.config` now, or
+  the new constructor once it is published (`nuget.md` §Changing a Shaw.* library). Record the answer
+  in the project's `CLAUDE.md` or an ADR.
 - **Connection strings:** `Shaw.DataAccess` v2.x resolves a connection string by checking `IConfiguration` first and only falling back to the `ShawCentral`-populated value if nothing's there (read `Shaw.DataAccess\DBConnectionBase.cs`'s `GetConnectionString()` for the exact order). Define them under `ConnectionStrings:<DatabaseName>` in `appsettings.{Environment}.json`, with Windows Integrated Security. Most legacy `Web.config`s still carry plaintext SQL credentials — that's the pattern to move away from, not copy.
 - **Logging / job-completion notification**: `Shaw.Diagnostics.Trace` (`Trace.Init(name)`, `Trace.TraceInformation`/`TraceException`, `Trace.Flush()`) plus `Shaw.Diagnostics.TraceMail`, which accumulates an HTML log and emails it at job end with the subject line prefixed `[SUCCESS]` or `[FAILURE]` depending on whether any errors were traced. This exact pattern repeats across most `ShawApplications` jobs — reuse it rather than inventing a new notification mechanism.
 - **Errors**: throw/catch through the `Shaw.Exception` hierarchy (`CustomException` → `BusinessException` / `DataAccessException`, plus `UndefinedConfigurationException` for missing config) rather than raw `Exception`, so callers can distinguish business failures from infrastructure failures.

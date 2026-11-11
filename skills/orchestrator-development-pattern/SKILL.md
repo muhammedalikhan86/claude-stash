@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.21.0"
+  version: "2.21.1"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -95,7 +95,8 @@ them from `init-adlc-repo upgrade` (plugin: `plugin-init-adlc-repo upgrade`), on
 
 1. **Phase 0** uses `make status`, then `make up` when the stack is needed and down.
 2. **The Integration gate is `make check`** (format check, lint, test, audit) when the target exists;
-   pass it as the Platform Profile's Test command in the Integration Agent Prompt. `make test` printing `no test suite` is a gap to report, never a
+   add it to the Platform Profile as `Gate: make check` for the Integration Agent Prompt; the Test
+   command stays `make test` (the baseline run uses it, and it is narrowed per item). `make test` printing `no test suite` is a gap to report, never a
    pass. When the repo has an `e2e` target (suites that need the running stack), run it after
    `make check`, with the stack up.
 3. **`make deploy` and `make rollback` are never run** by the Orchestrator or any sub-agent unless the
@@ -138,7 +139,7 @@ The pipeline needs an explicit ask — "orchestrate a fix for X", "run the orche
 normal debugging conversation (`debugging-wizard` or direct investigation), not this pipeline. Spike and
 P0 likewise need the user to actually ask for them ("spike", "P0", "hotfix" or equivalent); never infer
 them from tone or severity.
-<!-- Maintainers: this gate also lives in the frontmatter description and the global CLAUDE.md entry; keep all three in sync. -->
+<!-- Maintainers: this gate also lives in the frontmatter description; keep both in sync. -->
 
 **Sticky per conversation:** once this skill has entered Phase 0 in a conversation, a later plain "debug
 X" / "fix X" in the same conversation becomes a new Bug Fix Intake item (Step 0.1b), and a plain "let's
@@ -225,6 +226,8 @@ retry loop, so never an Escalated Model.
 
 ---
 
+Bird's-eye diagram (reference only, not rules): `mermaid/01-birds-eye.md`.
+
 ## Phase 0 — Initialization
 
 ### Step 0.0 — Verify Hard Dependencies
@@ -284,7 +287,7 @@ and do not block — for Step 0.4 to surface in the plan announcement.
   instead of writing a script; unset, it looks for an existing parity or layout spec first.
   If `app-url` or `artboard-server` is
   missing when a UI packet is planned, **look in the repo before asking**: the root `CLAUDE.md`, the
-  project's run skill (`.claude/skills/run/`), the stack config, and the README of whatever serves or
+  project's run skill (`.claude/skills/run-app/`), the stack config, and the README of whatever serves or
   tests against the boards. Read the same sources for a parity harness when `parity-command` is unset
   (a parity or layout spec they name), and use one found the same way. If both are found, use them, say where each came from in the Step 0.4
   announcement, and offer once (in the end-of-run summary, not mid-run) to write them into
@@ -1645,7 +1648,7 @@ holds what to save, the reports, "drop"/"defer" and "resume". Nothing resumes un
 - ALWAYS spawn each role via its dedicated `subagent_type` (Roles)
 - ALWAYS save `run-state-file` at every step start and end, verdict and user decision (Run-State Checkpointing)
 - NEVER resume a stale `run-state-file` without explicit user confirmation (Step 0.0)
-- ALWAYS append a `metrics-log-file` row at each terminal state and the `RUN` row at the summary (Pipeline Telemetry)
+- ALWAYS append a `metrics-log-file` row at each terminal state (a passed Feature's at close-out) and the `RUN` row at the summary (Pipeline Telemetry)
 - NEVER let a known-red pass silently (Known-reds)
 - NEVER let a detected flaky test go unlogged (Step 3.2)
 

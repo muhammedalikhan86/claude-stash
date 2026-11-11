@@ -13,7 +13,7 @@ assume 0); `artboard-server` — how the board is served; `parity-viewports` —
 (default `1440`); `parity-command` — optional, the repo's checked-in parity harness, e.g.
 `npx playwright test business-tests/layout/parity.spec.ts`; set, the Parity Check runs or extends it
 instead of writing a script; unset, it looks for an existing parity or layout spec first. If `app-url` or `artboard-server` is missing when a UI packet is planned, **look in
-the repo before asking**: the root `CLAUDE.md`, the project's run skill (`.claude/skills/run/`), the
+the repo before asking**: the root `CLAUDE.md`, the project's run skill (`.claude/skills/run-app/`), the
 stack config, and the README of whatever serves or tests against the boards (e.g.
 `business-tests/README.md`). Read the same sources for a parity harness when `parity-command` is unset (a
 parity or layout spec they name), and use one found the same way. If both are found there, use them, say where each came from in the Step 0.4

@@ -4,7 +4,7 @@ description: Use when the user has an idea to explore before writing any code, i
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.5.1"
+  version: "1.5.2"
   forked-from: "idea-triage@1.8.1 (2026-09-10)"
   domain: product-workflow
   triggers: idea, new feature, new product, new plugin, new component, let's build, I want to, what if we, next tranche, v2, new round of features, close out, discovery, as-is process, how does it work today, proposal, packaging
@@ -1147,7 +1147,7 @@ Same pattern as Phase 1 triage. On every change:
 
 ## 2.6 Phase 2 Gate
 
-When the user explicitly approves the architecture, first run these two pre-approval checks — both are
+When the user explicitly approves the architecture, first run these three pre-approval checks — both are
 soft gates (surface and ask, never silently block, never silently pass):
 
 - **Unresolved high risk:** scan §8's Open Questions & Risks table for any row with `Impact: High` AND
@@ -1200,8 +1200,8 @@ Any hit → include §10's UI Surfaces table, with one row per surface the PRD's
 `Status: Missing` for any surface with no artboard yet rather than omitting it. No hit → §10 stays
 entirely absent.
 
-If `artboards-directory` is not bound in `.claude/SKILLS.md`, say so once and write the table with the
-Artboard column left as `— (artboards-directory not bound)`. Do not invent a path.
+If `artboards-directory` is not bound in `.claude/SKILLS.md`, say so once and use the default from
+`~/.claude/skills/sync-artboards/references/design-files.md` (`docs/design/artboards/`).
 
 ---
 

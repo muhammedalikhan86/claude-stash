@@ -31,7 +31,7 @@ You can switch between them any time; each one backs up what it replaces.
 ```
 
 1. It refuses to run if the repo has uncommitted changes, the generated developer agents are stale,
-   or any published file holds a real DB password.
+   or any repo file it would publish holds a real DB password.
 2. It copies everything to a staging folder on the share, then swaps each item in, moving the old
    one into `\\sic2tfs1\Claude\Backups\publish-<date-time>\`. An item someone has open is skipped and
    reported; run it again later.
@@ -107,7 +107,7 @@ To update later: `git pull`, then `.\install.ps1`.
 | Folder | Goes to | What it is |
 |---|---|---|
 | `global/CLAUDE.md` | `~/.claude/CLAUDE.md` | Global instructions: when to use which skill, mod conventions |
-| `rules/` | `~/.claude/rules/` | `global-memory.md`, the one always-on file: where to look (the `shaw-estate` skill, Context7), the Shaw hard rules, your DB credentials, the memory index |
+| `rules/` | `~/.claude/rules/` | `global-memory.md`, the one always-on file: where to look (the `shaw-estate` skill, Context7), the Shaw hard rules, the memory index. The installer also creates `shaw-db.md` there once, from `shaw-db.template.md`: the DB login, this machine only |
 | `memory/` | `~/.claude/memory/` | Lessons learned, one per file (exec briefs, OFA ownership …; Shaw facts live in the `shaw-estate` skill) |
 | `skills/` | `~/.claude/skills/` | Our own skills (see list below) |
 | `agents/` | `~/.claude/agents/` | Developer / Reviewer / Integration / Finalizer agents used by the orchestrator skills |

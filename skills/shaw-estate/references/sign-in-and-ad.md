@@ -5,7 +5,8 @@ Users sign in with their Windows account. No login page, no tokens to manage. (W
 
 ## The Gen-3 pattern (copy from Phoenix.WebAPI)
 
-Reference: `WebApis\PhoenixV3WebAPI\Phoenix.WebAPI\Program.cs` and its `ConfigurationController`.
+Reference: `WebApis\PhoenixV3WebAPI\Phoenix.WebAPI\Program.cs` and its `ConfigurationController`. Copy
+the auth wiring only, not its legacy configuration call.
 
 1. **Negotiate authentication:**
    `builder.Services.AddAuthentication(NegotiateDefaults.AuthenticationScheme).AddNegotiate();`

@@ -1,11 +1,11 @@
 # 09 — Metrics: which event writes which row
 
 The Orchestrator appends to `metrics-log-file` itself, never overwriting (SKILL.md Pipeline Telemetry).
-Every row kind uses the same 17-cell header; `—` where a cell does not apply.
+Every row kind uses the same 18-cell header; `—` where a cell does not apply.
 
 ```mermaid
 flowchart TD
-    Item["Work item terminal: PASS<br/>(Feature on Reviewer/Parity PASS,<br/>Bug on 'verified'), Escalated,<br/>Findings recorded, or Dropped<br/>(when the drop is saved)"]
+    Item["Work item terminal: PASS<br/>(Feature: row at close-out,<br/>Bug on 'verified'), Escalated,<br/>Findings recorded, or Dropped<br/>(when the drop is saved)"]
     Int["Phase 2 terminal:<br/>PASS or Escalated"]
     Close["Close-out, always —<br/>also Spike-only and P0-only;<br/>run-state marked complete"]
     Pause["Escalation pause:<br/>run-state saved,<br/>NOT marked complete"]

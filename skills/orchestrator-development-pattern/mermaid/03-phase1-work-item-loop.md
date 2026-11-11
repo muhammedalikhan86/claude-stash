@@ -82,7 +82,7 @@ flowchart TD
     UVMax{"unverified_count > 2?"}
     Esc(["🚨 Escalate<br/>see 08"])
     Kind{"Item type?"}
-    Done["Feature terminal PASS:<br/>status passed review<br/>(run-state only), ✅ F-XXX,<br/>metrics row"]
+    Done["Feature terminal PASS:<br/>status passed review<br/>(run-state only), ✅ F-XXX;<br/>metrics row at close-out"]
     Next(["Next work item"])
     MV(["Manual Verification Gate<br/>Step 1.5, see 04"])
 

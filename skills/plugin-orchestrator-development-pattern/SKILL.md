@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.18.0"
+  version: "1.18.1"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -98,7 +98,8 @@ them from `init-adlc-repo upgrade` (plugin: `plugin-init-adlc-repo upgrade`), on
 
 1. **Phase 0** uses `make status`, then `make up` when the stack is needed and down.
 2. **The Integration gate is `make check`** (format check, lint, test, audit) when the target exists;
-   pass it as the Platform Profile's Test command in the Integration Agent Prompt. `make test` printing `no test suite` is a gap to report, never a
+   add it to the Platform Profile as `Gate: make check` for the Integration Agent Prompt; the Test
+   command stays `make test` (the baseline run uses it, and it is narrowed per item). `make test` printing `no test suite` is a gap to report, never a
    pass. When the repo has an `e2e` target (suites that need the running stack), run it after
    `make check`, with the stack up.
 3. **`make deploy` and `make rollback` are never run** by the Orchestrator or any sub-agent unless the

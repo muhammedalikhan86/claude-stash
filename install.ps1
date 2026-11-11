@@ -291,12 +291,15 @@ function Install-ShawDb {
     # Creates ~/.claude/rules/shaw-db.md once, from shaw-db.template.md, with the old password if there
     # was one. A file already there is the user's own and is never overwritten.
     $target = Join-Path $ClaudeDir $DbFile
+    Assert-Inside $target
     if (Test-Path -LiteralPath $target -PathType Leaf) {
         $script:PasswordKept = -not (Read-Text $target).Contains('<DB_PASSWORD>')
         Say "KEEP  " "$DbFile (this machine only, yours)" DarkGray
         return
     }
-    $text = Read-Text (Join-Path $Src "shaw-db.template.md")
+    $tpl = Join-Path $Src "shaw-db.template.md"
+    if (-not (Test-Path -LiteralPath $tpl -PathType Leaf)) { Say "WARN  " "$DbFile not created: $tpl is missing (republish the share)" Yellow; return }
+    $text = Read-Text $tpl
     if ($script:OldDbPassword) { $text = $text.Replace('<DB_PASSWORD>', $script:OldDbPassword); $script:PasswordKept = $true }
     Add-Action @{ action = 'create'; path = $DbFile }
     if (-not $WhatIf) { Write-Text $target $text }

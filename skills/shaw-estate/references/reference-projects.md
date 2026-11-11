@@ -33,6 +33,7 @@ Layered into sibling projects: `Phoenix.WebAPI` (host), `Phoenix.Business`, `Pho
     <PackageReference Include="scalar.aspnetcore" Version="2.16.3" />
     <PackageReference Include="Shaw.ActiveDirectory" Version="2.0.2.4" />
     <PackageReference Include="Shaw.DataAccess" Version="2.0.1" />
+    <!-- the legacy config package is left out: don't copy it -->
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Phoenix.Business\Phoenix.Business.csproj" />
@@ -65,9 +66,10 @@ Properties\launchSettings.json, Properties\PublishProfiles\FolderProfile.pubxml
 PersonalContactUpdatePIS.http
 ```
 
-Packages: `Shaw.ActiveDirectory` 2.0.2.4, `Shaw.DataAccess` 2.0.1, `Shaw.Diagnostics` 2.0.0, `Shaw.Models` 2.0.0.
+Packages: `Shaw.ActiveDirectory` 2.0.2.4, `Shaw.DataAccess` 2.0.1, `Shaw.Diagnostics` 2.0.0, `Shaw.Models` 2.0.0
+(the legacy config package is left out: don't copy it).
 
-`WebApis\BpayLoaderInstructionsGeneratorWebAPI\BpayLoaderInstructionsGenerator\` is the same shape, smaller still: `Domain\`, `Application\Workflow.cs`, `Controllers\WorkflowController.cs`, and only `Shaw.Configuration` + `Shaw.Mail` — no data access at all. It also keeps a template asset under `App_Data\` (an `.xlsx`), which is a reasonable place for one.
+`WebApis\BpayLoaderInstructionsGeneratorWebAPI\BpayLoaderInstructionsGenerator\` is the same shape, smaller still: `Domain\`, `Application\Workflow.cs`, `Controllers\WorkflowController.cs`, and only `Shaw.Mail` (plus the legacy config package, not to copy) — no data access at all. It also keeps a template asset under `App_Data\` (an `.xlsx`), which is a reasonable place for one.
 
 Notable choices to copy from both:
 - **A `.slnx` solution file** rather than `.sln` — the newer, terser solution format, also used by `LowBrokerageReportV2`.

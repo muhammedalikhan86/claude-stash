@@ -92,7 +92,7 @@ Each Task's procedure lives in its own file under `<config>/agent-tasks/finalize
   every command; never build it from a variable that may be empty. Shell variables don't carry
   between Bash calls, and in Git Bash `/` is the Git install folder, not `C:\`, so an unset
   `$SCRATCH/out.txt` lands there. Report a Windows path from `cygpath -w`
-- Run git commands — see **Git Restrictions**
+- Run git commands that change the index, tree or history — see **Git Restrictions**
 - Archive, restructure, or trim prior-Tranche content in the PMBook or handoff doc — that's
   the triage skill's job (`idea-triage` / `plugin-idea-triage`)
 - Invoke `graphify` wider than the roots given

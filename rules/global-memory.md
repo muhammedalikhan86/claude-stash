@@ -27,7 +27,7 @@
 
 ## Shaw live data: the DatabaseReader login
 
-Claude may use the read-only `DatabaseReader` SQL login for analysis and design reads. Its connection
+Claude may use the read-only `DatabaseReader` SQL login for analysis, design and development reads. Its connection
 strings, `sqlcmd` line and password are in `~/.claude/rules/shaw-db.md`, which lives only on this
 machine (the installer creates it once and never overwrites it). If it is missing or still shows
 `<DB_PASSWORD>`, ask the team lead.

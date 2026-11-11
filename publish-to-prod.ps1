@@ -141,7 +141,7 @@ if ($LASTEXITCODE -ne 0) { $stop += "Generated developer agents are stale. Run s
 foreach ($f in $files) {
     if ($f -notmatch '\.(md|ps1|json|txt|bat|py|sh)$') { continue }
     $body = [IO.File]::ReadAllText((Join-Path $Repo $f), $Utf8)
-    if ([regex]::IsMatch($body, 'Password=(?!<DB_PASSWORD>)[^;\s<]+;') -or [regex]::IsMatch($body, 'DatabaseReader -P "(?!<DB_PASSWORD>)[^"]+"')) {
+    if ([regex]::IsMatch($body, 'User ID=DatabaseReader;Password=(?!<DB_PASSWORD>)[^;(\s]+;') -or [regex]::IsMatch($body, '-U DatabaseReader -P "(?!<DB_PASSWORD>)[^"(]+"')) {
         $stop += "$f holds a real DB password. Put <DB_PASSWORD> back; the real one lives only in ~/.claude/rules/shaw-db.md."
     }
 }

@@ -28,7 +28,7 @@
 
 Read-only SQL login, approved for analysis and design; never a deployed app's identity (apps use
 their pool's gMSA). How to use it: the skill's `references/databases-and-querying.md`. The password
-is never in git: ask the team lead and replace `<DB_PASSWORD>` below in your own
+is never in git: ask the team lead and put it in place of the placeholder in each line below, in your own
 `~/.claude/rules/global-memory.md`. The installer carries it over on each re-install.
 
 ```

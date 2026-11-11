@@ -42,7 +42,8 @@ upgrade mode adds what is missing, and both orchestrators call it.
 5. **Windows:** GNU make runs recipes in `sh` or `cmd` depending on `PATH`. Either set
    `SHELL := bash` (Git Bash) and run each `cd` in a subshell, `(cd dir && …)` (with `.ONESHELL` a
    `cd` carries over), or keep the Makefile thin and send every target to one PowerShell
-   script in the repo's scripts folder, so it behaves the same from any shell. Process ids and logs that `up` writes go in a
+   script in the repo's scripts folder, so it behaves the same from any shell. Use the script option when
+   `bash` on `PATH` is the WSL launcher (`C:\Windows\System32\bash.exe`), not Git Bash. Process ids and logs that `up` writes go in a
    gitignored `.run/` folder.
 
 ## `deploy`: ship only what is ours
@@ -69,9 +70,9 @@ upgrade mode adds what is missing, and both orchestrators call it.
    only calling it, so a deploy started any other way gets the same dry run, copy and keep list. A
    step the standard makes interactive (DEP-1's typed `stopped`) stays interactive.
 
-8. **An analysis-only checkout** (a repo the user doesn't own or ship, checked out to read or
-   analyse): don't wire `deploy` or `rollback`. Both print `<target>: not configured; this checkout
-   is for analysis only` and **exit 1**, unlike other unused targets, so no script or agent mistakes
+8. **A checkout the user doesn't deploy** (analysis only, or someone else, such as the product owner,
+   ships it): don't wire `deploy` or `rollback`. Both print `<target>: not configured; <why, and who
+   deploys and how>` and **exit 1**, unlike other unused targets, so no script or agent mistakes
    them for a deploy that ran. Leave the repo's own deploy scripts as committed, and keep the `ask`
    rules while those scripts exist. Record the choice in `CLAUDE.md`.
 

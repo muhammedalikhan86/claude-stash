@@ -4,7 +4,7 @@ description: Initialise a repo for the ADLC (AI Development Life Cycle) workflow
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.4.0"
+  version: "1.5.0"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project
   role: platform-engineer
@@ -61,13 +61,16 @@ list, or item by item). It reads everything first and writes nothing until then.
 1. **Allow and deny rules** in `.claude/settings.json`: a wrap-around rule (`Bash(*ls*)`, `Bash(*npm*)`)
    matches any command that merely contains the word, so it allows far more than it names. Propose the
    prefix form from Step 3 (`Bash(ls *)`, `Bash(npm run *)`), keeping each project-specific rule's
-   intent. Never narrow a deny rule: a deny stays at least as broad as before.
+   intent. Never narrow a deny rule: a deny stays at least as broad as before. Offer any deny rule
+   Step 3's template has that the file lacks (adding a deny only blocks more).
 2. **`.gitignore`** has every line of Step 3c's block, `.claude/settings.local.json` included. If
    `.claude/settings.local.json` is tracked, offer `git rm --cached .claude/settings.local.json`.
 3. **Hooks** in `.claude/settings.json` that point at a path missing on this machine (another user's
    home folder, say) fail on every tool call: flag each, and offer Step 3a's shape.
 4. **`.claude/SKILLS.md`** has every block the current Step 8 writes (e.g. the Sync Artboards
-   bindings): add a missing block with its defaults. Never change a value already bound.
+   bindings): add a missing block with its defaults. Never change a value already bound. With no
+   `SKILLS.md` at all, offer to write it as Step 8 does, its paths fitted to the docs the repo
+   actually has (`docs/pmp.md`, say, not the default name).
 5. **`.claude/memory.md`** has the current Step 4 shape: pointers only, no status. A `<TODO>` in
    Identity is filled only from the repo or the user, never guessed.
 6. **`CLAUDE.md`** gets suggestions only, as Step 7 says for an existing file: the Required prefix; the
@@ -77,6 +80,21 @@ list, or item by item). It reads everything first and writes nothing until then.
 
 7. **Ports** are registered in `~/.claude/ports.md` (Step 2's *Ports* paragraph); register any that
    are missing, and flag any this checkout shares with another.
+8. **`Makefile`** has every target in `~/.claude/skills/init-adlc-repo/references/makefile.md` (Step 3e): offer each missing one, wired to the
+   stack. Flag, as suggestions, an existing target that falls short of the standard (an `audit`
+   that exits 0 with findings; a `deploy` that can write outside the app's folder, or has no dry
+   run, tag or local copy; a `rollback` that isn't by tag). Add the standard's `ask` rules if
+   missing.
+
+**Nested `.claude` folders** (a workspace whose projects each have their own `.claude/`): run every
+item over each one, and list the drift per folder.
+
+**Deliberate differences** (spike code tracked on purpose, graphify dropped from the project): report
+the item as declined with its reason, and don't offer it again.
+
+**A stale run skill:** `.claude/skills/run-app/` is never rewritten here, but flag one that still says
+pre-code or holds `<TODO>`s once code exists (or that the real run skills live in nested project
+folders), so the user can fix it.
 
 Upgrade mode never touches `docs/`, the governed docs, `.claude/skills/run-app/` or `.mcp.json`
 beyond the checks above. Report each item as changed, declined or already current.
@@ -174,6 +192,14 @@ Write, if absent, starting from this base (permissions + identity fields; no `ho
       "Bash(*git switch --create*)",
       "Bash(*git switch --force-create*)",
       "Bash(*rm -rf *)"
+    ],
+    "ask": [
+      "Bash(*make deploy*)",
+      "Bash(*make rollback*)",
+      "Bash(*deploy.ps1*)",
+      "PowerShell(*make deploy*)",
+      "PowerShell(*make rollback*)",
+      "PowerShell(*deploy.ps1*)"
     ],
     "defaultMode": "auto",
     "additionalDirectories": []
@@ -308,6 +334,7 @@ graphify-out/**
 **/.orchestrator-work/
 
 # Spike Directories: throwaway spike code, never committed (findings go to the PMBook).
+# Leave this line out if the repo tracks its spike code on purpose.
 spikes/
 
 # Local Claude settings: per-user permissions and env, never committed.
@@ -344,8 +371,24 @@ What the copy does, so the summary can say it plainly:
   is not on PATH or the build failed.
 - Works under Windows PowerShell 5.1 (`powershell`) and PowerShell 7.
 
-If the repo has a `Makefile`, offer a `graph` target that calls it; do not add a `Makefile` to a repo
-without one. After the copy, run it once with `-DryRun` and put its output in the Step 9 summary.
+The `Makefile`'s `graph` target calls it (Step 3e). After the copy, run it once with `-DryRun` and put its output in the Step 9 summary.
+
+## Step 3e — `Makefile`: the standard targets
+
+Every repo gets a root `Makefile` with the standard targets in `~/.claude/skills/init-adlc-repo/references/makefile.md`: `help`, `install`, `up`, `down`,
+`restart`, `status`, `logs`, `build`, `test`, `lint`, `format`, `audit`, `check`, `publish`, `deploy`,
+`rollback`, `ports`, `graph`, `docs-check`, `clean`. Read that file before writing one: it says what
+each target must do, how `deploy` ships only the app's own files (tag, local copy, dry run, keep list)
+and how `rollback` works by tag.
+
+1. **No `Makefile`:** write one, each target wired to the stack Step 2 detected. A target that doesn't
+   apply prints `<target>: not used in this repo`.
+2. **A `Makefile` exists:** add only the missing targets. Never change what an existing target does
+   without the user's yes; list any that fall short of the standard (an `audit` that exits 0 with
+   findings, a `deploy` with no dry run, tag or local copy) as suggestions.
+3. **Settings:** add the standard's `ask` rules to `.claude/settings.json` (Step 3), so `deploy` and
+   `rollback` always prompt.
+4. Run `make help` once and put its output in the Step 9 summary.
 
 ## Step 4 — `.claude/memory.md`
 

@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.15.1"
+  version: "1.16.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -58,7 +58,9 @@ is recorded in `~/.claude/ports.md`, the machine's one list; no repo keeps its o
 of one repo are two checkouts.
 
 **Consult it every run, not only on a clash.** At Phase 0 (before the stack check), read it and match
-this checkout's rows against the ports its config and run skill actually use. Then, by case:
+this checkout's rows against the ports its config and run skill actually use. A port counts when
+a config, script, launch profile or run skill names it (a reserved debug port too); one named only
+as an example in prose does not. Spike code counts while it is in the checkout. Then, by case:
 
 1. **Registered, and the rows match the config:** use them. Nothing else to do.
 2. **An existing project not yet registered** (its config already names ports): register each one not
@@ -86,6 +88,21 @@ user or the session that deletes it). A missing file is created with the header 
 rows. `app-url`'s offset comes from this checkout's registered ports; if the stack config disagrees,
 say so and use the registry's. Never start anything on a port registered to another checkout, even
 when it is free right now: that checkout's session may start it at any moment.
+
+## Make targets: one set of names in every repo
+
+Every ADLC repo has the standard `Makefile` (`~/.claude/skills/init-adlc-repo/references/makefile.md`); a repo without one, or missing targets, gets
+them from `init-adlc-repo upgrade` (plugin: `plugin-init-adlc-repo upgrade`), on the user's yes.
+
+1. **Phase 0** uses `make status`, then `make up` when the stack is needed and down.
+2. **The Integration gate is `make check`** (format check, lint, test, audit) when the target exists;
+   pass it in the Integration Packet. `make test` printing `no test suite` is a gap to report, never a
+   pass.
+3. **`make deploy` and `make rollback` are never run** by the Orchestrator or any sub-agent unless the
+   user asks for that deploy or rollback in so many words. Never offer either as a next step; the
+   settings `ask` rules prompt for them anyway.
+4. Missing targets are reported, not invented mid-run: the fallback is the bound commands in
+   `.claude/SKILLS.md`.
 
 **Three work-item types share this pipeline:** planned **Features** from the PMBook's Feature Backlog;
 reactive **Bugs**, which can be taken ad hoc (Step 0.1b); and exploratory **Spikes** (Step 0.1c). Spike

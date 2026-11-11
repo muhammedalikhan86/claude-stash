@@ -41,7 +41,8 @@ ADR. The precedent is `shaw-plugin-dashboard` (Shaw Portal).
 3. **App identity:** the pool runs as the firm's gMSA; SQL is reached with Windows Integrated
    Security. `appsettings.Production.json` holds no credentials, and `ProductionSettingsTests` fails
    the build if one appears (`app-identity-and-sql.md`).
-4. **User sign-in:** Windows (Negotiate) with a fallback policy that requires sign-in;
+4. **User sign-in:** Windows (Negotiate), **Kerberos only, never NTLM, for new work** (IIS keeps the
+   Negotiate provider, NTLM removed; `sign-in-and-ad.md` item 8), with a fallback policy that requires sign-in;
    `Shaw.ActiveDirectory` for the current user and AD-group roles — the Phoenix.WebAPI pattern
    (`sign-in-and-ad.md`).
 5. **App data:** its own database(s), created empty, tables added by DbUp on first start; LocalDB in

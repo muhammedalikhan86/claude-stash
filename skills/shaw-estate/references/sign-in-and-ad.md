@@ -22,6 +22,16 @@ Reference: `WebApis\PhoenixV3WebAPI\Phoenix.WebAPI\Program.cs` and its `Configur
 6. **CORS with `.AllowCredentials()` only when the front end is on another origin.** Under the IIS
    standard (DEP-2) the SPA and API share one host, so there is no CORS.
 7. On IIS, Windows auth is switched on for the API's IIS application (DEP-5/DEP-8).
+8. **Kerberos only, never NTLM, for all new work** (Muhammed's rule, 2026-11-11). In the API's IIS
+   Windows Authentication providers, keep **Negotiate** and remove **NTLM**, so the host enforces
+   Kerberos instead of the code only intending it; record it in the app's deploy notes. An existing
+   app that already relies on NTLM keeps it until it is changed on purpose; never add NTLM to a new
+   app or switch one back to it. AI Form Filler is the worked example.
+9. **A cross-origin API under Windows auth** (outside DEP-2's one host): the browser's preflight
+   `OPTIONS` carries no credentials, so Windows auth rejects it before CORS answers. Enable the
+   **IIS CORS module**, which answers preflight before auth runs; in code, register `UseCors` before
+   `UseAuthentication`/`UseAuthorization` (the same ordering, in-process). Source: AI Form Filler's
+   API `CLAUDE.md`, *IIS deployment notes*.
 
 **Don't copy one thing from Phoenix.WebAPI:** its `Program.cs` still calls
 `Shaw.Configuration ... GetConfiguration("PhoenixWebAPI")`. That central config is legacy for new

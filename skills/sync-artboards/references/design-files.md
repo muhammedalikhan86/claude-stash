@@ -31,7 +31,13 @@ Written once (by triage, or by hand) and sent with the first round; later rounds
   `<select>` is not allowed. A control the library lacks is a question, not a drawing.
   <Shaw work: copy the full list from `~/.claude/skills/shaw-estate/references/ui.md` §Design boards, including its
   named list of commonly hand-drawn controls.>
-- Use the design system's tokens; no one-off colours, sizes or fonts.
+- The design system is fixed. Screen CSS lays things out and uses the design system's tokens; it never
+  redefines a design-system token (Shaw work: any `--app-*`, `--shaw-*` or `--mat-*` custom property)
+  and never adds a colour, size, shadow or font the design system lacks. A local alias for a token
+  (`--x: var(--app-primary)`) is fine; a new value is not.
+- When a token can't meet something asked for (contrast, a dark mode the design system doesn't have,
+  anything else): stop, draw it with the design system's value, and write the conflict as a question in
+  your change log (`Question — <token> vs <requirement>`). Never pick a replacement value yourself.
 
 ## States to draw for every screen
 Populated, empty, loading, error, and every dialog, menu and pop-up the screen opens. Long text,
@@ -94,6 +100,12 @@ check, the files to open, and the change-log instruction from brief.md, restated
 4. **Both texts are shown to the user** in the reply, Summary first, whenever a round is written or
    changed.
 5. A row that needs a test gets it in the same commit, if the repo binds `design-row-tests`.
+6. **Never ask for what the design system can't give.** Before a brief or round asks for a theme,
+   mode or level the design system has no tokens for (a dark mode when it ships light only; a contrast
+   level its colours fail), check its tokens. If they can't meet it, either drop the ask, or name where
+   the values come from (the design system's owner, with the user's agreement) in the prompt. Otherwise
+   the designer can only meet it by inventing values. Every Detailed prompt restates the brief's
+   design-system rule.
 
 ## Bindings (`.claude/SKILLS.md`)
 

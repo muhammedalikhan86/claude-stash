@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.16.3"
+  version: "2.17.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -665,7 +665,7 @@ and why the check is measured on the rendered screen.
 3. **It measures** the elements this item changes, in every state in `States to compare` at every width,
    running or extending the repo's parity harness when there is one, plus a quick pass that lists
    differences outside the item — as the prompt says — and returns a Parity Table; screenshots and measurements stay in the parity folder.
-4. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. The mismatches go
+4. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. A board value that is not a design-system token (a colour, size or font in no token file, or a redefined token; `sync-artboards` step 10b) is not a target: the check lists it under `Design defects` with the token the build uses, it is never a mismatch or a FAIL, and the build keeps the design-system value. The Orchestrator puts each in its summary for the user, as a question for the designer's next round. The mismatches go
    back into Step 1.4's loop as the issues list, under the same 3-strike rule: a Developer retry, then
    the code Reviewer, then this check again. In that retry's Reviewer Retry Context, mark each parity
    issue `verified by Step 1.3b, not by you`: the code Reviewer checks only its own issues, and this

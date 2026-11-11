@@ -64,6 +64,10 @@ Parity command: <INSERT parity-command, or "None">
   Criterion, or changed between the board and the built screen because of this item. Otherwise — an
   element the item does not touch, on a surface it happens to share — it is outside this item. When
   unsure, it is this item's.
+- A board value that is not a design-system token (a colour, size or font found in none of the design
+  system's token files, or a token the board's screen CSS redefines) is a design defect, not a target.
+  List it under `Design defects` (state, element, board value, the design-system token the build uses);
+  it is never a row, a mismatch or a FAIL.
 - Every difference of this item is a row. A difference covered by a Ruled deviations line is a match
   with its ruling named. Any **unruled** difference of this item is a FAIL.
 - A difference outside this item goes under `Outside this item`, never in the Parity Table. It never
@@ -81,6 +85,8 @@ Parity Table:
 Issues (if FAIL): one per unruled mismatch — state, width, element, board value, built value.
 Outside this item (or "None"):
 | State | Width | Element | Board | Built | Why outside |
+Design defects (or "None"):
+| State | Element | Board value | Design-system token the build uses |
 Unable to Verify (if UNVERIFIED): what and why.
 Harness: <parity-command | existing spec <path> | parity.cjs> — and any spec written or extended
 Files: <the parity folder's contents>

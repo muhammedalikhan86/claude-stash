@@ -32,7 +32,7 @@ layout. Never move anything without the user's yes.
 
 ## Two modes — pick one from the words used
 
-- **"Sync"** — the fast mode. Steps 1–7 (step 7 only as "the validate command passes"), then 11–13.
+- **"Sync"** — the fast mode. Steps 1–7 (step 7 only as "the validate command passes"), then 10b and 11–13.
   No per-row walk-through, no new rows unless something is visibly broken.
 - **"Sync and validate"**, **"check all"**, **"the designer is done"** — the full mode. Every step.
 
@@ -105,9 +105,20 @@ layout. Never move anything without the user's yes.
     `<select>` with no Material attribute or `mat-` parent. A hand-built control is a finding for the
     user, with its Material replacement, not a row to fix quietly. Index files the design README names
     (e.g. a canvas file or file tables) change only when a page is added, moved or removed.
+10b. **Check the tokens** (both modes). The design system is the token files under the design folder
+    (e.g. `ds/**/tokens/*.css`); a screen layer is every other stylesheet and `<style>` block the boards
+    use (e.g. `lv.css`). List, per screen-layer file and line:
+    - each design-system token it redefines (any custom property the design system defines; Shaw work:
+      `--app-*`, `--shaw-*`, `--mat-*`), including inside a theme or dark-mode selector;
+    - each colour (hex, `rgb()`, `hsl()`, a named colour), font family, or `px` size not found in the
+      design system's token files. A `var(--token)` reference, `transparent`, `currentColor` and `inherit`
+      are fine; a local custom property set from a token is fine, one set to a new value is not.
+    Each hit is a finding for the user, never a silent pass and never a row to fix quietly: the board is
+    wrong, not the design system. If `design-validate-command` has a token test, its result is the
+    check; if it has none, say once in the report that one would make this check fail a test.
 11. **Write the findings into the round file** under `## Sync findings, <date>`: files synced, rows
     Done, rows still Open and why, follow-up rows raised (and which round they went into), validate
-    counts, contract findings. Set the round's `Status:` to `back <date>` (keep the sent date).
+    counts, contract findings, token findings. Set the round's `Status:` to `back <date>` (keep the sent date).
 12. **Run `design-post-sync`**, if bound (e.g. refresh a demo repo: diff it first for hand edits the
     refresh would overwrite, run its script, check each page visually, commit by path). Push it only
     if the binding says Claude may push that repo. Then **commit the main repo by path** (never

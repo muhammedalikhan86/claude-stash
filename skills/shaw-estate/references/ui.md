@@ -64,6 +64,12 @@ in the brief's `## Build rules`:
    controls (`<button>`, `<input>`, `<label>`, `<select>` with no Material attribute or `mat-` parent)
    and raises each as a finding with its Material replacement; the build always uses the Material
    component, never the drawn markup.
+6. **The design system is fixed.** Screen CSS uses its tokens and never redefines one (`--app-*`,
+   `--shaw-*`, `--mat-*`) or adds a colour, size or font it lacks. Where a token can't meet an ask
+   (contrast, dark mode), the designer draws the design-system value and raises a question; the
+   designer never picks a replacement. The sync lists every redefined token and off-system value as a
+   finding (the Log Viewer's boards, 2026-11, redefined the button colours as "AA-safe" and invented a
+   whole dark palette; it surfaced only at build time).
 
 ## Charts: Apache ECharts through ngx-echarts
 

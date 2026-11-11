@@ -139,7 +139,7 @@ for a packet with no `## Design Reference`.
    one, plus a quick pass that lists differences outside the item — per the Parity Prompt.
 4. **It returns a Parity Table**, one row per element: `element | board | built | match | ruling`.
    Screenshots and measurements stay in the parity folder.
-5. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. The mismatches go
+5. **Verdict.** Any mismatch not covered by a `Ruled deviations` line is a **FAIL**. A board value that is not a design-system token (a colour, size or font in no token file, or a redefined token; `sync-artboards` step 10b) is not a target: the check lists it under `Design defects` with the token the build uses, it is never a mismatch or a FAIL, and the build keeps the design-system value. The Orchestrator puts each in its summary for the user, as a question for the designer's next round. The mismatches go
    back into Step 1.4's loop as the issues list, under the same 3-strike rule: a Developer retry, then
    the code Reviewer (to whom they are marked `verified by Step 1.3b, not by you`), then this check
    again. UNVERIFIED (the app or board would not load) follows

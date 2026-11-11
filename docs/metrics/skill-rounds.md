@@ -152,6 +152,54 @@ Read of the snapshot:
 6. **Data quality:** the metrics log is written only at close-out, so open runs report estimated
    times (log viewer's are all estimated). A row per gate would fix that.
 
-## Snapshot 3 — 2026-11-11, 17:00 +11:00
+## Snapshot 3 — 2026-11-11, 17:30 +11:00
 
-To be collected.
+Skills installed: 2.19.0 / 1.16.0 (Makefile targets) at 13:30, 2.20.1 / 1.17.1 (sizing, build-output
+rule, free ports taken without asking) by 14:47. **Collected from files, not sessions:** every worker
+session was offline at 17:30 (the user paused them about 15:55 for session limits, resuming 17:40), so
+the numbers come from each checkout's `metrics-log-file` and run-state. Skill surprises come from the
+messages the workers sent this hub. No item ran on 2.20.x, so no item has a size yet.
+
+| Measure | Snapshot 2 (10:00 to 13:00) | Snapshot 3 (13:00 to 17:30) |
+|---|---|---|
+| Items finished | 10 reviewed, 1 bug withdrawn | 9 reviewed (1 done, 8 passed review and waiting on verification, Integration or close-out); 2 bugs dropped at review (OFA-B-034 as designed, OFA-B-036 duplicate) |
+| First-review pass rate | 8 of 10 (80%) | 7 of 9 (78%) |
+| Escalations | 1 | 0 |
+| Integration first-pass rate | 2 of 2 | 1 of 2 (ps F-086 PASS; compliance shell block passed on a doc-only retry) |
+| Time per item | 33–41 min clean | B-009 43 min to verification; F-086 about 2 h (est., 2 parity retries). Whole run: compliance shell, 3 features, 09:45 to 14:06 |
+| Restart survival | 3 of 3 resumed | not tested this period; 4 runs parked at a named step for the 17:40 resume |
+| Board Parity | 11 runs, 4 FAILs | about 9 runs, at least 4 FAILs (F-086 ×2, B-010, F-011); first run passed on 3 of 6 finished items; 2 stopped by the pause |
+| Usage-limit stops | 3 | all 4 active sessions paused at once, about 15:55, for session limits |
+| Hub rulings | about 22 | not collected (sessions offline); at least 6 in run-state (F-086 G1–G3, B-034, B-036, B-010 dialog title) |
+| Skill surprises | about 30 raised; about 18 open | about 16 raised (Makefile adoption, ports, WSL bash, build output, sizing), all fixed and installed; Snapshot 2's 18 still open |
+
+Items this period, by worker:
+
+| Worker | Item | Type | Size | loop_count | Reviewer FAILs | Integration passes | Notes |
+|---|---|---|---|---|---|---|---|
+| compliance | Shell run (F-108, F-103, F-102) | Integration | — | 1 | — | 2 | doc-only retry; npm audit 86 and dotnet 2 as known-reds; e2e not run (hub-accepted); closed 14:06 |
+| compliance | COMPLIANCE-DASHBOARD-F-004 | Feature | — | 1 | 1 | — | Reviewer PASS at loop 1; parity stopped by the pause |
+| ps | OFA-F-086 | Feature | — | 2 | 0 | 1 | Parity FAIL (10), FAIL (4), PASS; Reviewer-Integration PASS; done 14:29; raised B-032 to B-037 |
+| ps | OFA-B-030 | Bug | — | 0 | 0 | — | review and parity done; waiting on manual verification |
+| ps | OFA-B-037 | Bug | — | 0 | 0 | — | as B-030 |
+| ps | OFA-B-035 | Bug | — | 0 | 0 | — | review PASS; parity stopped by the pause |
+| ps | OFA-B-034, OFA-B-036 | Bug | — | — | — | — | dropped: as designed, and a duplicate (hub ruling) |
+| advisor | ADVISOR-DASHBOARD-B-010 | Bug | — | 2 | 0 | — | Reviewer PASS each loop; retries from parity (FAIL 13:32); waiting on verification |
+| advisor | ADVISOR-DASHBOARD-B-009 | Bug | — | 0 | 0 | — | 14:08 start, review PASS 14:28, parity PASS 14:51; waiting on verification |
+| log viewer | F-011 | Feature | — | 3 | 1 | — | Parity PASS on retry 1; 4 outside items found |
+| log viewer | F-009 | Feature | — | 2 | 0 | — | design hold lifted (round 003); passed review; run paused before its 5 Finalizers |
+
+Read of the snapshot:
+
+1. **Review held.** First-review pass rate 78%, against 80% and 67%; no new escalation.
+2. **Parity is still the main cost.** Every retry this period came from parity except F-004 and
+   F-011, and half the finished UI items failed their first parity run. Snapshot 2's parity items
+   (1–3) are still open; fixing them is the biggest lever left.
+3. **Most items are waiting on people, not agents:** 6 of 9 sit at manual verification, Integration or
+   close-out.
+4. **Session limits hit all workers at once.** The pause was clean: every run state names the step to
+   resume at.
+5. **Sizing starts with the next runs** (2.20.x), so size against actual time is first measurable at
+   the next snapshot.
+6. **Data quality:** this snapshot was read from files because no session was online; times marked
+   "est." come from run-state without a finish time.

@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.14.0"
+  version: "1.15.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -49,6 +49,36 @@ or the plan changes, all `completed` at the end, then an empty list once the use
 have neither tool, carry on without; do not mention it.
 
 **On a resume** (after a restart, a park or an escalation pause), send the list first, as soon as run-state is read and before you ask or do anything else: one task per item and phase still in the run, terminal ones `completed`, the rejoin point `in_progress`, everything queued (later waves, `heldForNextRun` items, Phase 2/3) `pending`. The user reads where the run stands from it. With nothing unfinished and nothing queued, send nothing.
+
+## Ports: one registry per machine
+
+Every port a checkout listens on (its stack, `artboard-server`, a parity before-side, a test server)
+is recorded in `~/.claude/ports.md`, the machine's one list; no repo keeps its own. One row per port:
+`| Port | Repo / checkout (folder) | Component | Serves | Since |`. A checkout is its folder: two clones
+of one repo are two checkouts.
+
+**Consult it every run, not only on a clash.** At Phase 0 (before the stack check), read it and match
+this checkout's rows against the ports its config and run skill actually use. Then, by case:
+
+1. **Registered, and the rows match the config:** use them. Nothing else to do.
+2. **An existing project not yet registered** (its config already names ports): register each one not
+   registered to another checkout, and say so in one line.
+3. **A clash** — a port the config names is registered to another checkout (a new clone of an existing
+   repo always hits this): the checkout registered first keeps it. This one moves: pick a free offset
+   or free ports (not in the registry and not in use: `netstat -ano | findstr :<port>` on Windows,
+   `lsof -i :<port>` elsewhere), move every port the stack uses together, and register them. Apply the
+   move through the repo's own offset mechanism or an untracked local override (an env var, a
+   `.local` config the repo ignores); a change to a tracked config file is the user's call, asked once.
+4. **A new project** (no ports chosen yet): choose them from the registry first — free ports, kept clear
+   of other checkouts' blocks — register them, then write them into the config.
+5. **A port in use that the registry does not list:** add it as `owner unknown — seen <date>`, and
+   never take it.
+
+Edit only this checkout's rows; never remove another's (a deleted checkout's rows go with it, by the
+user or the session that deletes it). A missing file is created with the header and this checkout's
+rows. `app-url`'s offset comes from this checkout's registered ports; if the stack config disagrees,
+say so and use the registry's. Never start anything on a port registered to another checkout, even
+when it is free right now: that checkout's session may start it at any moment.
 
 **Three work-item types share this pipeline:** planned **Features** from the PMBook's Feature Backlog;
 reactive **Bugs**, which can be taken ad hoc (Step 0.1b); and exploratory **Spikes** (Step 0.1c). Spike

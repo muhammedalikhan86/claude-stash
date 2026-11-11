@@ -4,7 +4,7 @@ description: Initialise a repo for the ADLC (AI Development Life Cycle) workflow
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.3.0"
+  version: "1.4.0"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project
   role: platform-engineer
@@ -48,6 +48,39 @@ It does **not** create a diagram render pipeline — see *Diagram convention* be
 Run `git rev-parse --is-inside-work-tree`. If this is not a git repo, do not just stop: offer to make it
 one with `git init -b main`, and if the user gives a remote URL, `git remote add origin <url>` as well.
 Run them only on the user's yes, then carry on from Step 1. If they decline, stop.
+
+Invoked as `/init-adlc-repo upgrade`, run *Upgrade mode* below instead of Steps 1–9.
+
+### Upgrade mode — bring an older repo up to the current template
+
+`/init-adlc-repo upgrade` is for a repo this skill (or an older version of it) already initialised. The init
+steps only write what is missing, so a repo set up from an older template keeps its old shapes. This
+mode finds each drift, lists it, and changes only what the user says yes to (one yes for the whole
+list, or item by item). It reads everything first and writes nothing until then.
+
+1. **Allow and deny rules** in `.claude/settings.json`: a wrap-around rule (`Bash(*ls*)`, `Bash(*npm*)`)
+   matches any command that merely contains the word, so it allows far more than it names. Propose the
+   prefix form from Step 3 (`Bash(ls *)`, `Bash(npm run *)`), keeping each project-specific rule's
+   intent. Never narrow a deny rule: a deny stays at least as broad as before.
+2. **`.gitignore`** has every line of Step 3c's block, `.claude/settings.local.json` included. If
+   `.claude/settings.local.json` is tracked, offer `git rm --cached .claude/settings.local.json`.
+3. **Hooks** in `.claude/settings.json` that point at a path missing on this machine (another user's
+   home folder, say) fail on every tool call: flag each, and offer Step 3a's shape.
+4. **`.claude/SKILLS.md`** has every block the current Step 8 writes (e.g. the Sync Artboards
+   bindings): add a missing block with its defaults. Never change a value already bound.
+5. **`.claude/memory.md`** has the current Step 4 shape: pointers only, no status. A `<TODO>` in
+   Identity is filled only from the repo or the user, never guessed.
+6. **`CLAUDE.md`** gets suggestions only, as Step 7 says for an existing file: the Required prefix; the
+   `shaw-estate` line for Shaw work, replacing any copied estate facts (servers, feeds, deployment
+   rules, the UI standard); dated test counts and known-red lists moved out (Step 7, *What to leave
+   out*); and any claim the repo now contradicts ("pre-code" when code exists).
+
+7. **Ports** are registered in `~/.claude/ports.md` (Step 2's *Ports* paragraph); register any that
+   are missing, and flag any this checkout shares with another.
+
+Upgrade mode never touches `docs/`, the governed docs, `.claude/skills/run-app/` or `.mcp.json`
+beyond the checks above. Report each item as changed, declined or already current.
+
 
 ## Step 1 — Check existing state
 
@@ -98,6 +131,12 @@ pre-code repo has none to read: ask the user where the code will live, or, if th
 bind placeholder roots (e.g. `./src`, `./tests`) with a `# placeholder — no code yet` note on its own
 line above the binding in `SKILLS.md`, and list them in Step 9. That is safe: `scripts/graph.ps1 -DryRun` reports a missing
 root as "would skip" and the build skips it.
+
+**Ports.** Read `~/.claude/ports.md`, the machine's one port registry, and follow the orchestrator
+skills' **Ports** section, case by case: an existing repo registers the ports its config uses; a new
+clone of a registered repo clashes and takes a free offset; a new project picks free ports from the
+registry before writing them into config. Never take a port registered to another checkout. With no
+file, create it.
 
 ## Step 3 — `.claude/settings.json`
 
@@ -270,6 +309,9 @@ graphify-out/**
 
 # Spike Directories: throwaway spike code, never committed (findings go to the PMBook).
 spikes/
+
+# Local Claude settings: per-user permissions and env, never committed.
+.claude/settings.local.json
 ```
 
 The three `graphify-out` lines have to be in that order. `graphify-out/**` excludes everything; git
@@ -484,6 +526,8 @@ keep them in sync with any structural change in the same session, not as a follo
 
 - Anything discoverable in seconds — full file trees, every component, obvious conventions.
 - Generic engineering advice ("write tests", "handle errors", "don't commit secrets").
+- **Test counts, known-red lists and dated baselines.** They change daily and drift between
+  branches. They go in `docs/dev-environment.md` or the test runbook; CLAUDE.md points there.
 - Invented sections — "Common Development Tasks", "Tips", "Support" — unless a file you read says it.
 - **The architecture itself.** One paragraph plus a pointer to `docs/architecture.md`. A full
   description here becomes a second, competing source of truth that drifts silently.

@@ -39,6 +39,7 @@
 
 .EXAMPLE
   .\install.ps1 -WhatIf                         # preview every step; changes nothing
+  .\install.ps1 -KeepBackups 0                  # keep every old backup (default keeps the newest 3)
   .\install.ps1                                 # install (backs up first)
   .\install.ps1 -Context7Key ctx7sk-...         # also fill the Context7 key into a new settings.json
   .\install.ps1 -Link -ClaudeDir "$env:USERPROFILE\.claude-lachlan"   # link one account to PROD (admin)
@@ -52,6 +53,7 @@ param(
     [string]$Context7Key = "",
     [string]$ClaudeDir = (Join-Path $env:USERPROFILE ".claude"),
     [string]$BackupRoot = (Join-Path $env:USERPROFILE ".claude-backups"),
+    [int]$KeepBackups = 3,   # after a good run, older backups of the same kind and folder beyond this many are deleted
     [switch]$Link,
     [string]$ProdDir = "\\sic2tfs1\Claude\Prod",
     [switch]$Force   # kept for old instructions; items are now always replaced (with a backup)
@@ -233,9 +235,9 @@ function Get-RepoFiles {
     return @($list | Where-Object { $_ -and (Test-Path -LiteralPath (Join-Path $Repo $_) -PathType Leaf) })
 }
 
-function Copy-FromRepo([string]$Rel) {
-    # Copies the source's item <Rel> (a file or a folder; the repo, or PROD with -Link) to ~/.claude/<Rel>.
-    $src = Join-Path $Src $Rel
+function Copy-FromRepo([string]$Rel, [string]$SrcRel = $Rel) {
+    # Copies the source's item <SrcRel> (a file or a folder; the repo, or PROD with -Link) to ~/.claude/<Rel>.
+    $src = Join-Path $Src $SrcRel
     $dst = Join-Path $ClaudeDir $Rel
     Assert-Inside $dst
     if ($WhatIf) { return }
@@ -288,7 +290,7 @@ function Restore-DbPassword($Info) {
     }
 }
 
-function Install-RepoItem([string]$Rel) {
+function Install-RepoItem([string]$Rel, [string]$SrcRel = $Rel) {
     $target = Join-Path $ClaudeDir $Rel
     Assert-Inside $target
     $info = $null
@@ -298,12 +300,12 @@ function Install-RepoItem([string]$Rel) {
         Add-Action $info
         $what = switch ($info.kind) { 'symlink' { "was a link to $($info.linkTarget); link removed, real files put in" } 'junction' { "was a junction; junction removed, real files put in" } 'hardlink' { "was a hard link; now its own copy (other names keep theirs)" } default { "replaced" } }
         Remove-Target $target
-        Copy-FromRepo $Rel
+        Copy-FromRepo $Rel $SrcRel
         Say "OVER  " "$Rel ($what)" Yellow
     }
     else {
         Add-Action @{ action = 'create'; path = $Rel }
-        Copy-FromRepo $Rel
+        Copy-FromRepo $Rel $SrcRel
         Say "NEW   " $Rel Green
     }
     Restore-Generated $Rel $info
@@ -613,8 +615,10 @@ foreach ($folder in $Merged) {
     }
 }
 
-# Global instructions
-if ($Link) { Link-Item "CLAUDE.md" } else { Install-RepoItem "CLAUDE.md" }
+# Global instructions: global/CLAUDE.md in the repo (the repo-root CLAUDE.md is the repo's own);
+# CLAUDE.md at the root of a published copy.
+$globalSrc = if (Test-Path -LiteralPath (Join-Path $Src "global\CLAUDE.md")) { "global\CLAUDE.md" } else { "CLAUDE.md" }
+if ($Link) { Link-Item "CLAUDE.md" } else { Install-RepoItem "CLAUDE.md" $globalSrc }
 
 # Retired items
 $retired = Join-Path $Src "retired.txt"
@@ -670,6 +674,17 @@ Write-Host @"
 if ($WhatIf) { Write-Host "`nPreview done. Nothing was changed." -ForegroundColor Cyan }
 else {
     Write-Host "`nDone. Backup and manifest: $script:BackupDir" -ForegroundColor Cyan
+    # Keep only the newest backups of this kind (install or link) for this folder; this run's is always kept.
+    if ($KeepBackups -gt 0) {
+        $kind = "{0}-{1}-" -f $modeName, (Split-Path $ClaudeDir -Leaf).TrimStart('.')
+        $old = @(Get-ChildItem -LiteralPath $BackupRoot -Directory |
+            Where-Object { $_.Name.StartsWith($kind) -and $_.Name -match '\d{8}-\d{6}$' -and $_.FullName -ne $script:BackupDir } |
+            Sort-Object Name -Descending | Select-Object -Skip ([Math]::Max(0, $KeepBackups - 1)))
+        foreach ($d in $old) {
+            try { Remove-Item -LiteralPath $d.FullName -Recurse -Force; Write-Host "[PRUNE]  old backup $($d.Name)" -ForegroundColor DarkGray }
+            catch { Write-Host "[WARN]   could not delete old backup $($d.Name): $_" -ForegroundColor Yellow }
+        }
+    }
     Write-Host "To undo:  powershell -ExecutionPolicy Bypass -File `"$PSCommandPath`" -Rollback `"$script:BackupDir`"" -ForegroundColor Cyan
     if ($Link) { Write-Host "          (run it as administrator, so the old links can be re-made)" -ForegroundColor Cyan }
     Write-Host "Restart Claude Code (or run /reload-plugins) to pick everything up."

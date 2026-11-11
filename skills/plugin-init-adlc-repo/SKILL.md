@@ -4,7 +4,7 @@ description: Initialise a PLUGIN-BASED repo for the ADLC (AI Development Life Cy
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.3.0"
+  version: "1.4.0"
   forked-from: "init-adlc-repo@1.0.0 (2026-09-10)"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project, add component, add plugin, new plugin
@@ -29,6 +29,9 @@ metadata:
 initialised. Runs **only** Step 5b, then reports. This is the mode `plugin-idea-triage` Step 0
 calls when a new plugin is triaged. It never touches `.claude/settings.json`, `CLAUDE.md`, or any
 existing component.
+
+**`/plugin-init-adlc-repo upgrade`** — bring a repo initialised from an older template up to the
+current one. Lists each drift and changes only what the user approves (see *Upgrade mode*).
 
 ## What a component is
 
@@ -85,6 +88,7 @@ Then branch on how you were invoked:
 |---|---|---|
 | `/plugin-init-adlc-repo` | **init** | Steps 1–9, in order |
 | `/plugin-init-adlc-repo add <component>` | **add** | Step 5b only, then Step 9 |
+| `/plugin-init-adlc-repo upgrade` | **upgrade** | *Upgrade mode* only |
 
 ### Add mode — the early exit
 
@@ -111,6 +115,36 @@ reads the `components:` table every time it runs, so the appended row is all it 
 block in it). That script does not see the new row, so `-Component <component>` exits 1 with
 "Unknown component". Say so in the Step 9 report and offer to replace it with the standard script
 (Step 3d) — never edit or replace it without the user's yes, since it is outside add mode's two writes.
+
+### Upgrade mode — bring an older repo up to the current template
+
+`/plugin-init-adlc-repo upgrade` is for a repo this skill (or an older version of it) already initialised. The init
+steps only write what is missing, so a repo set up from an older template keeps its old shapes. This
+mode finds each drift, lists it, and changes only what the user says yes to (one yes for the whole
+list, or item by item). It reads everything first and writes nothing until then.
+
+1. **Allow and deny rules** in `.claude/settings.json`: a wrap-around rule (`Bash(*ls*)`, `Bash(*npm*)`)
+   matches any command that merely contains the word, so it allows far more than it names. Propose the
+   prefix form from Step 3 (`Bash(ls *)`, `Bash(npm run *)`), keeping each project-specific rule's
+   intent. Never narrow a deny rule: a deny stays at least as broad as before.
+2. **`.gitignore`** has every line of Step 3c's block, `.claude/settings.local.json` included. If
+   `.claude/settings.local.json` is tracked, offer `git rm --cached .claude/settings.local.json`.
+3. **Hooks** in `.claude/settings.json` that point at a path missing on this machine (another user's
+   home folder, say) fail on every tool call: flag each, and offer Step 3a's shape.
+4. **`.claude/SKILLS.md`** has every block the current Step 8 writes (e.g. the Sync Artboards
+   bindings): add a missing block with its defaults. Never change a value already bound.
+5. **`.claude/memory.md`** has the current Step 4 shape: pointers only, no status and no component table (the `components:` table in `.claude/SKILLS.md` is the list). A `<TODO>` in
+   Identity is filled only from the repo or the user, never guessed.
+6. **`CLAUDE.md`** gets suggestions only, as Step 7 says for an existing file: the Required prefix; the
+   `shaw-estate` line for Shaw work, replacing any copied estate facts (servers, feeds, deployment
+   rules, the UI standard); dated test counts and known-red lists moved out (Step 7, *What to leave
+   out*); and any claim the repo now contradicts ("pre-code" when code exists).
+
+7. **Ports** are registered in `~/.claude/ports.md` (Step 2's *Ports* paragraph); register any that
+   are missing, and flag any this checkout shares with another.
+
+Upgrade mode never touches `docs/`, the governed docs, `.claude/skills/run-app/` or `.mcp.json`
+beyond the checks above. Report each item as changed, declined or already current.
 
 Everything below this point is **init mode**.
 
@@ -154,6 +188,12 @@ the stack will be and what the run/test commands are; do not infer from the repo
 
 Also detect whether the repo is **multi-toolchain** (e.g. an SPA + an API). If so, every quality
 claim must cover both halves — a green run on one says nothing about the other. Record that.
+
+**Ports.** Read `~/.claude/ports.md`, the machine's one port registry, and follow the orchestrator
+skills' **Ports** section, case by case: an existing repo registers the ports its config uses; a new
+clone of a registered repo clashes and takes a free offset; a new project picks free ports from the
+registry before writing them into config. Never take a port registered to another checkout. With no
+file, create it.
 
 ## Step 3 — `.claude/settings.json`
 
@@ -334,6 +374,9 @@ graphify-out/**
 
 # Spike Directories: throwaway spike code, never committed (findings go to the PMBook).
 spikes/
+
+# Local Claude settings: per-user permissions and env, never committed.
+.claude/settings.local.json
 ```
 
 The four lines have to be in that order and all four are needed. `graphify-out/**` excludes
@@ -416,13 +459,8 @@ architecture doc, PMBook or handoff — each component owns its own set and its 
 tranche line, so components close out independently and teams can work parallel
 branches without fighting over one file.
 
-| Component | Docs | Code |
-|---|---|---|
-| `<shell>` | `docs/<shell>/` | `apps/<shell>`, `services/<Shell.Api>` |
-| `<plugin1>` | `docs/<plugin1>/` | `apps/<plugin1>` |
-
-The authoritative list is the `components:` table in `.claude/SKILLS.md`. If the two
-disagree, `.claude/SKILLS.md` wins — the skills read it, not this file.
+The components, their docs and their code roots are listed once, in the `components:`
+table in `.claude/SKILLS.md`. The skills read it; this file never copies it.
 
 ---
 
@@ -441,8 +479,9 @@ disagree, `.claude/SKILLS.md` wins — the skills read it, not this file.
 | Release history | `docs/<component>/changelog.md`, `docs/<component>/revision.md` |
 ~~~
 
-Leave the `<TODO>`s. Never invent identity details. Replace `<shell>` / `<plugin1>` with the real
-component names created in Step 5b; leave `<component>` as a literal placeholder — it is the point.
+Leave the `<TODO>`s. Never invent identity details. Replace `<shell>` with the real shell component
+name created in Step 5b; leave `<component>` as a literal placeholder — it is the point. No component
+list here: a copied list is what goes stale.
 
 ## Step 5 — `docs/` scaffolding
 
@@ -669,6 +708,8 @@ item depends on.
 
 - Anything discoverable in seconds — full file trees, every component, obvious conventions.
 - Generic engineering advice ("write tests", "handle errors", "don't commit secrets").
+- **Test counts, known-red lists and dated baselines.** They change daily and drift between
+  branches. They go in `docs/dev-environment.md` or the test runbook; CLAUDE.md points there.
 - Invented sections — "Common Development Tasks", "Tips", "Support" — unless a file you read says it.
 - **The architecture itself.** One paragraph plus a pointer to `docs/<shell>/architecture.md`. A
   full description here becomes a second, competing source of truth that drifts silently.

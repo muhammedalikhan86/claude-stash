@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.17.0"
+  version: "2.18.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -46,6 +46,36 @@ item), again whenever a task starts or finishes or the plan changes, all `comple
 empty list once the user has seen it. If you have neither tool, carry on without; do not mention it.
 
 **On a resume** (after a restart, a park or an escalation pause), send the list first, as soon as run-state is read and before you ask or do anything else: one task per item and phase still in the run, terminal ones `completed`, the rejoin point `in_progress`, everything queued (later waves, `heldForNextRun` items, Phase 2/3) `pending`. The user reads where the run stands from it. With nothing unfinished and nothing queued, send nothing.
+
+## Ports: one registry per machine
+
+Every port a checkout listens on (its stack, `artboard-server`, a parity before-side, a test server)
+is recorded in `~/.claude/ports.md`, the machine's one list; no repo keeps its own. One row per port:
+`| Port | Repo / checkout (folder) | Component | Serves | Since |`. A checkout is its folder: two clones
+of one repo are two checkouts.
+
+**Consult it every run, not only on a clash.** At Phase 0 (before the stack check), read it and match
+this checkout's rows against the ports its config and run skill actually use. Then, by case:
+
+1. **Registered, and the rows match the config:** use them. Nothing else to do.
+2. **An existing project not yet registered** (its config already names ports): register each one not
+   registered to another checkout, and say so in one line.
+3. **A clash** — a port the config names is registered to another checkout (a new clone of an existing
+   repo always hits this): the checkout registered first keeps it. This one moves: pick a free offset
+   or free ports (not in the registry and not in use: `netstat -ano | findstr :<port>` on Windows,
+   `lsof -i :<port>` elsewhere), move every port the stack uses together, and register them. Apply the
+   move through the repo's own offset mechanism or an untracked local override (an env var, a
+   `.local` config the repo ignores); a change to a tracked config file is the user's call, asked once.
+4. **A new project** (no ports chosen yet): choose them from the registry first — free ports, kept clear
+   of other checkouts' blocks — register them, then write them into the config.
+5. **A port in use that the registry does not list:** add it as `owner unknown — seen <date>`, and
+   never take it.
+
+Edit only this checkout's rows; never remove another's (a deleted checkout's rows go with it, by the
+user or the session that deletes it). A missing file is created with the header and this checkout's
+rows. `app-url`'s offset comes from this checkout's registered ports; if the stack config disagrees,
+say so and use the registry's. Never start anything on a port registered to another checkout, even
+when it is free right now: that checkout's session may start it at any moment.
 
 The Orchestrator reads the Project Management Book (PMBook), detects the platform, turns work into Task
 Packets, and runs a Developer and a Reviewer sub-agent per work item. After every item passes, an
@@ -311,7 +341,7 @@ and do not block — for Step 0.4 to surface in the plan announcement.
   row ledgers and round files (`~/.claude/skills/sync-artboards/references/design-files.md`). Read and written by Step 0.3c and Phase 3's **Design rows owed**.
 - **For UI packets (Step 1.3b), when `artboards-directory` is set:** `app-url` — the app's address as a
   pattern with the port offset in it, e.g. `http://localhost:{4200+offset}`, filled with **this checkout's**
-  offset (from its stack config; never assume 0); `artboard-server` — how the boards are served;
+  offset (from its ports in `~/.claude/ports.md`, else its stack config; never assume 0); `artboard-server` — how the boards are served;
   `parity-viewports` — layout widths to compare at (default `1440`); `parity-command` — optional, the repo's checked-in parity harness, e.g.
   `npx playwright test business-tests/layout/parity.spec.ts`; set, the Parity Check runs or extends it
   instead of writing a script; unset, it looks for an existing parity or layout spec first.

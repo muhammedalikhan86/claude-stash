@@ -163,7 +163,9 @@ foreach ($folder in $Merged) {
     $names = @($files | Where-Object { $_.StartsWith("$folder/") } | ForEach-Object { ($_ -split '/')[1] } | Sort-Object -Unique)
     foreach ($n in $names) { Add-Item "$folder/$n" (Join-Path $Target "$folder\$n") }
 }
-foreach ($f in "claude-plugin-marketplace", "CLAUDE.md", "install.ps1", "retired.txt", "settings.template.json") { Add-Item $f (Join-Path $Target $f) }
+foreach ($f in "claude-plugin-marketplace", "install.ps1", "retired.txt", "settings.template.json") { Add-Item $f (Join-Path $Target $f) }
+# The global instructions live in global/ here (the repo-root CLAUDE.md is the repo's own) and at the share's root.
+Add-Item "global/CLAUDE.md" (Join-Path $Target "CLAUDE.md")
 if ($ShareRoot) {
     Add-Item "create-symlinks.bat" (Join-Path $ShareRoot "create-symlinks.bat")
     $readme = @($files | Where-Object { $_ -eq "docs/share/README.md" })

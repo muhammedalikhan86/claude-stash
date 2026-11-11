@@ -70,8 +70,8 @@ What the installer does:
    share is never written to. Anything in a linked folder that this repo lacks is kept.
    If the share can't be reached, it stops before changing anything.
 4. Deletes items listed in `retired.txt` (renamed or retired; backed up first).
-5. Copies `CLAUDE.md`. If yours is a hard link shared with another account's folder, yours gets its
-   own copy and the other one keeps its text.
+5. Copies `global/CLAUDE.md` to `~/.claude/CLAUDE.md`. If yours is a hard link shared with another
+   account's folder, yours gets its own copy and the other one keeps its text.
 6. Keeps your Shaw database password from your old `rules/shaw-estate.md`.
 7. Writes `settings.json` from `settings.template.json` if you have none. If you have one, it
    writes `settings.stash.json` beside it for you to merge by hand.
@@ -105,7 +105,7 @@ To update later: `git pull`, then `.\install.ps1`.
 
 | Folder | Goes to | What it is |
 |---|---|---|
-| `CLAUDE.md` | `~/.claude/CLAUDE.md` | Global instructions: when to use which skill, mod conventions |
+| `global/CLAUDE.md` | `~/.claude/CLAUDE.md` | Global instructions: when to use which skill, mod conventions |
 | `rules/` | `~/.claude/rules/` | Always-on rules: Context7 use, Shaw estate (load the `shaw-estate` skill, the hard rules, your DB credentials), memory index |
 | `memory/` | `~/.claude/memory/` | Lessons learned, one per file (exec briefs, OFA ownership …; Shaw facts live in the `shaw-estate` skill) |
 | `skills/` | `~/.claude/skills/` | Our own skills (see list below) |

@@ -8,7 +8,7 @@ trigger lines in `SKILL.md` at Step 0.4, Step 1.1b and Step 1.3b). Step numbers 
 ## UI bindings (checked before Phase 1)
 
 `app-url` — the app's address as a pattern with the port offset in it, e.g.
-`http://localhost:{4200+offset}`, filled with **this checkout's** offset (from its stack config; never
+`http://localhost:{4200+offset}`, filled with **this checkout's** offset (from its ports in `~/.claude/ports.md`, else its stack config; never
 assume 0); `artboard-server` — how the board is served; `parity-viewports` — layout widths to compare at
 (default `1440`); `parity-command` — optional, the repo's checked-in parity harness, e.g.
 `npx playwright test business-tests/layout/parity.spec.ts`; set, the Parity Check runs or extends it

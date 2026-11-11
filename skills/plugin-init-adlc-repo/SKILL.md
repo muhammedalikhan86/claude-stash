@@ -4,7 +4,7 @@ description: Initialise a PLUGIN-BASED repo for the ADLC (AI Development Life Cy
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.6.0"
+  version: "1.6.1"
   forked-from: "init-adlc-repo@1.0.0 (2026-09-10)"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project, add component, add plugin, new plugin
@@ -209,7 +209,8 @@ claim must cover both halves — a green run on one says nothing about the other
 
 **Ports.** Read `~/.claude/ports.md`, the machine's one port registry, and follow the orchestrator
 skills' **Ports** section, case by case: an existing repo registers the ports its config uses; a new
-clone of a registered repo clashes and takes a free offset; a new project picks free ports from the
+clone of a registered repo clashes and takes a free offset, without asking unless there is a real
+conflict; a new project picks free ports from the
 registry before writing them into config. Never take a port registered to another checkout. With no
 file, create it.
 

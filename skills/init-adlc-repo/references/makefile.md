@@ -51,7 +51,8 @@ upgrade mode adds what is missing, and both orchestrators call it.
    script in the repo's scripts folder, so it behaves the same from any shell. Use the script option when
    `bash` on `PATH` is the WSL launcher (`C:\Windows\System32\bash.exe`), not Git Bash. Process ids and logs that `up` writes go in one
    gitignored folder (`.run/` by default; an existing `.make/` is fine).
-6. **`help` prints the same in any shell:** use `printf "%-12s %s\n"` (or the PowerShell script), not
+6. **`help` prints the same in any shell:** use `printf "%-12s %s\n"` under `sh`, or PowerShell's `-f "{0,-12} {1}"` when
+   recipes may run in `cmd.exe` (which has no `printf`), not
    `echo` with tabs or `column`, which collapse under `sh`.
 7. **Suites that need the running stack** (end-to-end, business tests against a live API): an
    optional `e2e` target runs them against what `make up` started, and fails if the stack is not up.

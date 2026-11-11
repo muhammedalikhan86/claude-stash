@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.20.0"
+  version: "2.20.1"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -66,13 +66,15 @@ as an example in prose does not. Spike code counts while it is in the checkout. 
    repo always hits this): the checkout registered first keeps it. This one moves: pick a free offset
    or free ports (not in the registry and not in use: `netstat -ano | findstr :<port>` on Windows,
    `lsof -i :<port>` elsewhere). With an offset mechanism, move every port it moves, together. With
-   fixed ports, move only the ports that clash. Apply the move through the repo's own offset mechanism
-   or an untracked local override (an env var, a `.local` config the repo ignores). A change to a
-   tracked config file is the user's call, asked once; when the tool has no untracked override (an
-   Angular `ng serve` port, say), that ask is the normal path.
-   - **Register the new port at once**, before the user answers, so nothing else takes it; mark the
-     row `pending: <what waits>` and drop the mark when the move is done. If the user declines, remove
-     the row and ask again with another port.
+   fixed ports, move only the ports that clash. Apply the move through the repo's own offset mechanism;
+   where the tool has none (an Angular `ng serve` port, say), edit the tracked config and every
+   file that names the old port (launch profiles, `SKILLS.md`'s `app-url`, `CLAUDE.md`, READMEs,
+   runbooks).
+   - **Don't ask.** A port the registry shows free, with nothing listening on it, is this checkout's
+     to take: that is what the registry is for. Register it at once (no `pending:` mark), make the
+     change, then report in one line what moved and which files changed.
+   - **Ask only on a real conflict:** no free port fits, an unknown process holds the port you would
+     take, or the move is unusual (something outside the repo depends on the old port).
    - **A server already running** on the clashing port keeps running until its next restart; it
      restarts on the new port, never on the old one.
 4. **A new project** (no ports chosen yet): choose them from the registry first — free ports, kept clear

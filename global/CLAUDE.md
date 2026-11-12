@@ -25,16 +25,20 @@ genuinely about *you* across projects: your role, your preferences for how Claud
 feedback on approach, and pointers to external systems (Linear, Slack, dashboards).
 
 # answer-buttons
-The answer-buttons plugin draws buttons under questions to the user (needs 2+ in one reply). Write them in a shape it can read:
-- **Yes/No:** one question per line, ending in `?`. No options needed.
-- **A question that asks for a name or a value** ("which group?", "what port?") is not Yes/No. Give it options (a Choice), or end its line with `(no buttons)`. Bare, it renders as Yes/No and the answer comes back as "Yes".
-- **Choice:** the question line, then 2+ options on the next lines, indented, no blank line between: `a) text` or `- text`. Add `(Recommended)` at the end of the option you would pick.
-- **Pick any:** end the question line with `(pick any)` and list options as above. Without options it is just Yes/No.
-- **Other:** every question gets an "Other" button for free text. Do not add an "Other" option yourself.
-- **No buttons:** a line ending in `(no buttons)` switches buttons off for its block: under a heading, until the next heading; on a plain lead-in line, until the next blank line; on a list item, for its nested lines. Use it for any list of `?` lines that are not questions to the user (checklists, "things to look for", examples).
-- Maximum 8 questions per reply; code blocks and `>` quotes are never read as questions.
+The answer-buttons plugin turns a question to the user into buttons. It reads only lines tagged `[Question]:`; any other "?" is ordinary text, so a question you ask and answer yourself never gets buttons. Whenever you need the user to answer or decide something, write it in this shape:
+
+```
+[Question]: Which order should I run them in?
+Options: 1. «Sync first (Recommended)» 2. «Backfill first» 3. «Other»
+```
+
+- **`[Question]:`** starts its own line (bold or after a list number is fine). The "?" is optional: "[Question]: Tell me the port to use" works.
+- **`Options:`** goes on the next line. Number every option and put each one between `«` and `»` (guillemets), never bullets. For Yes/No write `Options: 1. «Yes» 2. «No» 3. «Other»`.
+- **`«Other»` is always the last option.** The plugin draws it as a button that opens a text box.
+- Add `(Recommended)` inside the quotes of the option you would pick, and `(pick any)` at the end of the question line when several options may be picked.
+- One question gets buttons too; up to 8 per reply. Tagged lines in code blocks and `>` quotes are ignored.
 - Answers come back as `My answers to your questions:` with `→` lines. `Not answered` means ask, do not assume.
-- **Open questions stay open.** A reply's buttons stay in the chat, answerable, across later replies, until answered, dismissed or replaced. So never reprint a question that is still open. To withdraw earlier questions because new ones supersede them, put the line `(replaces earlier questions)` in the reply that asks the new ones.
+- **Open questions stay open.** A reply's buttons stay in the chat, answerable, across later replies, until answered (Submit, or with the next typed message), dismissed or replaced. So never reprint a question that is still open. To withdraw earlier questions because new ones supersede them, put the line `(replaces earlier questions)` in the reply that asks the new ones.
 
 # task-bar
 When you start any job of three or more steps, call `mcp__task-bar__set_tasks` (the task-bar mod's tool, if you have it) with the whole task list. Call it again whenever a task starts, finishes or is added, or the plan changes, and send an empty list once the user has seen everything done. The user reads progress from the bar above the prompt instead of scrolling. If you do not have the tool, carry on without it.
@@ -47,6 +51,6 @@ Sort every reply to the user into up to three labelled tiers, in this order. Lea
 2. **🟡 Good to know**: anything that changes the plan or what the user will see.
 3. **⚪ FYI**: routine items (merges, routing, acks). Keep this tier to a line or two.
 
-An output style's one-line summary still comes first, above the tiers. A question to the user never goes inside a numbered item. Two or more questions each sit on their own line, after the numbered items, in the answer-buttons shape. Answer-buttons draws nothing for a single question, so a lone question goes through the AskUserQuestion tool instead.
+An output style's one-line summary still comes first, above the tiers. A question to the user never goes inside a numbered item. Each one sits on its own lines, after the numbered items, in the answer-buttons `[Question]:` shape.
 
 Why: an important approval was missed because it was buried in routine reporting.

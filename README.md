@@ -153,7 +153,7 @@ To update later: `git pull`, then `.\install.ps1`.
 
 | Mod | State |
 |---|---|
-| `answer-buttons` | **On.** Buttons under Claude's questions. Loaded through `CLAUDE_CODE_PLUGIN_DIRS` |
+| `answer-buttons` | **On.** Buttons under Claude's `[Question]:` lines (rhetorical questions get none). Loaded through `CLAUDE_CODE_PLUGIN_DIRS` |
 | `task-bar` | Off by default. Task list pinned above the prompt |
 | `comment-on-response` | Off by default. `/comment` on selected reply text |
 

@@ -6,64 +6,57 @@ export type Part =
 
 const MAX_QUESTIONS = 8
 
-// A question is a line outside a code fence with a "?" that ends a sentence.
-const isQuestion = (line: string) => /\?(\s|\*|_|\)|$)/.test(line) && !/^\s*>/.test(line)
+// Only a line tagged "[Question]:" is a question, so a rhetorical "?" in ordinary text never is.
+// It may follow a list marker or sit in bold; the "?" is optional (a request for an answer counts).
+const QUESTION = /^(\s*(?:\d+[.)]|[-*+])\s+)?\[Question\]\s*:\s*(\S.*)$/i
 
-// Leading list marker ("1. ", "- ") kept apart so only the words are underlined.
-const MARKER = /^(\s*(?:\d+[.)]|[-*+])\s+)/
-
-// An option is an indented "a) ..." or "- ..." line under its question.
-const OPTION = /^\s+(?:([a-z])\)|[-*+])\s+(\S.*)$/
+// Its answers: an "Options:" line under it, each option between guillemets, numbered:
+//   Options: 1. «Sync» 2. «Backfill» 3. «Other»
+// The guillemets may carry on over the following lines, up to a blank line.
+const OPTIONS = /^\s*(?:(?:\d+[.)]|[-*+])\s+)?Options\s*:\s*(.*)$/i
+const QUOTED = /«([^«»]*)»/g
 
 const PICK_ANY = /\(pick any\)[\s*_.?]*$/i
 const RECOMMENDED = /\s*\(Recommended\)$/i
 
-// "(no buttons)" on a heading, lead-in line or list item switches buttons off for its block.
-const NO_BUTTONS = /\(no buttons\)[\s*_:.]*$/i
+// "Other" is always drawn as its own type-your-answer button, so a listed one is not an option.
+const OTHER = /^other\b[^a-z]*(?:\(.*\))?[.:]?$/i
 
 const plain = (text: string) => text.replace(/\*\*|__|`/g, '').trim()
 
-const indentOf = (line: string) => line.length - line.trimStart().length
+// The option texts on an "Options:" line. Guillemets first; failing those, "1. A 2. B" or "A | B".
+function optionTexts(lines: string[]): string[] {
+  const joined = lines.join(' ')
+  const quoted = [...joined.matchAll(QUOTED)].map(m => m[1].trim())
+  if (quoted.length > 0) return quoted
 
-const headingLevel = (line: string) => line.match(/^(#{1,6})\s/)?.[1].length ?? 0
-
-// First line after the block that the "(no buttons)" line at `at` opens: a heading owns its
-// section, a list item its nested lines, any other line its paragraph.
-function blockEnd(lines: string[], at: number): number {
-  const line = lines[at]
-  const level = headingLevel(line)
-  let end = at + 1
-
-  if (level > 0) {
-    while (end < lines.length && !(headingLevel(lines[end]) > 0 && headingLevel(lines[end]) <= level)) end++
-  } else if (MARKER.test(line)) {
-    while (end < lines.length && lines[end].trim() !== '' && indentOf(lines[end]) > indentOf(line)) end++
-  } else {
-    while (end < lines.length && lines[end].trim() !== '') end++
-  }
-
-  return end
+  const bare = joined.trim().replace(/^\((.*)\)$/, '$1')
+  const parts = /\|/.test(bare) ? bare.split('|') : bare.split(/(?:^|\s)\d+[.)]\s+/)
+  return parts.map(t => t.trim().replace(/[,;]$/, '').trim()).filter(t => t !== '')
 }
 
+// The "Options:" block after the question at `at`: blank lines may come between; the options may
+// carry on over following lines that hold guillemets.
 function readOptions(lines: string[], at: number): { options: Option[]; end: number } {
-  const options: Option[] = []
-  let end = at + 1
+  let i = at + 1
+  while (i < lines.length && lines[i].trim() === '') i++
 
-  for (; end < lines.length; end++) {
-    const m = lines[end].match(OPTION)
-    if (m === null || indentOf(lines[end]) <= indentOf(lines[at])) break
+  const head = i < lines.length ? plain(lines[i]).match(OPTIONS) : null
+  if (head === null) return { options: [], end: at + 1 }
 
-    const raw = plain(m[2])
-    const text = raw.replace(RECOMMENDED, '').trim()
-    options.push({
-      label: m[1] === undefined ? text : `${m[1]}) ${text}`,
-      text,
-      recommended: RECOMMENDED.test(raw),
-    })
+  const block = [head[1]]
+  let end = i + 1
+  while (end < lines.length && lines[end].trim() !== '' && /«/.test(lines[end]) && !QUESTION.test(plain(lines[end]))) {
+    block.push(plain(lines[end]))
+    end++
   }
 
-  // One indented line is not a choice; leave it as ordinary text.
-  return options.length < 2 ? { options: [], end: at + 1 } : { options, end }
+  const options = optionTexts(block)
+    .map(raw => ({ raw, text: raw.replace(RECOMMENDED, '').trim() }))
+    .filter(o => o.text !== '' && !OTHER.test(o.text))
+    .map((o, k) => ({ label: `${k + 1}. ${o.text}`, text: o.text, recommended: RECOMMENDED.test(o.raw) }))
+
+  return { options, end }
 }
 
 export function splitParts(text: string): Part[] {
@@ -72,7 +65,6 @@ export function splitParts(text: string): Part[] {
   let buffer: string[] = []
   let inFence = false
   let found = 0
-  let skipTo = 0
 
   const flush = () => {
     if (buffer.some(line => line.trim() !== '')) {
@@ -85,19 +77,14 @@ export function splitParts(text: string): Part[] {
     const line = lines[i]
     if (/^\s*(```|~~~)/.test(line)) inFence = !inFence
 
-    if (inFence || i < skipTo) {
-      buffer.push(line)
-    } else if (NO_BUTTONS.test(line)) {
-      skipTo = blockEnd(lines, i)
-      buffer.push(line)
-    } else if (found < MAX_QUESTIONS && isQuestion(line)) {
+    const m = inFence || /^\s*>/.test(line) ? null : plain(line).match(QUESTION)
+    if (m !== null && found < MAX_QUESTIONS) {
       flush()
-      const marker = line.match(MARKER)?.[1] ?? ''
       const { options, end } = readOptions(lines, i)
-      const questionText = plain(line.slice(marker.length))
+      const questionText = m[2].trim()
       parts.push({
         kind: 'question',
-        marker: marker.trim(),
+        marker: (m[1] ?? '').trim(),
         text: questionText,
         options,
         multi: options.length > 0 && PICK_ANY.test(questionText),
@@ -183,15 +170,15 @@ export function hasAnswers<T extends { picks: (Answer | null)[] }>(p: T | null):
   return p !== null && p.picks.some(pick => pick !== null)
 }
 
-const keyOf =(q: Question) => JSON.stringify([q.text, q.multi, q.options.map(o => o.label)])
+const keyOf = (q: Question) => JSON.stringify([q.text, q.multi, q.options.map(o => o.label)])
 
 export function sameQuestions(a: Question[], b: Question[]): boolean {
   return a.length === b.length && a.every((q, i) => keyOf(q) === keyOf(b[i]))
 }
 
-// A reply is drawn with buttons only while it is an open one, and only with two or more questions.
+// A reply is drawn with buttons only while it is an open one with at least one question.
 export function ownsMessage<T extends { questions: Question[] }>(open: T | null, questions: Question[]): open is T {
-  return open !== null && questions.length >= 2 && sameQuestions(open.questions, questions)
+  return open !== null && questions.length >= 1 && sameQuestions(open.questions, questions)
 }
 
 // The open sheet a reply's questions belong to, or null.

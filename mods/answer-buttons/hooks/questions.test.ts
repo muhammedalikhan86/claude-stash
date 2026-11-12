@@ -18,74 +18,99 @@ import {
 
 const yn = (text: string): Question => ({ text, options: [], multi: false })
 
-const reply = `Two things to confirm before I start:
+const reply = `Two things to settle before I start.
 
-1. **Luke's three new sections**: copy them in word for word, and write them into the proposal? I'd do both.
-2. When Luke replies, we repeat the same loop: his copy first, then ours. Agreed?
+Is the copy right? I checked it twice, so yes.
 
-Say go and I'll start with step 1.`
+[Question]: Which order should I run them in?
+Options: 1. «Sync first (Recommended)» 2. «Backfill first» 3. «Other»
 
-test('finds the numbered questions and keeps their numbers apart', async () => {
-  expect(findQuestions(reply)).toEqual([
-    "Luke's three new sections: copy them in word for word, and write them into the proposal? I'd do both.",
-    'When Luke replies, we repeat the same loop: his copy first, then ours. Agreed?',
-  ])
-  const markers = splitParts(reply).flatMap(p => (p.kind === 'question' ? [p.marker] : []))
-  expect(markers).toEqual(['1.', '2.'])
+[Question]: Tell me the port to use
+Options: 1. «4200» 2. «4300» 3. «Other»
+
+Say go and I'll start.`
+
+test('only [Question]: lines are questions; a rhetorical one is not', async () => {
+  expect(findQuestions(reply)).toEqual(['Which order should I run them in?', 'Tell me the port to use'])
 })
 
-test('ignores a question mark inside a code block', async () => {
-  expect(findQuestions('Here:\n```\nif (a?) b\nwhy?\n```\nDone.')).toEqual([])
+test('a question needs no question mark', async () => {
+  expect(findQuestions('[Question]: Let me know which folder')).toEqual(['Let me know which folder'])
 })
 
-test('a reply with no questions has none', async () => {
-  expect(findQuestions('All done. The tests pass.')).toEqual([])
+test('a plain "?" line is never a question', async () => {
+  expect(findQuestions('Ship it?\nAgreed?\n1. Ready?')).toEqual([])
 })
 
-test('a plain question line has no options and is Yes/No', async () => {
-  expect(findAsked('Ship it?')).toEqual([yn('Ship it?')])
-})
-
-test('lettered options under a question become its options', async () => {
-  const [q] = findAsked('Which first?\n  a) Sync\n  b) Backfill')
-  expect(q.options.map(o => o.label)).toEqual(['a) Sync', 'b) Backfill'])
-  expect(q.options.map(o => o.text)).toEqual(['Sync', 'Backfill'])
+test('guillemet options become numbered options; Other is never one of them', async () => {
+  const [q] = findAsked(reply)
+  expect(q.options.map(o => o.label)).toEqual(['1. Sync first', '2. Backfill first'])
+  expect(q.options.map(o => o.text)).toEqual(['Sync first', 'Backfill first'])
+  expect(q.options.map(o => o.recommended)).toEqual([true, false])
   expect(q.multi).toBe(false)
 })
 
-test('dash options become options, and the option lines are not text or questions', async () => {
-  const parts = splitParts('Pick one?\n  - Is it fast?\n  - Is it safe?\nThen go.')
+test('an option may hold commas, pipes, digits and quote marks', async () => {
+  const [q] = findAsked('[Question]: Which?\nOptions: 1. «Use "fast", then 2. slow | safe» 2. «No»')
+  expect(q.options.map(o => o.text)).toEqual(['Use "fast", then 2. slow | safe', 'No'])
+})
+
+test('options may run over several lines, up to a blank line', async () => {
+  const parts = splitParts('[Question]: Which?\nOptions:\n1. «One»\n2. «Two»\n3. «Other»\n\nThen go.')
   expect(parts.map(p => p.kind)).toEqual(['question', 'text'])
   const q = parts[0]
-  expect(q.kind === 'question' && q.options.map(o => o.label)).toEqual(['Is it fast?', 'Is it safe?'])
+  expect(q.kind === 'question' && q.options.map(o => o.text)).toEqual(['One', 'Two'])
 })
 
-test('a single indented line is not a choice', async () => {
-  const [q] = findAsked('Ready?\n  - just a note')
-  expect(q.options).toEqual([])
+test('a blank line may sit between the question and its options', async () => {
+  const [q] = findAsked('[Question]: Which?\n\nOptions: 1. «One» 2. «Two»')
+  expect(q.options.map(o => o.text)).toEqual(['One', 'Two'])
 })
 
-test('an option ending in (Recommended) is marked and the tag is stripped from its text', async () => {
-  const [q] = findAsked('Which?\n  a) Sync first (Recommended)\n  b) Wait')
-  expect(q.options[0]).toEqual({ label: 'a) Sync first', text: 'Sync first', recommended: true })
-  expect(q.options[1].recommended).toBe(false)
+test('without guillemets, numbered or piped options still parse', async () => {
+  expect(findAsked('[Question]: Ship?\nOptions: 1. Yes 2. No 3. Other')[0].options.map(o => o.text)).toEqual([
+    'Yes',
+    'No',
+  ])
+  expect(findAsked('[Question]: Ship?\nOptions: (Yes|No)')[0].options.map(o => o.text)).toEqual(['Yes', 'No'])
+})
+
+test('a question with no Options line is Yes/No', async () => {
+  expect(findAsked('[Question]: Ship it?')).toEqual([yn('Ship it?')])
+})
+
+test('a list marker and bold around the tag are allowed', async () => {
+  const parts = splitParts('1. **[Question]:** Ship it?\n- [Question]: Today?')
+  expect(parts.flatMap(p => (p.kind === 'question' ? [[p.marker, p.text]] : []))).toEqual([
+    ['1.', 'Ship it?'],
+    ['-', 'Today?'],
+  ])
+})
+
+test('a [Question]: inside a code block or a > quote is ignored', async () => {
+  expect(findQuestions('```\n[Question]: x?\n```\n> [Question]: y?\n[Question]: z?')).toEqual(['z?'])
+})
+
+test('"Other team" is a real option, not the Other button', async () => {
+  const [q] = findAsked('[Question]: Who?\nOptions: 1. «Our team» 2. «Other team» 3. «Other (type it)»')
+  expect(q.options.map(o => o.text)).toEqual(['Our team', 'Other team'])
 })
 
 test('(pick any) makes the options multi-select; without options it stays Yes/No', async () => {
-  const [multi] = findAsked('Which ones? (pick any)\n  a) One\n  b) Two')
+  const [multi] = findAsked('[Question]: Which ones? (pick any)\nOptions: 1. «One» 2. «Two»')
   expect(multi.multi).toBe(true)
-  const [bare] = findAsked('Which ones? (pick any)')
+  const [bare] = findAsked('[Question]: Which ones? (pick any)')
   expect(bare.multi).toBe(false)
 })
 
 test('a choice answer is sent as the option label', async () => {
-  const q = findAsked('Which first?\n  a) Sync first\n  b) Backfill')[0]
+  const q = findAsked('[Question]: Which first?\nOptions: 1. «Sync first» 2. «Backfill»')[0]
   const picks = [togglePick(q, null, { option: 0 })]
-  expect(answersText({ questions: [q], picks })).toContain('1. Which first?\n   → a) Sync first')
+  expect(answersText({ questions: [q], picks })).toContain('1. Which first?\n   → 1. Sync first')
 })
 
 test('a one-of question swaps its pick, and a second press un-picks', async () => {
-  const q = findAsked('Which?\n  a) One\n  b) Two')[0]
+  const q = findAsked('[Question]: Which?\nOptions: 1. «One» 2. «Two»')[0]
   const a = togglePick(q, null, { option: 0 })
   const b = togglePick(q, a, { option: 1 })
   expect(b?.picked).toEqual([1])
@@ -93,11 +118,11 @@ test('a one-of question swaps its pick, and a second press un-picks', async () =
 })
 
 test('a pick-any question toggles options independently and sends every pick', async () => {
-  const q = findAsked('Which? (pick any)\n  a) One\n  b) Two\n  c) Three')[0]
+  const q = findAsked('[Question]: Which? (pick any)\nOptions: 1. «One» 2. «Two» 3. «Three»')[0]
   let a = togglePick(q, null, { option: 2 })
   a = togglePick(q, a, { option: 0 })
   expect(a?.picked).toEqual([0, 2])
-  expect(answersText({ questions: [q], picks: [a] })).toContain('→ a) One; c) Three')
+  expect(answersText({ questions: [q], picks: [a] })).toContain('→ 1. One; 3. Three')
   a = togglePick(q, a, { option: 0 })
   expect(a?.picked).toEqual([2])
 })
@@ -111,40 +136,19 @@ test('Other text is sent as the answer, and replaces a Yes/No pick', async () =>
 })
 
 test('Other on a pick-any question sits beside the picks; empty text clears it', async () => {
-  const q = findAsked('Which? (pick any)\n  a) One\n  b) Two')[0]
+  const q = findAsked('[Question]: Which? (pick any)\nOptions: 1. «One» 2. «Two»')[0]
   const a = setOther(q, togglePick(q, null, { option: 1 }), 'something else')
-  expect(answersText({ questions: [q], picks: [a] })).toContain('→ b) Two; Other: something else')
+  expect(answersText({ questions: [q], picks: [a] })).toContain('→ 2. Two; Other: something else')
   expect(setOther(q, a, '')?.picked).toEqual([1])
   expect(setOther(yn('Ship it?'), setOther(yn('Ship it?'), null, 'x'), '  ')).toBe(null)
 })
 
-test('lines under a (no buttons) lead-in are skipped until the blank line', async () => {
-  const text = 'Things to look for (no buttons):\n- Is the fan loud?\n- Is it warm?\n\nShip it?\nAgreed?'
-  expect(findQuestions(text)).toEqual(['Ship it?', 'Agreed?'])
-})
-
-test('a (no buttons) heading skips its whole section, up to the next heading', async () => {
-  const text = '## Checklist (no buttons)\n\n- Is it loud?\n\n- Is it warm?\n\n## Decisions\nShip it?'
-  expect(findQuestions(text)).toEqual(['Ship it?'])
-})
-
-test('a (no buttons) list item skips itself and its nested lines only', async () => {
-  const text = '- Look for (no buttons)\n  - Is it loud?\n- Ship it?'
-  expect(findQuestions(text)).toEqual(['Ship it?'])
-})
-
-test('a (no buttons) tag inside a code block does nothing', async () => {
-  expect(findQuestions('```\nx (no buttons)\n```\nShip it?')).toEqual(['Ship it?'])
-})
-
 test('a reply can mix Yes/No and choice questions', async () => {
-  const text = `1. Ship it today?
-2. Which order?
-   a) Sync first (Recommended)
-   b) Backfill first
-3. Anything to add? (pick any)
-   - Docs
-   - Tests`
+  const text = `[Question]: Ship it today?
+[Question]: Which order?
+Options: 1. «Sync first (Recommended)» 2. «Backfill first» 3. «Other»
+[Question]: Anything to add? (pick any)
+Options: 1. «Docs» 2. «Tests» 3. «Other»`
   const qs = findAsked(text)
   expect(qs.map(q => q.options.length)).toEqual([0, 2, 2])
   expect(qs.map(q => q.multi)).toEqual([false, false, true])
@@ -153,7 +157,7 @@ test('a reply can mix Yes/No and choice questions', async () => {
     picks: [togglePick(qs[0], null, { yn: 'no' }), togglePick(qs[1], null, { option: 1 }), null],
   })
   expect(out).toContain('1. Ship it today?\n   → No')
-  expect(out).toContain('2. Which order?\n   → b) Backfill first')
+  expect(out).toContain('2. Which order?\n   → 2. Backfill first')
   expect(out).toContain('3. Anything to add? (pick any)\n   → Not answered')
   expect(out).toContain('do not assume')
 })
@@ -181,8 +185,12 @@ test('all answered adds no warning', async () => {
   expect(text).not.toContain('do not assume')
 })
 
-test('a reply with one question is never drawn with buttons', async () => {
-  expect(ownsMessage({ questions: [yn('Ready?')] }, [yn('Ready?')])).toBe(false)
+test('a reply with one question gets buttons', async () => {
+  expect(ownsMessage({ questions: [yn('Ready?')] }, [yn('Ready?')])).toBe(true)
+})
+
+test('a reply with no questions gets none', async () => {
+  expect(ownsMessage({ questions: [] }, [])).toBe(false)
 })
 
 test('once the buttons are closed, no reply is drawn by the mod', async () => {
@@ -194,13 +202,9 @@ test('a later reply with different questions is not the open one', async () => {
 })
 
 test('the same text with different options is not the open reply', async () => {
-  const a = findAsked('1. Which?\n  a) One\n  b) Two\n2. Ok?')
-  const b = findAsked('1. Which?\n  a) One\n  b) Three\n2. Ok?')
+  const a = findAsked('[Question]: Which?\nOptions: 1. «One» 2. «Two»')
+  const b = findAsked('[Question]: Which?\nOptions: 1. «One» 2. «Three»')
   expect(ownsMessage({ questions: a }, b)).toBe(false)
-})
-
-test('the open reply with two or more questions gets buttons', async () => {
-  expect(ownsMessage({ questions: [yn('Copy it?'), yn('Agreed?')] }, [yn('Copy it?'), yn('Agreed?')])).toBe(true)
 })
 
 test('a typed draft goes in front of the answers with a blank line between', async () => {

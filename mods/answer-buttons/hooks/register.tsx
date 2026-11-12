@@ -34,7 +34,7 @@ export const register: Register = on => {
   on('turn.complete', async ($, e, next) => {
     if (e.agentId === undefined && e.reason === 'answer') {
       const questions = findAsked(e.answer)
-      if (questions.length >= 2) {
+      if (questions.length >= 1) {
         const sheet: Pending = { questions, picks: questions.map(() => null), typing: null }
         const replaces = /\(replaces earlier questions\)/i.test(e.answer)
         await update($, open, sheets => addSheet(sheets, sheet, replaces))

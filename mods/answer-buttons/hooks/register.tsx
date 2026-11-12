@@ -18,7 +18,7 @@ import {
 const legacy = atom({ plugin: 'answer-buttons', key: 'pending' } as const, null)
 const open = atom({ plugin: 'answer-buttons', key: 'open' } as const, [])
 
-// Options longer than this many characters are drawn as a number button with wrapping text beside it.
+// A question with an option longer than this many characters lists its options as text, then number buttons.
 const LONG_OPTION = 60
 
 // Every reply's questions stay open until they are answered or dismissed, or a later reply says
@@ -185,30 +185,36 @@ export const register: Register = on => {
                   />
                   {otherButton}
                 </Box>
+              ) : part.options.some(o => o.text.length > LONG_OPTION) ? (
+                // A button label never wraps, so a long option would push the reply sideways into a
+                // scrollbar. Then every option is listed as wrapping text first, and the buttons
+                // underneath carry only their numbers.
+                <Box flexDirection="column">
+                  <Markdown
+                    key={`optlist-${n}`}
+                    text={part.options
+                      .map((o, k) => `${k + 1}. ${o.text}${o.recommended ? ' (Recommended)' : ''}`)
+                      .join('\n')}
+                  />
+                  <Box flexDirection="row" gap={1}>
+                    {part.options.map((_, k) => {
+                      const chosen = picked?.picked.includes(k) ?? false
+                      return (
+                        <Button
+                          key={`opt-${n}-${k}`}
+                          label={`${k + 1}${chosen ? ' ✓' : ''}`}
+                          variant={chosen ? 'primary' : undefined}
+                          onPress={() => press(n, { option: k })}
+                        />
+                      )
+                    })}
+                    {otherButton}
+                  </Box>
+                </Box>
               ) : (
                 <Box flexDirection="column">
                   {part.options.map((option, k) => {
                     const chosen = picked?.picked.includes(k) ?? false
-                    // A button label never wraps, so a long option would push the reply sideways
-                    // into a scrollbar. Its button carries just the number; the words wrap beside it.
-                    if (option.text.length > LONG_OPTION) {
-                      return (
-                        <Box key={`optrow-${n}-${k}`} flexDirection="row" gap={1}>
-                          <Button
-                            key={`opt-${n}-${k}`}
-                            label={`${k + 1}${chosen ? ' ✓' : ''}`}
-                            variant={chosen ? 'primary' : undefined}
-                            onPress={() => press(n, { option: k })}
-                          />
-                          <Box flexShrink={1} flexGrow={1}>
-                            <Text wrap="wrap">
-                              {option.text}
-                              {option.recommended ? ' (Recommended)' : ''}
-                            </Text>
-                          </Box>
-                        </Box>
-                      )
-                    }
                     return (
                       <Button
                         key={`opt-${n}-${k}`}

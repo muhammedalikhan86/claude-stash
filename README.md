@@ -145,6 +145,7 @@ To update later: `git pull`, then `.\install.ps1`.
 | `shaw-estate` | The single Shaw & Partners knowledge base: code, `Shaw.*` NuGet packages, databases, IIS hosting, app identity, AD sign-in, UI standard, standard architecture defaults |
 | `sync-artboards` | Pull the designer's boards and change logs into a repo's design folder, check them against the design rows, write the findings into the round file. Owns the design-folder spec (`references/design-files.md`) and the move from the old layout (`references/migrate-design-layout.md`) |
 | `disparity-checker` | Compare the build with its boards and test cases at the parity widths, in every state; write one findings file (read-only). Owns the findings format and the orchestrators' Findings Intake (`references/`) |
+| `summarise`, `reload` | Session checkpoint. `/summarise` writes `docs/sessions/latest.md` (small index) and topic files in `docs/sessions/knowledge/`, then you type `/clear`; the `session-clear-restore.sh` hook loads `latest.md` only. `/reload @file …` loads more on demand |
 | `claude-account-switcher` | Switch between team Claude Code accounts on Windows |
 | `pdf-to-markdown` | Convert PDFs to Markdown before Claude reads them |
 | `context7-mcp`, `find-skills`, `developing-with-streamlit` | Helpers |

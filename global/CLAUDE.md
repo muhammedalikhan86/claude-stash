@@ -47,6 +47,6 @@ Sort every reply to the user into up to three labelled tiers, in this order. Lea
 2. **🟡 Good to know**: anything that changes the plan or what the user will see.
 3. **⚪ FYI**: routine items (merges, routing, acks). Keep this tier to a line or two.
 
-An output style's one-line summary still comes first, above the tiers. Questions under Needs you keep the answer-buttons shape.
+An output style's one-line summary still comes first, above the tiers. A question to the user never goes inside a numbered item. Two or more questions each sit on their own line, after the numbered items, in the answer-buttons shape. Answer-buttons draws nothing for a single question, so a lone question goes through the AskUserQuestion tool instead.
 
 Why: an important approval was missed because it was buried in routine reporting.

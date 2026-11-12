@@ -37,4 +37,6 @@ the auth wiring only, not its legacy configuration call.
 ## Who is who
 
 Tables that mirror AD (`ShawCentral.dbo.Users`, `DataWarehouse.dbo.AdvisorAccess`):
-`databases-and-querying.md`, *Handy starting points*.
+`databases-and-querying.md`, *Handy starting points*. A Dealer's Assistant is a member of the
+`Dealers Assistants` AD security group; which codes they see is in `AdvisorAccess` /
+`DepartmentAccess` (same section).

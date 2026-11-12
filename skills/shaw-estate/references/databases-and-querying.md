@@ -42,7 +42,14 @@ guess. It is never an app's production identity (`app-identity-and-sql.md`).
      `JobTitle`, `Status`, `NetworkUsername`).
    - `DataWarehouse.dbo.AdvisorAccess` maps a person's email to their advisor codes (`AdvisorCode`,
      `Email`, `Name`); the advisor dashboard reads it. `AdvisorAccessProper` is its nightly rebuild
-     with branch managers cut down to their own branch.
+     with branch managers cut down to their own branch. `DepartmentAccess` is the same kind of
+     who-sees-which-code map (`Email` to `DepartmentCode`).
+   - **`DepartmentCode` (DataWarehouse, IS) is not a department.** It is a repurposed column holding a
+     personal code for one individual (e.g. an Adviser's own account). Never group or label by it as
+     if it were a team.
+   - **Dealer's Assistants** are mapped in `AdvisorAccess` / `DepartmentAccess` too, to the State
+     Managers, Advisers or National staff they assist. They are identified by the `Dealers Assistants`
+     AD security group, not by a column. (Source: Muhammed, 2026-11-12.)
    - `ShawCentral` also holds `Trace.Information` / `Trace.Exception` / `Trace.AuditTrail` and
      `audit.SyncJobs` (written by `Shaw.Diagnostics`) and `webJob.Jobs` / `webJob.JobResult`
      (`Shaw.WebJob`) — see `shaw-libraries.md`.

@@ -38,3 +38,15 @@ The answer-buttons plugin draws buttons under questions to the user (needs 2+ in
 
 # task-bar
 When you start any job of three or more steps, call `mcp__task-bar__set_tasks` (the task-bar mod's tool, if you have it) with the whole task list. Call it again whenever a task starts, finishes or is added, or the plan changes, and send an empty list once the user has seen everything done. The user reads progress from the bar above the prompt instead of scrolling. If you do not have the tool, carry on without it.
+
+# Reply shape
+
+Sort every reply to the user into up to three labelled tiers, in this order. Leave out a tier that has nothing in it.
+
+1. **🔴 Needs you**: a decision, an approval, something to paste, or a command to run. Number these items, and end each one with exactly what the user must do.
+2. **🟡 Good to know**: anything that changes the plan or what the user will see.
+3. **⚪ FYI**: routine items (merges, routing, acks). Keep this tier to a line or two.
+
+An output style's one-line summary still comes first, above the tiers. Questions under Needs you keep the answer-buttons shape.
+
+Why: an important approval was missed because it was buried in routine reporting.

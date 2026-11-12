@@ -17,10 +17,6 @@ import {
 
 const legacy = atom({ plugin: 'answer-buttons', key: 'pending' } as const, null)
 const open = atom({ plugin: 'answer-buttons', key: 'open' } as const, [])
-
-// A question with an option longer than this many characters lists its options as text, then number buttons.
-const LONG_OPTION = 60
-
 // Every reply's questions stay open until they are answered or dismissed, or a later reply says
 // it replaces them; a new reply without questions closes nothing.
 export const register: Register = on => {
@@ -185,10 +181,9 @@ export const register: Register = on => {
                   />
                   {otherButton}
                 </Box>
-              ) : part.options.some(o => o.text.length > LONG_OPTION) ? (
-                // A button label never wraps, so a long option would push the reply sideways into a
-                // scrollbar. Then every option is listed as wrapping text first, and the buttons
-                // underneath carry only their numbers.
+              ) : (
+                // The options are listed as wrapping text first, and the buttons underneath carry only
+                // their numbers: a button label never wraps, so a long one would scroll sideways.
                 <Box flexDirection="column">
                   <Markdown
                     key={`optlist-${n}`}
@@ -210,21 +205,6 @@ export const register: Register = on => {
                     })}
                     {otherButton}
                   </Box>
-                </Box>
-              ) : (
-                <Box flexDirection="column">
-                  {part.options.map((option, k) => {
-                    const chosen = picked?.picked.includes(k) ?? false
-                    return (
-                      <Button
-                        key={`opt-${n}-${k}`}
-                        label={`${option.label}${option.recommended ? ' (Recommended)' : ''}${chosen ? ' ✓' : ''}`}
-                        variant={chosen ? 'primary' : undefined}
-                        onPress={() => press(n, { option: k })}
-                      />
-                    )
-                  })}
-                  {otherButton}
                 </Box>
               )}
               {sheet.typing === n && Input !== null ? (

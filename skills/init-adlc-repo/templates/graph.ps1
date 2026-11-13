@@ -21,9 +21,11 @@
 #       one component. This is the exact command plugin-orchestrator-development-pattern
 #       runs in its Graphify step.
 #   ... -Component <name> -Root <root>[,<root>]
-#       only those of the component's roots, when its graph.json already exists
-#       (graphify update merges, so the other roots' nodes stay). The stamp still
-#       lists every root. Without a graph.json every root is built.
+#       accepted and checked (an unknown root still fails), but every root of the
+#       component is built. A graphify update of one root drops the edges that run
+#       into the other roots (references, implements, inherits), so a partial
+#       rebuild of a multi-root component loses edges. A component with more than
+#       one root prints a warning when -Root is passed.
 #   ... -DryRun
 #       parse .claude/SKILLS.md and print what would be built; builds nothing,
 #       writes nothing, does not need graphify on PATH.
@@ -68,7 +70,7 @@ param(
     # it only labels the stamp (default: the repo folder's name).
     [string] $Component = '',
 
-    # Only these roots of -Component, when its graph.json already exists.
+    # Checked against -Component's roots, but every root is built (see Usage).
     [string[]] $Root = @(),
 
     # Parse and report; build nothing.
@@ -297,14 +299,12 @@ foreach ($name in $targets) {
     $roots = @($declared | Where-Object { Test-Path $_ })
     $missing = @($declared | Where-Object { -not (Test-Path $_) })
     $out = (ConvertTo-RootPath ($outTemplate -replace '\{component\}', $name))
-    $graphJson = Join-Path $out 'graph.json'
 
-    # Which roots to run: all of them, unless -Root narrowed it and a graph
-    # already exists to merge into.
+    # Every root, always: updating only some roots drops the cross-root edges
+    # (see Usage). -Root was checked above; here it only earns a warning.
     $run = $roots
-    if ($RootFilter.Count) {
-        if (Test-Path $graphJson) { $run = @($roots | Where-Object { $RootFilter -contains $_ }) }
-        else { Write-Host "[$name] no $graphJson yet - building every root, not just -Root." -ForegroundColor DarkYellow }
+    if ($RootFilter.Count -and $roots.Count -gt 1) {
+        Write-Host "[$name] -Root ignored: $name has $($roots.Count) roots, and rebuilding only some of them drops the edges between them. Building every root." -ForegroundColor DarkYellow
     }
 
     if ($DryRun) {

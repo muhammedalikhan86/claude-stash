@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.22.0"
+  version: "2.22.1"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -1088,13 +1088,11 @@ code+docs graph is a manual `/graphify` run.
 1. **The repo's own graph script.** If the repo has one (e.g. `scripts/graph.ps1`, or a `make graph`
    target), name its exact command and the Finalizer runs that and nothing else — the script builds and
    stamps the report. That keeps the pipeline and the team building the graph the same way. For the
-   standard `scripts/graph.ps1`, pass the changed paths:
-   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1 -Root <changed paths, comma-separated>`
-   (it rebuilds only those when `graph.json` exists, every path when it does not, and rejects a path
-   that is not one of its roots); drop `-Root` when every path changed.
-2. **No script, more than one path → `graphify update <path>` per changed path** (every path when
-   `graphify-out/graph.json` does not exist yet); `GRAPHIFY_OUT` absolute; never the `/graphify` skill
-   once per path.
+   standard `scripts/graph.ps1`, the command is
+   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1`, with no `-Root`: it builds
+   every path, because updating only some paths drops the edges that run between them.
+2. **No script, more than one path → `graphify update <path>` for every path**, not just the changed
+   ones (same reason); `GRAPHIFY_OUT` absolute; never the `/graphify` skill once per path.
 3. **No script, one path → the `/graphify` skill**, scoped to that path, with `--update` when
    `graphify-out/graph.json` already exists from a prior Finalization.
 
@@ -1105,8 +1103,7 @@ uncommitted file under a path does not make it changed. A path in `graphify-dire
 `source-code-directory`) counts as changed when a file in that set lies under it — committed earlier in
 this run or not. If no path counts as changed, spawn no
 Finalizer for this Task and print `Graphify: skipped — no change in <paths>`. Otherwise pass the
-changed paths in the Task-Specific Inputs: route 2 runs only those when `graphify-out/graph.json`
-already exists. **Never spawned at all for a Spike** — see **Spike Flow**'s single
+changed paths in the Task-Specific Inputs, for the record: every route still builds every path. **Never spawned at all for a Spike** — see **Spike Flow**'s single
 Spike Log Task. **For a P0 fast lane**, when it runs or skips is in `references/spike-and-p0.md` (step 3).
 
 ### Step 3.2 — Update PMBook

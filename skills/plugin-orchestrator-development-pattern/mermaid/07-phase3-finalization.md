@@ -35,9 +35,9 @@ becomes `Done`. A Spike gets only its Spike Log (`08`).
 ```mermaid
 flowchart TD
     S0("Some root changed") --> Script{"scripts/graph.ps1<br/>at repo root?"}
-    Script -->|"yes"| R1["Route 1: graph.ps1<br/>-Component name<br/>-Root changed roots"]
+    Script -->|"yes"| R1["Route 1: graph.ps1<br/>-Component name<br/>(every root)"]
     Script -->|"no"| Roots{"Several roots?"}
-    Roots -->|"yes"| R2["Route 2: graphify update<br/>per changed root, every<br/>root if no graph.json"]
+    Roots -->|"yes"| R2["Route 2: graphify update<br/>for every root<br/>of the component"]
     Roots -->|"no"| R3["Route 3: /graphify skill<br/>scoped to that root"]
     R1 --> Out
     R2 --> Out

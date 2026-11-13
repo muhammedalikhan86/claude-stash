@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.19.0"
+  version: "1.19.1"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -1058,12 +1058,11 @@ close-out summary. Otherwise keep the list of roots that did change: the routes 
 Graphify procedure holds the mechanics):
 
 1. **Repo graph script** — `scripts/graph.ps1` exists at the repo root. Command:
-   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1 -Component <component> -Root <changed roots, comma-separated>`.
-   `-Root` rebuilds only those roots when the component's `graph.json` exists (the script builds every
-   root when it does not), and rejects a root that is not one of the component's. Drop `-Root` when every
-   root changed.
-2. **No script, several roots** — the `graphify update` command line per changed root (every root when
-   `graph.json` does not exist yet). Never the `/graphify` skill once per root.
+   `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/graph.ps1 -Component <component>`, with
+   no `-Root`: it builds every root of the component, because updating only some roots drops the edges
+   that run between them.
+2. **No script, several roots** — the `graphify update` command line for every root of the component,
+   not just the changed ones (same reason). Never the `/graphify` skill once per root.
 3. **No script, one root** — the `/graphify` skill, scoped to that root.
 
 - **Task-Specific Inputs:** the component name; which of the three routes, with the exact command for 1;

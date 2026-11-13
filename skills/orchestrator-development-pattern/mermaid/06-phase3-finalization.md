@@ -15,8 +15,8 @@ flowchart TD
     Changed{"Any path changed?"}
     Skip["No Graphify spawn;<br/>print Graphify: skipped"]
     Route{"How to build?"}
-    R1["Route 1: repo's own<br/>graph script, only that;<br/>graph.ps1 -Root changed paths"]
-    R2["Route 2: graphify update<br/>per changed path,<br/>absolute GRAPHIFY_OUT"]
+    R1["Route 1: repo's own<br/>graph script, only that;<br/>graph.ps1, every path"]
+    R2["Route 2: graphify update<br/>for every path,<br/>absolute GRAPHIFY_OUT"]
     R3["Route 3: /graphify skill,<br/>--update if graph exists"]
     Spawn(["Graphify Finalizer<br/>haiku, diagram 2"])
 

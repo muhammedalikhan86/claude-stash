@@ -4,7 +4,7 @@ description: Initialise a PLUGIN-BASED repo for the ADLC (AI Development Life Cy
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.7.0"
+  version: "1.7.1"
   forked-from: "init-adlc-repo@1.0.0 (2026-09-10)"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project, add component, add plugin, new plugin
@@ -405,8 +405,8 @@ What the copy does, so the summary can say it plainly:
   component's roots merge into one graph at `graphify-out/<component>/`, then stamps
   `GRAPH_REPORT.md` with `> Component:`, `> Built at commit: <sha>` (plus `+ uncommitted working tree`
   when the roots have uncommitted changes) and `> Code roots:`.
-- `-Root <root>` rebuilds only those roots of a component whose `graph.json` already exists;
-  `-DryRun` parses `SKILLS.md` and prints what it would build, writing nothing.
+- `-Root <root>` is checked but still builds every root of the component, with a warning when it has
+  more than one: updating only some roots drops the edges that run between them. `-DryRun` parses `SKILLS.md` and prints what it would build, writing nothing.
 - A component whose roots are not on disk yet is skipped with a note (exit 0). Exit 1 means an
   unknown component, graphify not on PATH, or a failed build.
 - Works under Windows PowerShell 5.1 (`powershell`) and PowerShell 7.

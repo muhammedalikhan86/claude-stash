@@ -5,14 +5,14 @@ Parallel-Safety, Git Restrictions, Output Template) still applies.
 
 **Follow the route your Task-Specific Inputs name.** Some orchestrators name one of three:
 
-1. **A repo graph script** (e.g. `scripts/graph.ps1 -Component <name> -Root <changed roots>`): run exactly the command given,
+1. **A repo graph script** (e.g. `scripts/graph.ps1 -Component <name>`): run exactly the command given,
    from the repo root. It builds and stamps the report itself; do not run graphify or stamp separately.
    Check it exited 0 and that the report's first lines carry the stamp, then report the files.
 2. **The graphify command line, per root:** for each root in order, run `graphify update <root>` with
-   `GRAPHIFY_OUT` set to the absolute path of the output directory. When the inputs give a list of
-   changed roots and `graph.json` already exists, run only those roots: the others' nodes stay in the
-   graph. Otherwise run every root. Take the changed roots as given — the Orchestrator decided them from
-   the run's own files; never recompute them from `git status`, which also shows other sessions' files. Then stamp the report (below), listing every root.
+   `GRAPHIFY_OUT` set to the absolute path of the output directory. Run every root, even when the
+   inputs list only some as changed: updating one root drops the edges that run into the other roots
+   (references, implements, inherits), so a partial run loses them. Then stamp the report (below),
+   listing every root.
 3. **The `graphify` skill:** the default when no route is named — see below.
 
 Whatever the route, never scan the project root, which would also pull docs/ADR/PMBook/handoff content

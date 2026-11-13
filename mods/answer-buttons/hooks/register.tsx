@@ -17,14 +17,14 @@ import {
 
 const legacy = atom({ plugin: 'answer-buttons', key: 'pending' } as const, null)
 const open = atom({ plugin: 'answer-buttons', key: 'open' } as const, [])
-// Every reply's questions stay open until they are answered or dismissed, or a later reply says
-// it replaces them; a new reply without questions closes nothing.
+// Every reply's questions stay open until the person presses Submit or Dismiss. Nothing else closes
+// them: not a later reply, not a typed message, not a message from another session.
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     // Carry over the one sheet an earlier version kept.
     const old = await read($, legacy)
     if (old !== null) {
-      await update($, open, sheets => addSheet(sheets, old, false))
+      await update($, open, sheets => addSheet(sheets, old))
       await update($, legacy, () => null)
     }
     return next(e)
@@ -35,25 +35,11 @@ export const register: Register = on => {
       const questions = findAsked(e.answer)
       if (questions.length >= 1) {
         const sheet: Pending = { questions, picks: questions.map(() => null), typing: null }
-        const replaces = /\(replaces earlier questions\)/i.test(e.answer)
-        await update($, open, sheets => addSheet(sheets, sheet, replaces))
+        await update($, open, sheets => addSheet(sheets, sheet))
       }
     }
 
     return next(e)
-  })
-
-  // Answered sheets ride along, visibly, with the next prompt the person types and then close.
-  // Sheets with nothing picked stay open.
-  on('prompt.submit', async ($, e, next) => {
-    const sheets = await read($, open)
-    const answered = sheets.filter(s => hasAnswers(s))
-    if (answered.length === 0) {
-      return next(e)
-    }
-
-    await update($, open, all => all.filter(s => !hasAnswers(s)))
-    return next({ ...e, text: `${e.text}\n\n${answered.map(answersText).join('\n\n')}` })
   })
 
   on('ui.render', { component: 'AssistantMessage' }, async ($, e, next) => {
@@ -222,8 +208,8 @@ export const register: Register = on => {
         })}
         <Box flexDirection="row" gap={1}>
           <Text dimColor>
-            {answered} of {questions.length} answered. Press Submit, or type a message and the answers go
-            with it. Unanswered questions stay open.
+            {answered} of {questions.length} answered. Press Submit to send, or Dismiss to close. They stay
+            open until you do.
           </Text>
           <Button key="submit" label="Submit" variant="primary" onPress={() => void submit()} />
           <Button key="dismiss" label="Dismiss" onPress={() => void change(() => null)} />

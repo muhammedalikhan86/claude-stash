@@ -3,7 +3,6 @@ import { expect, test } from 'claude-code/testing'
 import type { Question } from '../types'
 import {
   addSheet,
-  MAX_OPEN,
   sheetFor,
   answersText,
   findAsked,
@@ -230,28 +229,23 @@ const sheet = (...texts: string[]) => ({ questions: texts.map(yn), picks: texts.
 test('a new reply with questions keeps the earlier open ones', async () => {
   const a = sheet('Copy it?', 'Agreed?')
   const b = sheet('Ship it?', 'Today?')
-  const open = addSheet([a], b, false)
+  const open = addSheet([a], b)
   expect(open).toEqual([a, b])
   expect(sheetFor(open, a.questions)).toBe(a)
   expect(sheetFor(open, b.questions)).toBe(b)
 })
 
-test('"(replaces earlier questions)" closes every earlier sheet', async () => {
-  const b = sheet('Ship it?', 'Today?')
-  expect(addSheet([sheet('Copy it?', 'Agreed?')], b, true)).toEqual([b])
-})
-
-test('the same questions asked again replace their old sheet, not add a second', async () => {
+test('the same questions asked again keep their old sheet and its picks', async () => {
   const old = { ...sheet('Copy it?', 'Agreed?'), picks: [{ choice: 'yes' as const, picked: [], other: null }, null] }
-  const fresh = sheet('Copy it?', 'Agreed?')
-  expect(addSheet([old], fresh, false)).toEqual([fresh])
+  expect(addSheet([old], sheet('Copy it?', 'Agreed?'))).toEqual([old])
 })
 
-test('only the newest few sheets stay open', async () => {
-  let open: ReturnType<typeof sheet>[] = []
-  for (let i = 0; i < MAX_OPEN + 2; i++) open = addSheet(open, sheet(`A${i}?`, `B${i}?`), false)
-  expect(open.length).toBe(MAX_OPEN)
-  expect(open[0].questions[0].text).toBe('A2?')
+test('no number of later replies closes an open sheet', async () => {
+  const first = sheet('A0?', 'B0?')
+  let open = [first]
+  for (let i = 1; i < 20; i++) open = addSheet(open, sheet(`A${i}?`, `B${i}?`))
+  expect(open.length).toBe(20)
+  expect(open[0]).toBe(first)
 })
 
 test('a reply that is no open sheet gets no buttons', async () => {

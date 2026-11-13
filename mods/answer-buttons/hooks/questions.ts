@@ -186,12 +186,8 @@ export function sheetFor<T extends { questions: Question[] }>(sheets: readonly T
   return sheets.find(s => ownsMessage(s, questions)) ?? null
 }
 
-// Oldest are dropped past this many open replies.
-export const MAX_OPEN = 6
-
-// A new reply's sheet joins the open ones. The same questions asked again replace their old sheet;
-// `replaces` (the reply said "(replaces earlier questions)") closes every earlier sheet.
-export function addSheet<T extends { questions: Question[] }>(sheets: readonly T[], sheet: T, replaces: boolean): T[] {
-  const kept = replaces ? [] : sheets.filter(s => !sameQuestions(s.questions, sheet.questions))
-  return [...kept, sheet].slice(-MAX_OPEN)
+// A new reply's sheet joins the open ones. Only Submit or Dismiss closes a sheet, so nothing here
+// drops one: the same questions asked again keep their existing sheet and its picks.
+export function addSheet<T extends { questions: Question[] }>(sheets: readonly T[], sheet: T): T[] {
+  return sheets.some(s => sameQuestions(s.questions, sheet.questions)) ? [...sheets] : [...sheets, sheet]
 }

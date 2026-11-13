@@ -1,6 +1,6 @@
 {
   "name": "answer-buttons",
-  "version": "0.6.3",
-  "description": "Puts buttons under Claude's questions, which Claude tags \"[Question]:\" with an \"Options:\" line of numbered «quoted» options: one button per option (one or pick-any), Yes/No when none are listed, and Other for typed text; a rhetorical question gets none; a Submit button sends your answers at once, or they go with your next prompt; unanswered questions stay open across later replies until answered, dismissed or replaced",
+  "version": "0.7.0",
+  "description": "Puts buttons under Claude's questions, which Claude tags \"[Question]:\" with an \"Options:\" line of numbered «quoted» options: one button per option (one or pick-any), Yes/No when none are listed, and Other for typed text; a rhetorical question gets none; Submit sends your answers and Dismiss closes them; nothing else closes open questions, not a later reply, a typed message or another session's message",
   "types": "./types/index.d.ts"
 }

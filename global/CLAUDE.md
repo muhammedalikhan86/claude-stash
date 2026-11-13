@@ -38,7 +38,7 @@ Options: 1. «Sync first (Recommended)» 2. «Backfill first» 3. «Other»
 - Add `(Recommended)` inside the quotes of the option you would pick, and `(pick any)` at the end of the question line when several options may be picked.
 - One question gets buttons too; up to 8 per reply. Tagged lines in code blocks and `>` quotes are ignored.
 - Answers come back as `My answers to your questions:` with `→` lines. `Not answered` means ask, do not assume.
-- **Open questions stay open.** A reply's buttons stay in the chat, answerable, across later replies, until answered (Submit, or with the next typed message), dismissed or replaced. So never reprint a question that is still open. To withdraw earlier questions because new ones supersede them, put the line `(replaces earlier questions)` in the reply that asks the new ones.
+- **Open questions stay open.** A reply's buttons stay in the chat, answerable, across later replies, until the user presses Submit or Dismiss. Nothing else closes them: not a later reply, not a typed message, not another session's message. So never reprint a question that is still open, and never assume a typed message answers it.
 
 # task-bar
 When you start any job of three or more steps, call `mcp__task-bar__set_tasks` (the task-bar mod's tool, if you have it) with the whole task list. Call it again whenever a task starts, finishes or is added, or the plan changes, and send an empty list once the user has seen everything done. The user reads progress from the bar above the prompt instead of scrolling. If you do not have the tool, carry on without it.

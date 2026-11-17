@@ -11,12 +11,16 @@
     ./launch-workers.ps1 -Mode terminal -DryRun
 .EXAMPLE
     ./launch-workers.ps1 -WhoAmI               # print the account this session runs as, and stop
+.EXAMPLE
+    ./launch-workers.ps1 -IncludeInHub         # also open the workers that live in the hub checkout
 
 .NOTES
     Each worker opens through its checkout's launch script (hub.json launch.script, normally
     launch-as.ps1), which wraps the claude-account-switcher skill. A checkout without one is opened with
-    the switcher directly. Workers that live in the hub checkout (inHubCheckout, or checkout ".") are
-    never opened: they are sessions the user starts in the hub checkout itself.
+    the switcher directly. Workers that live in the hub checkout (inHubCheckout, or checkout ".") open
+    only with -IncludeInHub, as a second session in the hub checkout; without it the script prints the
+    command to open each one. The hub itself is never opened. A window that opens has not registered
+    yet: it shows in ListAgents only once its trust or sign-in prompt is cleared.
 #>
 param(
     [string]   $HubRoot,
@@ -25,6 +29,7 @@ param(
     [string]   $Mode,
     [string[]] $Only,
     [switch]   $WhoAmI,
+    [switch]   $IncludeInHub,
     [switch]   $DryRun
 )
 
@@ -68,7 +73,8 @@ if (-not $Account) { throw 'Could not tell which account this session runs as. P
 if (-not $Mode) { $Mode = if ($cfg.launch -and $cfg.launch.mode) { $cfg.launch.mode } else { 'vscode' } }
 $launchName = if ($cfg.launch -and $cfg.launch.script) { $cfg.launch.script } else { 'launch-as.ps1' }
 
-$workers = @($cfg.components | Where-Object { $_.checkout -and $_.checkout -ne '.' -and -not $_.inHubCheckout })
+$isInHub = { param($c) (-not $c.checkout) -or $c.checkout -eq '.' -or $c.inHubCheckout }
+$workers = @($cfg.components)
 if ($Only) {
     $want = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim().ToLowerInvariant() } | Where-Object { $_ })
     $workers = @($workers | Where-Object { $want -contains ([string]$_.short).ToLowerInvariant() -or $want -contains ([string]$_.name).ToLowerInvariant() })
@@ -78,7 +84,13 @@ if ($Only) {
 $failed = 0
 foreach ($w in $workers) {
     $label = if ($w.short) { $w.short } else { $w.name }
-    $dir = [System.IO.Path]::GetFullPath((Join-Path $HubRoot $w.checkout))
+    $inHub = & $isInHub $w
+    $dir = if ($inHub) { $HubRoot } else { [System.IO.Path]::GetFullPath((Join-Path $HubRoot $w.checkout)) }
+    if ($inHub -and -not $IncludeInHub) {
+        $cmd = "& '$(Join-Path $HubRoot $launchName)' $Account" + $(if ($Mode -eq 'terminal') { ' -Terminal' } else { '' })
+        Write-Output "$label : in the hub checkout, not opened (add -IncludeInHub, or run: $cmd)"
+        continue
+    }
     if (-not (Test-Path $dir)) { Write-Warning "$label : checkout not found at $dir"; $failed++; continue }
 
     $launcher = Join-Path $dir $launchName
@@ -98,4 +110,5 @@ foreach ($w in $workers) {
     if ($LASTEXITCODE -ne 0) { Write-Warning "$label : launcher exited $LASTEXITCODE"; $failed++ }
     else { Write-Output "$label : opened $dir as $Account ($Mode)" }
 }
+if (-not $DryRun) { Write-Output 'Opened windows register only after their trust or sign-in prompt is cleared.' }
 exit $failed

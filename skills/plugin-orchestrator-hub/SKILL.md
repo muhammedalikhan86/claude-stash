@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.2.0"
+  version: "0.3.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -72,19 +72,29 @@ Read each only when its trigger occurs. They are part of this skill.
    switcher's registry (`launch-workers.ps1 -WhoAmI` prints it). Workers open on the same account.
 3. **Resume.** Read `references/state-and-switch.md` §Resume and follow it: live state first (each
    checkout's `git log`, `git status`, PMBook and handoff), then the session note, then the hub
-   operations file and the rulings log. Live state wins over notes.
-4. **Find the workers.** `ListAgents`. A worker already live (its checkout's session row is idle or busy)
-   is not reopened.
-5. **Open the rest.** Ask once, with buttons, whether to open the missing workers; on yes run
-   `scripts/launch-workers.ps1 -Only <names>` (mode from `launch.mode`). Each worker opens with the
-   checkout's `launch-as.ps1` on the hub's account. It never opens the hub: the user opens the hub
-   with `./launch-as <account>` in the hub checkout, as `launch.hubMode` says (`-Terminal` for `terminal`).
-6. **Brief each worker** in one message: "I am the hub (`<session name>`). Send me every question, gate
+   operations file and the rulings log. Live state wins over notes, and hub.json wins over notes for
+   any setting it holds (cron expressions above all). A missing rulings log is created there
+   (§Resume step 4).
+4. **Find the workers.** Every component in hub.json is a worker, the ones with `inHubCheckout: true`
+   included. `ListAgents`. A worker already live (its checkout's session row is idle or busy) is not
+   reopened.
+5. **Open the rest.** Ask once, with buttons, whether to open the missing workers, naming each one, the
+   in-hub ones included. On yes run `scripts/launch-workers.ps1 -Only <names> -IncludeInHub` (mode from
+   `launch.mode`). Each worker opens with its checkout's `launch-as.ps1` on the hub's account; an in-hub
+   worker opens a second session in the hub checkout. The script never opens the hub itself: the user
+   opens the hub with `./launch-as <account>` in the hub checkout, as `launch.hubMode` says
+   (`-Terminal` for `terminal`).
+6. **Wait for them to register.** The script returns as soon as each window opens, but a worker only
+   shows in `ListAgents` once its window clears any trust or sign-in prompt. Tell the user: "clear any
+   prompt in each new window, then say **workers up**." On "workers up", `ListAgents` once; any worker
+   still missing is named back to the user. Never brief a worker that is not listed, and never poll.
+7. **Brief each worker** in one message: "I am the hub (`<session name>`). Send me every question, gate
    and issue; send a default with each question and keep working. Your queue: <groups>. Next: <step>."
    Subscribe to its idle notice (`notify_when_idle: true`).
-7. **Crons.** Recreate the heartbeat (`watch.heartbeatCron`) and any open designer-log check. Crons die
-   with the session, so the session note lists them.
-8. Tell the user, in one short tiered reply, who is live, what each runs next, and anything waiting on them.
+8. **Crons.** Recreate the heartbeat from `watch.heartbeatCron` (never from a note) and any open
+   designer-log check. Crons die with the session, so the session note lists them.
+9. Tell the user, in one short tiered reply, every worker by name (N of N live), what each runs next, and
+   anything waiting on them.
 
 ## The hub loop
 

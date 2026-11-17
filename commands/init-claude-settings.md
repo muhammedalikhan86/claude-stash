@@ -37,7 +37,7 @@
    {
      "permissions": {
        "allow": [
-         "Read(*)",
+         "Read",
          "Bash(ls *)",
          "Bash(cat *)",
          "Bash(cd *)",

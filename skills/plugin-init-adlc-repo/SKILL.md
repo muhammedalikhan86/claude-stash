@@ -4,7 +4,7 @@ description: Initialise a PLUGIN-BASED repo for the ADLC (AI Development Life Cy
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.7.1"
+  version: "1.7.2"
   forked-from: "init-adlc-repo@1.0.0 (2026-09-10)"
   domain: repo-bootstrap
   triggers: init repo, initialise repo, set up claude, scaffold .claude, new repo, adlc setup, bootstrap project, add component, add plugin, new plugin
@@ -211,7 +211,7 @@ Write, if absent, starting from this base (permissions + identity fields; no `ho
 {
   "permissions": {
     "allow": [
-      "Read(*)",
+      "Read",
       "Bash(ls *)",
       "Bash(cat *)",
       "Bash(cd *)",

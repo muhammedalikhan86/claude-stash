@@ -45,7 +45,7 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `watch.heartbeatCron` | Cron expression for the heartbeat |
 | `triage.tolerancePx` | The strict tolerance (`2`): a look gap this size or smaller is not recorded, and the hub's disparity check fails anything larger |
 | `testing.workerScope` | `affected`: a worker's Integration gate runs only the affected tier (tiered testing); `full` or absent: workers keep their own scope rules |
-| `testing.affectedCommand` | The affected-tier command(s) a worker runs (e.g. `nx affected -t test`, its `.slnx`, its business tests `--only-changed`); `components[].testAffected` overrides it per component |
+| `testing.affectedCommand` | The affected-tier command(s) a worker runs (e.g. `npx nx affected -t test --base=origin/main`, its `.slnx`, `npm run test:business -- --project=<component>`). Base on `origin/main`, never plain `main` (no local main in a worker checkout); never `--only-changed` (it can select 0 tests and pass); `components[].testAffected` overrides it per component |
 | `testing.fullCommand` | The full set the hub runs after a merge (every suite) |
 | `testing.fullAfter` | `merge` (each merge) or `batch` (once per batch of merges, at the latest at the next heartbeat) |
 | `testing.onDemand` | Suites kept out of every gate and run on demand or nightly (the layout and parity crawls) |

@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.24.0"
+  version: "1.24.1"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -196,8 +196,11 @@ When the repo has `.claude/hub.json` and a live hub session (`hub.sessionName`),
    from your own rows file: another worker may already hold it on its branch.
 11. **Tiered testing: your gate runs only the affected tier.** When hub.json `testing.workerScope` is
    `affected`, Step 2.0 sets `Test scope: affected`: the command in hub.json `testing.affectedCommand`
-   (this component's `testAffected` overrides it), e.g. `nx affected -t test` or this component's
-   projects, its own `.slnx`, and its own business tests with `--only-changed`. It replaces both
+   (this component's `testAffected` overrides it), e.g. `npx nx affected -t test --base=origin/main`,
+   its own `.slnx`, and its own business tests by project (`npm run test:business --
+   --project=<component>`). Never a base of plain `main` (a worker checkout has no local main) and never
+   `--only-changed` (generated BDD specs don't track `.feature` edits, so it can select 0 tests and
+   pass). It replaces both
    `component` and `full`, the shell included; only the user's explicit ask gets `full`. The crawls in
    `testing.onDemand` (layout and parity crawls) stay out of the gate. Per-item Board Parity (Step 1.3b)
    is unchanged. The hub runs the full set after it merges and sends any red back to its owner; take it

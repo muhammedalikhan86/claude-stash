@@ -27,6 +27,7 @@
   .\claude-accounts.ps1 open john -Project C:\code\app     # same, for a given folder
   .\claude-accounts.ps1 open john -Terminal                 # terminal instead of VS Code
   .\claude-accounts.ps1 open john -Terminal -PermissionMode bypassPermissions
+  .\claude-accounts.ps1 open john -Terminal -Model opus -Effort high
   .\claude-accounts.ps1 sync                               # copy this skill to every account
 #>
 [CmdletBinding()]
@@ -58,6 +59,12 @@ param(
     # --dangerously-skip-permissions). Not used for VS Code, which takes its mode from its own settings.
     [ValidateSet('', 'default', 'acceptEdits', 'auto', 'manual', 'dontAsk', 'plan', 'bypassPermissions')]
     [string]$PermissionMode = '',
+
+    # open -Terminal: the model (claude --model, e.g. opus or claude-opus-5-5) and reasoning effort
+    # (claude --effort) the new Claude Code starts with. Omitted: the account's settings.json decides.
+    [string]$Model = '',
+    [ValidateSet('', 'low', 'medium', 'high', 'xhigh', 'max')]
+    [string]$Effort = '',
 
     # open: print what would be launched without launching it
     [switch]$DryRun
@@ -350,6 +357,7 @@ function Open-Account {
 
     if (-not $Terminal) {
         if ($PermissionMode) { Write-Warning "-PermissionMode applies only with -Terminal; VS Code takes its mode from its own settings." }
+        if ($Model -or $Effort) { Write-Warning "-Model and -Effort apply only with -Terminal; VS Code takes them from the account's settings." }
         Open-VSCode $acct $proj $label; return
     }
 
@@ -363,6 +371,8 @@ function Open-Account {
         'bypassPermissions' { 'claude --dangerously-skip-permissions' }
         default             { "claude --permission-mode $PermissionMode" }
     }
+    if ($Model)  { $claudeCmd += " --model $(Quote $Model)" }
+    if ($Effort) { $claudeCmd += " --effort $Effort" }
     $inner = "$CleanEnvCmd; $envCmd; Set-Location -LiteralPath $(Quote $proj); `$Host.UI.RawUI.WindowTitle = $(Quote "Claude - $label"); $claudeCmd"
     $encoded = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($inner))
     $shell = if (Get-Command pwsh.exe -ErrorAction SilentlyContinue) { 'pwsh.exe' } else { 'powershell.exe' }

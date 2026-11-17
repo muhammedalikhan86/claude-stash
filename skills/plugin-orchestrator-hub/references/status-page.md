@@ -34,6 +34,13 @@ change in done points since the last patch feeds the velocity series and rates.
    the series or rates: the first PMBook-counted patch on a page that was kept by hand, or a recount
    the user asked for. **`--status <file>`** patches a copy instead.
 4. A page with no PMBooks behind it can still take hand deltas (the legacy form in the script's usage).
+5. **Found during build.** Engineering-only items (test speed-ups, test kits, tooling: no change a
+   business user sees) are not product work. Tag the row `[engineering]` in its title cell when it is
+   raised (or the first time the hub sees one untagged). The patcher keeps tagged rows out of every
+   product figure and the forecast, and writes them as each component's `foundDuringBuild` and the
+   page's top-level `foundDuringBuild` (`pointsDone`, `pointsRemaining`, `pointsTotal`, `itemsDone`,
+   `itemsRemaining`). The page shows them as a separate "found during build" line. After tagging or
+   untagging rows, patch with `--rebase` (a `NOTE: done points fell` line says when one is due).
 
 Try `python -I scripts/pmbook_points.py <hub checkout>` to see the counts and the unsized rows alone.
 
@@ -45,5 +52,5 @@ Then, in the status repo: `git add <status.file>`, `git commit -m "status: <log 
 The patcher expects: `components[]` (`name`, `pointsDone`, `pointsRemaining`, `pointsTotal`,
 `itemsRemaining`), `velocity` (`series[]`, `wholePeriodWorkingDays`, `pointsPerWorkingDay`,
 `pointsPerWorkingDayWholePeriod`), `forecast` (`perComponent{}` with `rateLast10`, `rateWhole`, and
-`overall`), and optionally `milestones[]`, `phases[]`, `log[]`. It stamps `updatedAt` and appends a `log`
-entry each run. A file without that shape needs its own patcher (`status.patcher`).
+`overall`), and optionally `milestones[]`, `phases[]`, `log[]`. It stamps `updatedAt`, appends a `log`
+entry each run, and writes `foundDuringBuild` (step 5); the page must render that line itself. A file without that shape needs its own patcher (`status.patcher`).

@@ -70,6 +70,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<skill-dir>/scripts/cla
 | `open <name>` | **Switch**: open a new VS Code window on the project as that account. `-Project <folder>` sets the folder (default: current folder) |
 | `open <name> -Terminal` | Open a terminal window running Claude Code instead. Only when the user explicitly asks for a terminal |
 | `open <name> -Terminal -PermissionMode <mode>` | Start that Claude Code in a permission mode (`default`, `acceptEdits`, `plan`, `bypassPermissions`, ...). Only when the user or a hub asks for one |
+| `open <name> -Terminal -Model <model> -Effort <level>` | Start that Claude Code on a model (`opus`, `claude-opus-5-5`, ...) and reasoning effort (`low` … `max`). Omitted: the account's `settings.json` decides |
 | `sync` | Copy this skill into every account's `skills` folder, so all accounts use the same version. `add` and `install` do this automatically |
 | `open ... -DryRun` | Show what would be launched without launching it |
 

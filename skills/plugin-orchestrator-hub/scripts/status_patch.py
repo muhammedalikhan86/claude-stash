@@ -20,6 +20,10 @@ Every run stamps updatedAt (local time, with offset) and appends a log entry {at
 Rates: rateWhole += done / wholePeriodWorkingDays. rateLast10 and velocity.pointsPerWorkingDay are left as
 the page's owner set them; new points never move them.
 Forecast: ceil(remaining / rate) working days (Mon-Fri) counted from the next working day after the date.
+Found during build: rows tagged [engineering] (pmbook_points.py) stay out of every product figure. The
+--hub form writes them as each component's foundDuringBuild {pointsDone, pointsRemaining, pointsTotal,
+itemsDone, itemsRemaining} and their sum as the top-level foundDuringBuild; they never move the
+velocity, rates or forecast. The first patch after rows are tagged (or untagged) is a --rebase.
 The file shape it expects is in references/status-page.md.
 """
 import json, os, sys, math, datetime as dt
@@ -46,6 +50,7 @@ def parse_spec(arg):
 
 
 deltas = []  # (name, done, rem, tot, items) to apply
+found = {}   # statusName -> foundDuringBuild block (the --hub form only)
 if argv and argv[0] == '--hub':
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import pmbook_points as pm
@@ -68,6 +73,14 @@ if argv and argv[0] == '--hub':
         di = r['items'] - old['itemsRemaining']
         print(f"{name}: done {r['done']:g} ({dd:+g}), open {r['open']:g} ({dr:+g}), "
               f"items {r['items']} ({di:+d})")
+        found[name] = {'pointsDone': r['engDone'], 'pointsRemaining': r['engOpen'],
+                       'pointsTotal': r['engDone'] + r['engOpen'],
+                       'itemsDone': r['engDoneItems'], 'itemsRemaining': r['engItems']}
+        if r['engDone'] or r['engOpen']:
+            print(f"  found during build: done {r['engDone']:g}, open {r['engOpen']:g}, items {r['engItems']}")
+        if dd < 0 and not rebase:
+            print(f'  NOTE: done points fell ({dd:+g}); a row was tagged [engineering] or reopened. '
+                  'If it was a tag, patch with --rebase.')
         for k in ('unsizedOpen', 'unsizedDone', 'uncounted'):
             if r[k]:
                 print(f'  {k} ({len(r[k])}): ' + '; '.join(r[k][:8]) + (' ...' if len(r[k]) > 8 else ''))
@@ -95,11 +108,16 @@ for name, done, rem, tot, items in deltas:
         sys.exit(f'unknown component {name!r}; the page has: {", ".join(comps)}')
     c = comps[name]
     c['pointsDone'] += done; c['pointsRemaining'] += rem; c['pointsTotal'] += tot; c['itemsRemaining'] += items
+    if name in found:
+        c['foundDuringBuild'] = found[name]
     if rebase:
         continue
     pc = f['perComponent'][name]
     pc['rateWhole'] = round(pc['rateWhole'] + done / nw, 2)
     added += done; scope += tot
+
+if found:
+    d['foundDuringBuild'] = {k: sum(b[k] for b in found.values()) for k in next(iter(found.values()))}
 
 s = v['series']
 if s[-1]['date'] != day:

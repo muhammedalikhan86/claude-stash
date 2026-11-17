@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.9.2"
+  version: "0.10.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -84,7 +84,10 @@ Read each only when its trigger occurs. They are part of this skill.
    `launch.mode`). Each worker opens with its checkout's `launch-as.ps1` on the hub's account; an in-hub
    worker opens a second session in the hub checkout. Workers start in the hub's own permission mode:
    when `launch.permissionMode` is `same-as-hub` (or absent), pass the hub's current mode as
-   `-PermissionMode` (`bypassPermissions`, `acceptEdits`, `plan`, ...; nothing for `default`). The
+   `-PermissionMode` (`bypassPermissions`, `acceptEdits`, `plan`, `default`, ...; always pass it:
+   `launch-as.ps1` opens in bypass when none is given). Model
+   and effort come from `launch.model` / `launch.effort` (or `-Model` / `-Effort`), else each account's
+   `settings.json`. The
    switcher clears the hub's inherited session variables, so each worker is a full session that
    `ListAgents` lists. The script never opens the hub itself: the user
    opens the hub with `./launch-as <account>` in the hub checkout, as `launch.hubMode` says
@@ -150,6 +153,10 @@ follow that file.
 1. **Idle notices.** Every message to a worker that expects work back subscribes with
    `notify_when_idle: true`. An idle notice with no report means the worker stopped: read its checkout's
    live state and nudge it with its next step.
+   **A subscription can fail on a busy worker.** The send can come back "not holding" (the worker did
+   not take the subscription), and then no idle notice will come. Do not resend or poll: ask the worker,
+   in the same message, to send "parked" (or its report) when it stops, and rely on that message and the
+   heartbeat. Subscribe again once the worker is idle.
 2. **Heartbeat cron** (`watch.heartbeatCron`): one pass of ListAgents, merge whatever is ready, green
    counts, open answers, nudge any worker idle without a reason, status page. It is a fallback, not a
    poll.

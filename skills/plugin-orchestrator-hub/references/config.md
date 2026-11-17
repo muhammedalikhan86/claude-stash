@@ -22,6 +22,7 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `accounts` | Account names the user switches between, in the order they are usually used (`["muhammed", "john"]`). Names only |
 | `launch.mode` | `vscode` or `terminal`: how `launch-workers.ps1` opens each worker |
 | `launch.permissionMode` | The permission mode workers start in (terminal workers only): `same-as-hub` (default) or a Claude Code mode (`default`, `acceptEdits`, `plan`, `bypassPermissions`, ...) |
+| `launch.model`, `launch.effort` | Optional. The model (`claude --model`, e.g. `opus`) and reasoning effort (`low` … `max`) terminal workers start with; `launch-workers.ps1 -Model` / `-Effort` override them. Absent: each account's `settings.json` decides |
 | `launch.hubMode` | `vscode` or `terminal`: how the user opens the hub itself (`./launch-as <account>`, plus `-Terminal` for `terminal`). `launch-workers.ps1` never opens the hub |
 | `launch.script` | The per-checkout launcher, relative to each checkout (`launch-as.ps1`) |
 | `delegation` | What the hub may approve for the user: `gates` (`"ui-and-non-ui"`, `"non-ui-only"` or `"none"`), `manualVerificationWaiver` (the wording, or empty), `pullPush` (may tell workers to pull the main branch / push their own branch) |

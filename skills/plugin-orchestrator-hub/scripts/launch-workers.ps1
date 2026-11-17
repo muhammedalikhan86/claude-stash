@@ -15,6 +15,8 @@
     ./launch-workers.ps1 -IncludeInHub         # also open the workers that live in the hub checkout
 .EXAMPLE
     ./launch-workers.ps1 -PermissionMode bypassPermissions   # workers start in this mode (terminal only)
+.EXAMPLE
+    ./launch-workers.ps1 -Model opus -Effort high            # workers' model and effort (terminal only)
 
 .NOTES
     Each worker opens through its checkout's launch script (hub.json launch.script, normally
@@ -35,6 +37,11 @@ param(
     # The workers' permission mode. Omitted: hub.json launch.permissionMode, unless that is "same-as-hub"
     # (the default), which the hub resolves by passing its own mode here.
     [string]   $PermissionMode,
+    # The workers' model and reasoning effort (claude --model / --effort; terminal only). Omitted:
+    # hub.json launch.model / launch.effort, else each account's settings.json decides.
+    [string]   $Model,
+    [ValidateSet('', 'low', 'medium', 'high', 'xhigh', 'max')]
+    [string]   $Effort,
     [switch]   $DryRun
 )
 
@@ -80,6 +87,9 @@ if (-not $PermissionMode -and $cfg.launch -and $cfg.launch.permissionMode -and $
     $PermissionMode = $cfg.launch.permissionMode
 }
 if ($PermissionMode -and $Mode -ne 'terminal') { Write-Warning "-PermissionMode applies only to terminal workers; VS Code workers take their mode from VS Code settings." }
+if (-not $Model -and $cfg.launch -and $cfg.launch.model) { $Model = $cfg.launch.model }
+if (-not $Effort -and $cfg.launch -and $cfg.launch.effort) { $Effort = $cfg.launch.effort }
+if (($Model -or $Effort) -and $Mode -ne 'terminal') { Write-Warning "-Model and -Effort apply only to terminal workers; VS Code workers take them from the account's settings." }
 $launchName = if ($cfg.launch -and $cfg.launch.script) { $cfg.launch.script } else { 'launch-as.ps1' }
 
 $isInHub = { param($c) (-not $c.checkout) -or $c.checkout -eq '.' -or $c.inHubCheckout }
@@ -106,7 +116,8 @@ foreach ($w in $workers) {
     # An older launch-as.ps1 has no -Terminal switch; for terminal mode go straight to the switcher.
     # An older launch-as.ps1 has no -PermissionMode either; then the switcher is called directly too.
     $launcherOk = (Test-Path $launcher) -and ($Mode -ne 'terminal' -or (Select-String -Path $launcher -Pattern '\[switch\]\s*\$Terminal' -Quiet)) -and
-                  (-not $PermissionMode -or (Select-String -Path $launcher -Pattern '\$PermissionMode' -Quiet))
+                  (-not $PermissionMode -or (Select-String -Path $launcher -Pattern 'PermissionMode' -Quiet)) -and
+                  (-not ($Model -or $Effort) -or (Select-String -Path $launcher -Pattern '\$Effort' -Quiet))
     if ($launcherOk) {
         $args2 = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $launcher, $Account)
     } elseif (Test-Path $switcher) {
@@ -117,6 +128,8 @@ foreach ($w in $workers) {
     if ($Mode -eq 'terminal') {
         $args2 += '-Terminal'
         if ($PermissionMode) { $args2 += @('-PermissionMode', $PermissionMode) }
+        if ($Model) { $args2 += @('-Model', $Model) }
+        if ($Effort) { $args2 += @('-Effort', $Effort) }
     }
 
     if ($DryRun) { Write-Output "$label -> powershell.exe $($args2 -join ' ')"; continue }

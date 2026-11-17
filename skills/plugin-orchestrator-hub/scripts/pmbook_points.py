@@ -14,6 +14,8 @@ A row whose ID cell has no letter or digit (a note row, `| — | ... |`) is not 
 A row with no number in its Size cell (or in a table with no Size column) is unsized: never counted,
 always reported (an open one breaks the size-when-raised rule; a done one is sized at Finalization).
 A table with a Size column but no Status column, other than the Spike Log, is reported, not counted.
+A row with the tag `[engineering]` in any cell (test speed-ups, test kits, tooling: no change a business
+user sees) is counted apart, as found-during-build work (engDone, engOpen, engItems), never as product.
 
 usage (a check, nothing written):
     python -I pmbook_points.py <hub checkout> [<component name or statusName> ...]
@@ -29,6 +31,7 @@ for _s in (sys.stdout, sys.stderr):
 
 DONE = re.compile(r'^(done|fixed|closed)\b')
 EXCLUDED = re.compile(r'^(withdrawn|not needed|folded|moved|split into|duplicate|superseded)\b')
+ENGINEERING = '[engineering]'  # row tag: engineering-only work, shown as "found during build"
 
 
 def git_show(root, rev, path):
@@ -77,6 +80,7 @@ def rows(text):
 
 def count(root, rev, pmbooks):
     out = {'done': 0.0, 'open': 0.0, 'items': 0, 'doneItems': 0,
+           'engDone': 0.0, 'engOpen': 0.0, 'engItems': 0, 'engDoneItems': 0,
            'unsizedOpen': [], 'unsizedDone': [], 'uncounted': [], 'files': []}
     files = []
     for p in pmbooks:
@@ -110,10 +114,10 @@ def count(root, rev, pmbooks):
             if size is None:
                 (out['unsizedDone'] if done else out['unsizedOpen']).append(f'{rid} ({f})')
                 continue
-            if done:
-                out['done'] += size; out['doneItems'] += 1
-            else:
-                out['open'] += size; out['items'] += 1
+            eng = any(ENGINEERING in c.lower() for c in cells)
+            pts, n = (('engDone', 'engDoneItems') if eng else ('done', 'doneItems')) if done else \
+                     (('engOpen', 'engItems') if eng else ('open', 'items'))
+            out[pts] += size; out[n] += 1
     return out
 
 
@@ -139,6 +143,9 @@ if __name__ == '__main__':
         r = count(root, rev, books)
         print(f"{c['statusName']}: done {r['done']:g} ({r['doneItems']} items), open {r['open']:g} "
               f"({r['items']} items), total {r['done'] + r['open']:g}")
+        if r['engDone'] or r['engOpen']:
+            print(f"  found during build: done {r['engDone']:g} ({r['engDoneItems']} items), "
+                  f"open {r['engOpen']:g} ({r['engItems']} items)")
         for k in ('unsizedOpen', 'unsizedDone', 'uncounted'):
             if r[k]:
                 print(f'  {k} ({len(r[k])}): ' + '; '.join(r[k][:12]) + (' ...' if len(r[k]) > 12 else ''))

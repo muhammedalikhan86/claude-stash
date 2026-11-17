@@ -6,7 +6,10 @@
 flowchart TD
     S0("Every Feature passed,<br/>every non-P0 Bug verified,<br/>and every P0 lane done") --> Only{"Run has a Feature<br/>or non-P0 Bug?"}
     Only -->|"no: only Spikes,<br/>fast-laned P0s"| NoP2("Skip Phases 2–3,<br/>Step 3.6 close-out<br/>07")
-    Only -->|"yes"| Diff["2.0 git status, ignore<br/>docs and graphify-out"]
+    Only -->|"yes"| Tier{"Hub worker and<br/>testing.workerScope<br/>affected, no user<br/>ask for full?"}
+    Tier -->|"yes"| A["Test scope: affected<br/>(hub runs full<br/>after merge)"]
+    A --> Print
+    Tier -->|"no"| Diff["2.0 git status, ignore<br/>docs and graphify-out"]
     Diff --> Full{"Shell, out-of-root change,<br/>no component command,<br/>Deferred row re-validated,<br/>user ask, or Linked Runs?"}
     Full -->|"yes"| F["Test scope: full"]
     Full -->|"no"| C["Test scope: component<br/>+ its scenarios<br/>+ contract tests"]
@@ -15,7 +18,7 @@ flowchart TD
     Print --> Next("Step 2.1<br/>below")
 ```
 
-Nodes: 8. A P0 fast-laned earlier in this run is not a work item here, but its `Pending` Deferred row
+Nodes: 10. A P0 fast-laned earlier in this run is not a work item here, but its `Pending` Deferred row
 is passed for re-validation, which forces `full`.
 
 ## The Integration agent (Step 2.1)

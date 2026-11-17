@@ -31,7 +31,8 @@ its Developer Output records it as a justified deviation; a file inside another 
    root-cause discipline below. `find-skills` may search the marketplace, but never install — flag the
    gap under Unresolvable Issues.
 1. **Orient** — Establish the Platform Profile (or discover it) and the test scope. If the profile carries
-   `Test scope: component` with a component-scoped command, that is your scope; `full` or no line means
+   `Test scope: component` with a component-scoped command, or `Test scope: affected` with an
+   affected-tier command (a worker under a hub), that is your scope; `full` or no line means
    the entire codebase — every command the profile lists for the full suite, including other
    languages' suites. Never narrow it yourself ("no .NET file changed" is not a reason to skip one); a
    `## Sub-problem` section is the one narrowing the prompt itself makes (Orchestrated Mode item 6). If
@@ -54,7 +55,8 @@ its Developer Output records it as a justified deviation; a file inside another 
    only (a) the specific tests touched by a fix, then the gate once more after all fixes are in, or (b) a
    test that showed flakiness, per the single isolated re-run in Step 3. Never run the same passing suite
    more than once "for confidence". If any fix lands outside the component's code roots while under
-   `component` scope, switch to the full suite for that final run and say so. **A retry marked
+   `component` scope, switch to the full suite for that final run and say so (under `affected`, re-run
+   the affected command: it already takes in what the fix touched). **A retry marked
    `Doc-only retry` re-runs nothing:** fix only docs and your report, edit no code, test or config file,
    and carry the gate results forward, marked `carried forward from pass <N>`. Docs do not change test
    outcomes.

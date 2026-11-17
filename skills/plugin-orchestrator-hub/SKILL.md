@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.7.0"
+  version: "0.9.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -32,7 +32,7 @@ Read each only when its trigger occurs. They are part of this skill.
 | `references/state-and-switch.md` | Start-up (resume), writing the session note, or an account switch is coming |
 | `references/merging.md` | A worker reports a commit ready to merge, or green counts move |
 | `references/priorities-and-groups.md` | A worker raises an issue, proposes a group, or the user asks for the worker picture or a reorder |
-| `references/designer-loop.md` | Design rows pile up, the user asks for the designer prompt, or says "designer is done" |
+| `references/designer-loop.md` | A worker asks for design row IDs, design rows pile up, the user asks for the designer prompt, or says "designer is done" |
 | `references/status-page.md` | Story points change (an item raised, resized, done or withdrawn) |
 | `scripts/launch-workers.ps1` | Opening the worker sessions |
 | `scripts/status_patch.py` | Patching the status page (counts from the PMBooks) |
@@ -112,7 +112,8 @@ the user unless the last column says so.
 | Issue found mid-build | Rule it by `references/priorities-and-groups.md` §Issue triage, record the ruling | No |
 | Next-group proposal | Regroup by `references/priorities-and-groups.md` §Group planning and give the go yourself; never ask the user | No (one FYI line at most) |
 | Gate (Reviewer PASS etc.) | Approve within `delegation`; else ask the user | Only if it went to the user |
-| "Committed, ready to merge" | Merge (`references/merging.md`), green counts, status patch, wake any worker waiting on it, then the strict after-group disparity check in a helper (`references/priorities-and-groups.md`) | Milestone line only |
+| "Committed, ready to merge" | Merge (`references/merging.md`), green counts, status patch, wake any worker waiting on it, then in helpers the strict after-group disparity check (`references/priorities-and-groups.md`) and, under tiered testing, the full test run (`references/merging.md` §Full run after merge) | Milestone line only |
+| Design row IDs request | Hand them out (`references/designer-loop.md` §Row IDs) | No |
 | Item for another component | Route it to the owner, pass the new ID back, note the dependency | No |
 | Shared-file change request | Make it in the hub checkout (or give it to the worker that owns shared files) | No |
 | Needs a restart / test data / ports | §Stack and environment | Yes, if a restart is needed |

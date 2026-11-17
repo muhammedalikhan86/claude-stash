@@ -46,6 +46,25 @@ git merge-tree --write-tree --name-only HEAD FETCH_HEAD | tail -n +2
    these items that they are on main and it should pull, and tell the user the milestone. Then start
    the strict **after-group disparity check** for that component in a background helper
    (`references/priorities-and-groups.md` §After-group disparity check).
+10. **Full test run** (when `testing.workerScope` is `affected`): the workers' gates ran only the
+   affected tier, so the hub runs the full set (§Full run after merge), after this merge or once per
+   batch (`testing.fullAfter`).
+
+## Full run after merge
+
+Workers under tiered testing gate only what their change affects. The full set runs here, in a
+background helper, on the hub checkout (its port offset), never in a worker's checkout.
+
+1. Run `testing.fullCommand` with each suite's output sent to a log file (summary lines and failures
+   only, never a whole log). Leave out `testing.onDemand` suites.
+2. **All green:** update the green counts (below). One ⚪ FYI line at most.
+3. **A red:** re-run that one test once. Still red → find its owner: the component whose roots hold the
+   test, else the component whose merge since the last green full run touched what it tests. Send that
+   worker "red after merge: `<test>` — `<log path>`, raise it as a functional bug". It goes ahead of
+   queued features. A known-red already on the list is not re-sent.
+4. Main is not moved back. A red the owner can't fix in its next group goes on the known-red list with
+   its bug ID.
+5. The layout and parity crawls (`testing.onDemand`) run only when the user asks or on a nightly cron.
 
 ## Push
 

@@ -108,8 +108,8 @@ to make its report look clean. Check that the report is true, not just coherent.
 - **Self-Check.** A ticked Self-Check line that is not true is an Issue in its own right.
 - **Test scope.** The Integration Output may report a component-scoped run
   (`Tests (component scope: <command>)`). That is legitimate only when the prompt says the orchestrator
-  set Test scope to `component`. A component-scoped run when `full` was set — or no stated scope at
-  all — is an Issue.
+  set Test scope to `component`; an affected-tier run (`Tests (affected scope: <command>)`) only when it
+  set `affected`. A narrower run than the scope set — or no stated scope at all — is an Issue.
 
 ### 2. Fixes Applied — Root Cause or Gamed
 

@@ -44,6 +44,11 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `merge.ruledExceptions` | Files outside a component's roots that its branch may still change (e.g. its green-count lines). Each with a one-line reason |
 | `watch.heartbeatCron` | Cron expression for the heartbeat |
 | `triage.tolerancePx` | The strict tolerance (`2`): a look gap this size or smaller is not recorded, and the hub's disparity check fails anything larger |
+| `testing.workerScope` | `affected`: a worker's Integration gate runs only the affected tier (tiered testing); `full` or absent: workers keep their own scope rules |
+| `testing.affectedCommand` | The affected-tier command(s) a worker runs (e.g. `nx affected -t test`, its `.slnx`, its business tests `--only-changed`); `components[].testAffected` overrides it per component |
+| `testing.fullCommand` | The full set the hub runs after a merge (every suite) |
+| `testing.fullAfter` | `merge` (each merge) or `batch` (once per batch of merges, at the latest at the next heartbeat) |
+| `testing.onDemand` | Suites kept out of every gate and run on demand or nightly (the layout and parity crawls) |
 | `triage.workerParityTolerancePx` | The lenient per-item Board Parity tolerance a worker uses under this hub (`20`). A px gap between the two goes to the parity backlog, not a FAIL; functional gaps fail at any size |
 
 ### `components[]`
@@ -105,7 +110,9 @@ dev-ports script and the run skill read; the hub reads it from there, never from
     { "path": "docs/dev-environment.md", "reason": "green-count lines; the hub re-applies only that component's change" }
   ] },
   "watch": { "heartbeatCron": "45 4,9,14,18,23 * * *" },
-  "triage": { "tolerancePx": 2, "workerParityTolerancePx": 20 }
+  "triage": { "tolerancePx": 2, "workerParityTolerancePx": 20 },
+  "testing": { "workerScope": "affected", "affectedCommand": "make test-affected COMPONENT=<component>",
+               "fullCommand": "make test-full", "fullAfter": "merge", "onDemand": ["layout crawl", "parity crawl"] }
 }
 ```
 

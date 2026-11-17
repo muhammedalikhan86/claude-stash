@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.22.0"
+  version: "1.24.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -191,6 +191,17 @@ When the repo has `.claude/hub.json` and a live hub session (`hub.sessionName`),
    `<path>`"): pull main, and at your next group boundary run Findings Intake on that file (Step 0.1e).
    Functional findings become functional bugs, ahead of queued features; look findings join the UI bug
    fixes. Strike any parity-backlog line the intake covers. Then send the hub your new queue.
+10. **Design row IDs come from the hub.** Before writing any design row, ask the hub for its IDs
+   ("row IDs: `<letter>` × `<count>`, for `<item>`") and use exactly those. Never take the next number
+   from your own rows file: another worker may already hold it on its branch.
+11. **Tiered testing: your gate runs only the affected tier.** When hub.json `testing.workerScope` is
+   `affected`, Step 2.0 sets `Test scope: affected`: the command in hub.json `testing.affectedCommand`
+   (this component's `testAffected` overrides it), e.g. `nx affected -t test` or this component's
+   projects, its own `.slnx`, and its own business tests with `--only-changed`. It replaces both
+   `component` and `full`, the shell included; only the user's explicit ask gets `full`. The crawls in
+   `testing.onDemand` (layout and parity crawls) stay out of the gate. Per-item Board Parity (Step 1.3b)
+   is unchanged. The hub runs the full set after it merges and sends any red back to its owner; take it
+   as a functional bug, ahead of queued features. A solo run (item 8) keeps the full gate.
 
 ---
 
@@ -851,6 +862,10 @@ Decide from **the run's own file set** — the same set the Diff Guard reads: ev
 the `integration` block's `files`. Ignore paths under `docs-directory` and `graphify-out` (docs don't
 change test outcomes). Then:
 
+- **`affected`** when this run is a hub worker (§Working under a hub item 11) and hub.json
+  `testing.workerScope` is `affected`, unless the user asked for a full run. The rules below are then
+  skipped: the hub's full run after merge is the backstop.
+
 - **`full`** if any of these is true: the component is the **shell** (every plugin builds against it);
   any path in the run's file set lies outside this component's `code` roots (root manifest, lockfile,
   shared `libs/`, CI config); `Test (component)` is `none`; a `## Deferred Integration` row is being
@@ -867,7 +882,7 @@ fixes nor reverts it.
 
 This does not weaken the gate: the Cross-Component Diff Guard proves no other component's code changed,
 and every change that could reach another component forces `full`. Write the result into the Platform
-Profile as `Test scope: <full|component> — <command> — <reason>`, and print it.
+Profile as `Test scope: <full|component|affected> — <command> — <reason>`, and print it.
 
 ### Step 2.1 — Invoke Integration Agent
 
@@ -1372,7 +1387,7 @@ running | confirmation pass | done` — the confirmation pass is Divide-and-Conq
 its one Reviewer-Integration), the Parity Table path of each of its
 Step 1.3b runs (FAILs included) with that run's unruled major-mismatch count beside it (counts cleared per
 **Pipeline Telemetry**), per-item and per-phase start/finish timestamps (the
-RUN row's Phase times come from these), and `linkedRuns` when there are any (Linked Runs: one file per
+RUN row's Phase times come from these), the `steps` still open (**Pipeline Telemetry** step rows), and `linkedRuns` when there are any (Linked Runs: one file per
 component, all with the same run id; finding any incomplete one resumes every file with that run id).
 A UI Iteration adds `"mode": "ui-iteration"`, `openedAt`, its `tweaks` log (number, the user's ask,
 files, time), `doneAt` once the user says "done", and its file set (`references/ui-iteration.md` step 3).
@@ -1437,6 +1452,22 @@ moment of escalation, after the event time and the `escalated` status are saved 
 terminal state, with that event's own Timestamp. **Final loop_count**, on every item and Integration row (an
 escalation row included), is `loop_count` minus `loopCountAtEscalation` (0 when
 never escalated).
+
+**Step rows (one per step, written the moment it ends).** So the log shows where a run's time went,
+the Orchestrator also appends a row for every step, as soon as it ends, never batched at close-out:
+- **Agent steps:** every Developer, Reviewer, Parity check (Step 1.3b), Integration, Reviewer-Integration
+  and Finalizer spawn, Type `Step: <role>` (e.g. `Step: Developer`, `Step: Finalizer (graph)`).
+- **Waits:** time the run stood still, Type `Wait: user` (Manual Verification, or a question to the user that blocks), `Wait: hub` (a question, gate or next-group go the hub has not answered yet) and `Wait: usage limit`.
+- **Cells:** Item ID is the item, or `Integration`, or `RUN` for a step over several items. Started is
+  saved in run-state (`steps`: role, item, attempt, startedAt) when the spawn or wait begins; Finished is
+  when it returned or the wait ended; Timestamp = Finished. Final loop_count is the attempt (1 for the
+  first try). Verdict is the step's result (`PASS`, `FAIL`, `UNVERIFIED`, `done`, `answered`,
+  `interrupted`). Phase times is the step's length, `<n> min`. Size and Wave as on the item's row; every
+  other cell `—`. Fill the cells in header order: 18 cells, nothing shifted.
+- A step cut off by a pause, a limit or a crash gets its row on resume: Finished `(not recorded)`,
+  Verdict `interrupted`; its redo is a new step row. Parallel steps each get their own row.
+- A step row is unique by Run ID, Item ID, Type and Timestamp (write-once as above). Step rows are not
+  item rows: close-out's "has a row" check and the summary's retry counters ignore them.
 
 - **Run ID** is the id written to `run-state-file` at Phase 0. **Timestamp, Started, Finished** are ISO
   date-times with the zone (**Run-State Checkpointing**).
@@ -1516,7 +1547,7 @@ Escalated? counters.
 📦 Feature Loop Complete
 Features:  <IDs>
 Bugs:      <IDs> (or "None this run")
-Test scope: <full|component> — <reason>
+Test scope: <full|component|affected> — <reason>
 Starting integration validation...
 ```
 
@@ -1524,7 +1555,7 @@ Starting integration validation...
 ```
 ✅ Integration — PASS after <N> iteration(s)   (<M> doc-only)
    Reviewer-Integration: PASS / skipped — clean first pass
-   Test scope: <full|component>
+   Test scope: <full|component|affected>
    Fixes applied: <N>
    Tests: <N> passed, <F> failed (each a known-red or flaky, listed)
 ```

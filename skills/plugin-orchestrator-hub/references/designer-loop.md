@@ -11,6 +11,20 @@ round back in when it is done.
 2. **Mid-build, send only functional rows** (a missing part, wrong words, a broken state). Look-only rows
    wait for the parity sweep.
 
+## Row IDs (the hub hands them out)
+
+Every design row ID in the project comes from the hub, so two workers never take the same one.
+
+1. A worker that needs rows sends "row IDs: `<letter>` × `<count>`, for `<item>`" and waits for the reply
+   before writing them.
+2. The hub takes the highest number for that letter across every rows file or review ledger and every
+   designer change log (`design.changeLogs`), on main **and** on each worker's branch, and the IDs it has
+   already handed out (one line per letter in the hub operations file: `design IDs: P up to 79`). It
+   hands out the next ones, updates that line, and replies with them.
+3. **A collision already made:** the row the designer has already seen keeps its ID. Every other row
+   with that ID gets a fresh one from step 2, in its ledger, round file and any unsent prompt, before
+   the next prompt goes out. Record the mapping (`advisor P75 → P80`) in the rulings log.
+
 ## Write the prompt
 
 Two parts, both in the reply:

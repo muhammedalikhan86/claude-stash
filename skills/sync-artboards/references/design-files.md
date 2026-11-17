@@ -62,6 +62,13 @@ an earlier round's section. The sync reads this log to know what to check.
 
 1. **ID** — a letter per screen plus a number (`P1`, `P2`, `D1` …). The letter is fixed per screen
    for the life of the repo; numbers only go up. **Never renumber, never reuse.**
+   **The next number** for a letter is one above the highest anywhere that letter appears: every rows
+   file (or old-layout review ledger) in every component, every designer change log synced in, and the
+   open and sent round files, read both in this checkout and on the main branch (`git show
+   <main>:<path>`). A number in a change log that no ledger holds is taken too (the designer used it).
+   **Under a hub, never pick it yourself:** ask the hub for the IDs and wait
+   (`plugin-orchestrator-hub` `references/designer-loop.md` §Row IDs), because two workers on separate
+   branches cannot see each other's new rows.
 2. **Change** — what is drawn or changed, in plain words, with the check that proves it.
 3. **Source** — where it came from: a work item and AC, a ruling (who, date), a meeting, a sync finding.
 4. **Round** — the round it was sent in (`001`), or `open` while it waits in the open round.

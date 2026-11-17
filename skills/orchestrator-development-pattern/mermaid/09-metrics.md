@@ -50,3 +50,9 @@ saved `escalationFinalLoopCount`, so a re-run writes the same value. Stored UNVE
 cleared once an item's row is written, so each leg counts only its own. The RUN row's
 Wave, Final loop_count, Escalated? and UNVERIFIED count are `—`, and Started / Finished are the run's
 start and end. An old row takes only one edit: the RUN row's appended commit ids. A mismatch is always its own appended row.
+
+**Step rows.** Besides the rows above, one row per step (each agent spawn, and each wait on the user,
+a usage limit), appended the moment the step ends: Type `Step: <role>` or `Wait: <what>`,
+Started from run-state's `steps`, Finished = Timestamp, Final loop_count = the attempt, Phase times = its
+length in minutes. A step cut off is written on resume as `interrupted`. Close-out and the retry
+counters ignore step rows (`SKILL.md` **Pipeline Telemetry**).

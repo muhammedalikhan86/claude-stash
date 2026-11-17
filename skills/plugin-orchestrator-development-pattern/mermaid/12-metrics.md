@@ -25,6 +25,12 @@ row, the Integration row only if Phase 2 ran, and the `Paused (escalation)` RUN 
 that completes adds its own `Complete` RUN row. A UI Iteration item's row has
 `Type: Feature (UI Iteration)`, Started = `openedAt`, and its RUN row has `MV` = `n/a`.
 
+**Step rows.** Besides the rows above, one row per step (each agent spawn, and each wait on the user,
+the hub or a usage limit), appended the moment the step ends: Type `Step: <role>` or `Wait: <what>`,
+Started from run-state's `steps`, Finished = Timestamp, Final loop_count = the attempt, Phase times = its
+length in minutes. A step cut off is written on resume as `interrupted`. Close-out and the retry
+counters ignore step rows (`SKILL.md` **Pipeline Telemetry**).
+
 ## Appending a row
 
 ```mermaid

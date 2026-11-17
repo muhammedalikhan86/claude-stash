@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.23.0"
+  version: "2.24.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -1836,6 +1836,22 @@ its row ID or why it was not written, and mark run-state complete. An escalation
 writes the rows due so far (never a passed Feature's) plus a `RUN` row with Verdict `Paused (escalation)`, and saves run-state **without**
 marking it complete, so Step 0.0's resume check still fires. When the resumed run finishes, its close-out
 appends a second `RUN` row, `Complete`.
+
+**Step rows (one per step, written the moment it ends).** So the log shows where a run's time went,
+the Orchestrator also appends a row for every step, as soon as it ends, never batched at close-out:
+- **Agent steps:** every Developer, Reviewer, Parity check (Step 1.3b), Integration, Reviewer-Integration
+  and Finalizer spawn, Type `Step: <role>` (e.g. `Step: Developer`, `Step: Finalizer (graph)`).
+- **Waits:** time the run stood still, Type `Wait: user` (Manual Verification, or a question to the user that blocks) and `Wait: usage limit`.
+- **Cells:** Item ID is the item, or `Integration`, or `RUN` for a step over several items. Started is
+  saved in run-state (`steps`: role, item, attempt, startedAt) when the spawn or wait begins; Finished is
+  when it returned or the wait ended; Timestamp = Finished. Final loop_count is the attempt (1 for the
+  first try). Verdict is the step's result (`PASS`, `FAIL`, `UNVERIFIED`, `done`, `answered`,
+  `interrupted`). Phase times is the step's length, `<n> min`. Size and Wave as on the item's row; every
+  other cell `—`. Fill the cells in header order: 18 cells, nothing shifted.
+- A step cut off by a pause, a limit or a crash gets its row on resume: Finished `(not recorded)`,
+  Verdict `interrupted`; its redo is a new step row. Parallel steps each get their own row.
+- A step row is unique by Run ID, Item ID, Type and Timestamp (write-once as above). Step rows are not
+  item rows: close-out's "has a row" check and the summary's retry counters ignore them.
 
 **Cells:**
 - `Run ID` — run-state's run id (format in **Run-State Checkpointing**).

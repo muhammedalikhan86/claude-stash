@@ -146,6 +146,11 @@ Under-thinking ships silent wrong guesses; overthinking re-derives settled concl
    class or the whole project. Report the command and its result under Test Files Written; the
    Reviewer still runs them independently. Without that line, the rule above stands;
    `Tests you may run: None` means the same as no line.
+   **Test output stays out of your context.** Send it to a file, never straight to you:
+   `<command> > <log dir>/<name>.log 2>&1; echo "exit=$?"`, where `<log dir>` is the gate log directory
+   the packet names, else your session scratchpad (full path). Read the runner's summary lines
+   (`tail -n 40`), then `grep` for the failing test names, `FAIL` and `error`, with a few lines around
+   each. Never `cat` the whole log. Report the log path with the result.
 5. **Other Developers may be running at the same time** on other work items in the same working tree.
    Run Format and Lint exactly as the Task Packet states them; when it scopes them to the files you
    touched, run them over those files only — never over the whole repository. Never revert, reformat or

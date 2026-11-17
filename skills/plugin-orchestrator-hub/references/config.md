@@ -21,6 +21,7 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `components[]` | One entry per component (below) |
 | `accounts` | Account names the user switches between, in the order they are usually used (`["muhammed", "john"]`). Names only |
 | `launch.mode` | `vscode` or `terminal`: how `launch-workers.ps1` opens each worker |
+| `launch.permissionMode` | The permission mode workers start in (terminal workers only): `same-as-hub` (default) or a Claude Code mode (`default`, `acceptEdits`, `plan`, `bypassPermissions`, ...) |
 | `launch.hubMode` | `vscode` or `terminal`: how the user opens the hub itself (`./launch-as <account>`, plus `-Terminal` for `terminal`). `launch-workers.ps1` never opens the hub |
 | `launch.script` | The per-checkout launcher, relative to each checkout (`launch-as.ps1`) |
 | `delegation` | What the hub may approve for the user: `gates` (`"ui-and-non-ui"`, `"non-ui-only"` or `"none"`), `manualVerificationWaiver` (the wording, or empty), `pullPush` (may tell workers to pull the main branch / push their own branch) |
@@ -80,7 +81,7 @@ dev-ports script and the run skill read; the hub reads it from there, never from
       "pmbook": "docs/advisor-dashboard/project-management.md", "handoff": "docs/advisor-dashboard/handoff.md" }
   ],
   "accounts": ["muhammed", "john"],
-  "launch": { "mode": "terminal", "hubMode": "vscode", "script": "launch-as.ps1" },
+  "launch": { "mode": "terminal", "hubMode": "vscode", "script": "launch-as.ps1", "permissionMode": "same-as-hub" },
   "delegation": { "gates": "ui-and-non-ui", "manualVerificationWaiver": "", "pullPush": true },
   "push": { "main": "user", "statusRepo": true },
   "status": { "repo": "../plugin-dashboard-status", "file": "status.json", "patcher": "skill", "excludeComponents": [] },

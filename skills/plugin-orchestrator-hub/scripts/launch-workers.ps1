@@ -13,6 +13,8 @@
     ./launch-workers.ps1 -WhoAmI               # print the account this session runs as, and stop
 .EXAMPLE
     ./launch-workers.ps1 -IncludeInHub         # also open the workers that live in the hub checkout
+.EXAMPLE
+    ./launch-workers.ps1 -PermissionMode bypassPermissions   # workers start in this mode (terminal only)
 
 .NOTES
     Each worker opens through its checkout's launch script (hub.json launch.script, normally
@@ -30,6 +32,9 @@ param(
     [string[]] $Only,
     [switch]   $WhoAmI,
     [switch]   $IncludeInHub,
+    # The workers' permission mode. Omitted: hub.json launch.permissionMode, unless that is "same-as-hub"
+    # (the default), which the hub resolves by passing its own mode here.
+    [string]   $PermissionMode,
     [switch]   $DryRun
 )
 
@@ -71,6 +76,10 @@ $cfg = Get-Content $cfgPath -Raw | ConvertFrom-Json
 if (-not $Account) { $Account = Get-CurrentAccount }
 if (-not $Account) { throw 'Could not tell which account this session runs as. Pass -Account <name>.' }
 if (-not $Mode) { $Mode = if ($cfg.launch -and $cfg.launch.mode) { $cfg.launch.mode } else { 'vscode' } }
+if (-not $PermissionMode -and $cfg.launch -and $cfg.launch.permissionMode -and $cfg.launch.permissionMode -ne 'same-as-hub') {
+    $PermissionMode = $cfg.launch.permissionMode
+}
+if ($PermissionMode -and $Mode -ne 'terminal') { Write-Warning "-PermissionMode applies only to terminal workers; VS Code workers take their mode from VS Code settings." }
 $launchName = if ($cfg.launch -and $cfg.launch.script) { $cfg.launch.script } else { 'launch-as.ps1' }
 
 $isInHub = { param($c) (-not $c.checkout) -or $c.checkout -eq '.' -or $c.inHubCheckout }
@@ -95,7 +104,9 @@ foreach ($w in $workers) {
 
     $launcher = Join-Path $dir $launchName
     # An older launch-as.ps1 has no -Terminal switch; for terminal mode go straight to the switcher.
-    $launcherOk = (Test-Path $launcher) -and ($Mode -ne 'terminal' -or (Select-String -Path $launcher -Pattern '\[switch\]\s*\$Terminal' -Quiet))
+    # An older launch-as.ps1 has no -PermissionMode either; then the switcher is called directly too.
+    $launcherOk = (Test-Path $launcher) -and ($Mode -ne 'terminal' -or (Select-String -Path $launcher -Pattern '\[switch\]\s*\$Terminal' -Quiet)) -and
+                  (-not $PermissionMode -or (Select-String -Path $launcher -Pattern '\$PermissionMode' -Quiet))
     if ($launcherOk) {
         $args2 = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $launcher, $Account)
     } elseif (Test-Path $switcher) {
@@ -103,7 +114,10 @@ foreach ($w in $workers) {
     } else {
         Write-Warning "$label : no $launchName in the checkout and no account switcher installed"; $failed++; continue
     }
-    if ($Mode -eq 'terminal') { $args2 += '-Terminal' }
+    if ($Mode -eq 'terminal') {
+        $args2 += '-Terminal'
+        if ($PermissionMode) { $args2 += @('-PermissionMode', $PermissionMode) }
+    }
 
     if ($DryRun) { Write-Output "$label -> powershell.exe $($args2 -join ' ')"; continue }
     powershell.exe @args2

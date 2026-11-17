@@ -69,8 +69,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File "<skill-dir>/scripts/cla
 | `install` | Rewrite the profile block, e.g. after the user edited it by hand |
 | `open <name>` | **Switch**: open a new VS Code window on the project as that account. `-Project <folder>` sets the folder (default: current folder) |
 | `open <name> -Terminal` | Open a terminal window running Claude Code instead. Only when the user explicitly asks for a terminal |
+| `open <name> -Terminal -PermissionMode <mode>` | Start that Claude Code in a permission mode (`default`, `acceptEdits`, `plan`, `bypassPermissions`, ...). Only when the user or a hub asks for one |
 | `sync` | Copy this skill into every account's `skills` folder, so all accounts use the same version. `add` and `install` do this automatically |
 | `open ... -DryRun` | Show what would be launched without launching it |
+
+`open` clears the variables a running Claude Code session sets (`CLAUDECODE`, `CLAUDE_CODE_*`, `CLAUDE_PID`, ...) before it starts the new one, so a window opened from inside a session is a full session of its own: transcript on, listed by `ListAgents`, reachable by peer messages. A value set at User or Machine level is kept.
 
 Names are lowercase letters, digits and hyphens (`work`, `personal`, `client-a`). `default` is reserved.
 

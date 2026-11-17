@@ -9,6 +9,9 @@
 .EXAMPLE
     ./launch-as lachlan -Terminal
 
+.EXAMPLE
+    ./launch-as lachlan -Terminal -PermissionMode bypassPermissions
+
 .NOTES
     A thin wrapper over the claude-account-switcher skill's script. The account must already be
     set up there (run its "list" to see them). The window opens on the folder this file sits in.
@@ -18,7 +21,10 @@ param(
     [string] $Account,
 
     # Open Claude Code in a terminal window instead of VS Code.
-    [switch] $Terminal
+    [switch] $Terminal,
+
+    # With -Terminal: the permission mode the new Claude Code starts in (e.g. bypassPermissions).
+    [string] $PermissionMode
 )
 
 $switcher = Join-Path $HOME '.claude\skills\claude-account-switcher\scripts\claude-accounts.ps1'
@@ -29,5 +35,6 @@ if (-not (Test-Path $switcher)) {
 
 $switcherArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $switcher, 'open', $Account, '-Project', $PSScriptRoot)
 if ($Terminal) { $switcherArgs += '-Terminal' }
+if ($PermissionMode) { $switcherArgs += @('-PermissionMode', $PermissionMode) }
 powershell.exe @switcherArgs
 exit $LASTEXITCODE

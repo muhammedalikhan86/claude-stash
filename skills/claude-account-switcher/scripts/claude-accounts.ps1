@@ -26,6 +26,7 @@
   .\claude-accounts.ps1 open lachlan                       # new VS Code window as lachlan
   .\claude-accounts.ps1 open john -Project C:\code\app     # same, for a given folder
   .\claude-accounts.ps1 open john -Terminal                 # terminal instead of VS Code
+  .\claude-accounts.ps1 open john -Terminal -PermissionMode bypassPermissions
   .\claude-accounts.ps1 sync                               # copy this skill to every account
 #>
 [CmdletBinding()]
@@ -53,6 +54,10 @@ param(
     # open: start Claude Code in a terminal window instead of VS Code
     [switch]$Terminal,
 
+    # open -Terminal: the permission mode the new Claude Code starts in (bypassPermissions maps to
+    # --dangerously-skip-permissions). Not used for VS Code, which takes its mode from its own settings.
+    [ValidateSet('', 'default', 'acceptEdits', 'auto', 'manual', 'dontAsk', 'plan', 'bypassPermissions')]
+    [string]$PermissionMode = '',
 
     # open: print what would be launched without launching it
     [switch]$DryRun
@@ -256,6 +261,32 @@ function Initialize-VSCodeData([string]$UserDataDir, [string]$Label) {
     $settings | ConvertTo-Json -Depth 50 | Set-Content -Path $settingsPath -Encoding UTF8
 }
 
+# Variables a running Claude Code session sets for itself and its tools. A window opened from inside a
+# session inherits them, and the new Claude Code then thinks it is a child session: no transcript, no
+# peer messaging, not listed by ListAgents. CLAUDE_CONFIG_DIR is not one of them.
+$SessionEnvPattern = '^(CLAUDECODE$|CLAUDE_CODE_|CLAUDE_PID$|CLAUDE_AGENT_SDK|CLAUDE_EFFORT$)'
+
+# The same clean-up as a command for the new window: drop each inherited session variable, but keep a
+# value set at User or Machine level (a deliberate setting, not an inherited one).
+$CleanEnvCmd = '@(Get-ChildItem Env: | Where-Object Name -match ''' + $SessionEnvPattern + ''') | ForEach-Object { $n = $_.Name; Remove-Item -LiteralPath "Env:$n"; $v = [Environment]::GetEnvironmentVariable($n, ''User''); if (-not $v) { $v = [Environment]::GetEnvironmentVariable($n, ''Machine'') }; if ($v) { Set-Item -LiteralPath "Env:$n" -Value $v } }'
+
+function Clear-SessionEnv {
+    # Removes the inherited session variables from this process and returns them, for Restore-SessionEnv.
+    $saved = @{}
+    foreach ($v in @(Get-ChildItem Env: | Where-Object Name -match $SessionEnvPattern)) {
+        $keep = [Environment]::GetEnvironmentVariable($v.Name, 'User')
+        if (-not $keep) { $keep = [Environment]::GetEnvironmentVariable($v.Name, 'Machine') }
+        if ($keep) { continue }
+        $saved[$v.Name] = $v.Value
+        Remove-Item -LiteralPath "Env:$($v.Name)"
+    }
+    return $saved
+}
+
+function Restore-SessionEnv([hashtable]$Saved) {
+    foreach ($k in $Saved.Keys) { Set-Item -LiteralPath "Env:$k" -Value $Saved[$k] }
+}
+
 function Open-VSCode($acct, [string]$proj, [string]$label) {
     $code = Find-Code
     $codeArgs = @()
@@ -272,11 +303,13 @@ function Open-VSCode($acct, [string]$proj, [string]$label) {
         return
     }
     $prev = $env:CLAUDE_CONFIG_DIR
+    $saved = Clear-SessionEnv
     try {
         if ($acct.dir) { $env:CLAUDE_CONFIG_DIR = $acct.dir } else { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue }
         Start-Process -FilePath $code -ArgumentList $codeArgs -WindowStyle Hidden
     } finally {
         if ($null -ne $prev) { $env:CLAUDE_CONFIG_DIR = $prev } else { Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue }
+        Restore-SessionEnv $saved
     }
     Write-Host "Opened a new VS Code window as '$($acct.name)' in $proj."
 }
@@ -315,12 +348,22 @@ function Open-Account {
         Write-Host "Note: '$($acct.name)' is not logged in yet; log in when Claude Code asks (or run /login)."
     }
 
-    if (-not $Terminal) { Open-VSCode $acct $proj $label; return }
+    if (-not $Terminal) {
+        if ($PermissionMode) { Write-Warning "-PermissionMode applies only with -Terminal; VS Code takes its mode from its own settings." }
+        Open-VSCode $acct $proj $label; return
+    }
 
     # The account is set inside the new window's own command, so it is correct
     # even when Windows Terminal hands the window to an already-running instance.
     $envCmd = if ($acct.dir) { '$env:CLAUDE_CONFIG_DIR = ' + (Quote $acct.dir) } else { 'Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue' }
-    $inner = "$envCmd; Set-Location -LiteralPath $(Quote $proj); `$Host.UI.RawUI.WindowTitle = $(Quote "Claude - $label"); claude"
+    # A window opened from inside a Claude Code session inherits that session's variables; clear them
+    # first so the new session is a full one (transcript, peer messaging).
+    $claudeCmd = switch ($PermissionMode) {
+        ''                  { 'claude' }
+        'bypassPermissions' { 'claude --dangerously-skip-permissions' }
+        default             { "claude --permission-mode $PermissionMode" }
+    }
+    $inner = "$CleanEnvCmd; $envCmd; Set-Location -LiteralPath $(Quote $proj); `$Host.UI.RawUI.WindowTitle = $(Quote "Claude - $label"); $claudeCmd"
     $encoded = [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($inner))
     $shell = if (Get-Command pwsh.exe -ErrorAction SilentlyContinue) { 'pwsh.exe' } else { 'powershell.exe' }
     $wt = Get-Command wt.exe -ErrorAction SilentlyContinue
@@ -332,9 +375,14 @@ function Open-Account {
         return
     }
     if ($wt) {
-        Start-Process -FilePath 'wt.exe' -ArgumentList @('-w', 'new', 'new-tab', '--title', "`"Claude - $label`"", '-d', "`"$proj`"", $shell, '-NoExit', '-EncodedCommand', $encoded)
+        # wt.exe can hand the tab this process's environment; clear it here too, then put it back.
+        $saved = Clear-SessionEnv
+        try { Start-Process -FilePath 'wt.exe' -ArgumentList @('-w', 'new', 'new-tab', '--title', "`"Claude - $label`"", '-d', "`"$proj`"", $shell, '-NoExit', '-EncodedCommand', $encoded) }
+        finally { Restore-SessionEnv $saved }
     } else {
-        Start-Process -FilePath $shell -ArgumentList @('-NoExit', '-EncodedCommand', $encoded)
+        $saved = Clear-SessionEnv
+        try { Start-Process -FilePath $shell -ArgumentList @('-NoExit', '-EncodedCommand', $encoded) }
+        finally { Restore-SessionEnv $saved }
     }
     Write-Host "Opened a new window running Claude Code as '$($acct.name)' in $proj."
 }

@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.3.0"
+  version: "0.4.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -81,7 +81,11 @@ Read each only when its trigger occurs. They are part of this skill.
 5. **Open the rest.** Ask once, with buttons, whether to open the missing workers, naming each one, the
    in-hub ones included. On yes run `scripts/launch-workers.ps1 -Only <names> -IncludeInHub` (mode from
    `launch.mode`). Each worker opens with its checkout's `launch-as.ps1` on the hub's account; an in-hub
-   worker opens a second session in the hub checkout. The script never opens the hub itself: the user
+   worker opens a second session in the hub checkout. Workers start in the hub's own permission mode:
+   when `launch.permissionMode` is `same-as-hub` (or absent), pass the hub's current mode as
+   `-PermissionMode` (`bypassPermissions`, `acceptEdits`, `plan`, ...; nothing for `default`). The
+   switcher clears the hub's inherited session variables, so each worker is a full session that
+   `ListAgents` lists. The script never opens the hub itself: the user
    opens the hub with `./launch-as <account>` in the hub checkout, as `launch.hubMode` says
    (`-Terminal` for `terminal`).
 6. **Wait for them to register.** The script returns as soon as each window opens, but a worker only

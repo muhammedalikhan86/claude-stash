@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.19.1"
+  version: "1.20.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -161,6 +161,24 @@ instead; it is never a bug. A new conversation starts back at the high bar.
 - **Spend tokens where they buy quality.** Read a governed doc by the section the step needs, never
   whole. Don't re-read this skill or a reference file mid-run unless it changed on disk. A status
   message to the hub or another session is one line (item, decision, commit hash), not a report.
+
+## Working under a hub
+
+When the repo has `.claude/hub.json` and a live hub session (`hub.sessionName`), this session is a
+**worker** driven by the `plugin-orchestrator-hub` skill:
+
+1. **Questions, gates and issues go to the hub**, never to the user in this session. Each question carries
+   the default you would pick; keep working on the default (or on other items) while you wait.
+2. **Any issue found mid-build** goes to the hub before you raise or take it on. The hub rules it
+   functional (an item, ahead of queued features), UI-only (a line in the parity backlog, no item) or
+   not recorded.
+3. **Before each new group**, send the hub the proposed group plus your open queue, and wait for the go.
+4. **Read the rulings log** (`paths.rulingsLog`) before asking; a ruling there is settled.
+5. **When committed and gated**, send "ready to merge `<hash>`: `<item IDs>`, `<points>`, green counts
+   `<changes>`". Leave the green-count file (`paths.devEnvironment`) out of your commits.
+6. **On "safe stop" / account switch**: finish the current gate, commit by path, update the PMBook and
+   handoff, send `parked <hash>`, and start nothing new.
+7. A file outside your component's roots is asked of the hub, never changed here.
 
 ---
 

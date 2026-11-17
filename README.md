@@ -22,6 +22,38 @@ There are two ways to set up a machine:
 
 You can switch between them any time; each one backs up what it replaces.
 
+## What got better (in plain words)
+
+Skills are step-by-step playbooks that tell Claude how to do a job. Here is what we built on,
+and what each change does for Claude.
+
+1. **Strengthened crash recovery.** Claude saves its progress at every step and picks up where it stopped.
+   *Impact:* less time and fewer tokens lost redoing work after a restart.
+2. **Sharpened design checks.** Claude now measures the built screens against the designer's pictures, in every state, and lists each gap.
+   *Impact:* mistakes are caught during the build, not by people afterwards, so there are fewer rework rounds.
+3. **Tightened the brand rules.** Colours, sizes and fonts must come from our design system. Anything else is flagged early.
+   *Impact:* off-brand designs are caught before any code is written, not at build time.
+4. **Made data planning more thorough.** Before building a screen, Claude checks where every number on it comes from.
+   *Impact:* fewer screens built and then blocked by missing data.
+5. **Added structure to estimating.** Every task gets a size (1 to 8 points), and the size is tracked against the real effort.
+   *Impact:* bigger jobs are split up before they start, and plans get more accurate over time.
+6. **Smoothed running several apps at once.** Claude keeps one list of which app uses which port (network address).
+   *Impact:* no time lost on apps clashing, and Claude picks a free port without stopping to ask.
+7. **Standardised project setup.** Start, test, deploy and roll back now work the same way in every project.
+   *Impact:* Claude doesn't have to work out each project's commands, which saves time and tokens.
+8. **Made the release rules stricter.** Claude only deploys when asked, ships only the app's own files, and can always roll back.
+   *Impact:* lower risk to live systems.
+9. **Consolidated Shaw knowledge.** Our systems, databases and sign-in rules now live in one place.
+   *Impact:* less guessing and fewer wrong answers, and Claude loads only the part it needs, so less context is used.
+10. **Streamlined the instructions.** Hundreds of repeated instructions were cut, and extra detail is loaded only when needed.
+    *Impact:* Claude's context holds less, which means fewer tokens per job and faster runs.
+11. **Enhanced the code map.** The map Claude uses to understand a project is rebuilt only when something changed, and it now keeps every link.
+    *Impact:* faster finishes, and Claude finds related code first time, with less searching.
+12. **Tightened housekeeping.** Temporary files go in a throwaway folder, and work-in-progress is kept apart from the project.
+    *Impact:* clean projects, and no stray files to clean up.
+13. **Extended support for long sessions.** `/summarise` saves where you are. After `/clear`, Claude reloads only that short summary.
+    *Impact:* a fresh, small context without losing track, so Claude stays sharp and uses fewer tokens.
+
 ## Publish to the share (maintainers)
 
 ```powershell
@@ -138,6 +170,7 @@ To update later: `git pull`, then `.\install.ps1`.
 |---|---|
 | `idea-triage`, `plugin-idea-triage` | Idea → PRD → Architecture → PMBook, before any code |
 | `orchestrator-development-pattern`, `plugin-orchestrator-development-pattern` | Developer → Reviewer → Integration → Finalizer pipeline |
+| `plugin-orchestrator-hub` | The Hub role: one session on the main checkout opens, drives and merges a worker session per component checkout (each running `plugin-orchestrator-development-pattern`), keeps their queues, the status page and the rulings log, and carries the work across an account switch. Reads the project's `.claude/hub.json` |
 | `init-adlc-repo`, `plugin-init-adlc-repo` | Set a repo up for the above. Both copy `skills/init-adlc-repo/templates/graph.ps1` into the repo as `scripts/graph.ps1`, the standard knowledge-graph build script (it reads its components and roots from the repo's `.claude/SKILLS.md`) |
 | `graphify` | Build a knowledge graph of a codebase or docs |
 | `llm-council` | Pressure-test a decision with five advisors |

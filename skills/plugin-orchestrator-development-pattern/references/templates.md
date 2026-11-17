@@ -81,6 +81,8 @@ States to compare: <every state the board draws that this item's elements appear
   each dialog and menu it touches>
 Ruled deviations: <each accepted difference from the board, with its source: a design row ID, or a
   hub or user ruling with its date — or "None". Only these may differ; any other major gap fails>
+Parity tolerance: <"2px, solo" | "<N>px, worker under a hub" — from run-state `hubWorker`. A spacing,
+  size, radius or line-height gap up to this is deferred, not failed; anything functional fails at any size>
 Data sources: <each field the board shows → its API field and database read, or "added by this item"
   (Step 0.4, `references/ui-packets.md` §Data sources check)>
 Standing acceptance criterion (every UI packet): The built screen matches the board in every listed
@@ -324,6 +326,7 @@ App URL: <INSERT app-url, filled with this checkout's port offset>
 Board URL: <INSERT the board's URL from artboard-server>
 Compared against: <"Board <file>" | "Acceptance Criteria — <surface> not drawn">
 Widths: <INSERT parity-viewports, at least 1440>
+Parity tolerance: <INSERT "2px, solo" | "<N>px, worker under a hub"> — a px gap up to this is minor
 Parity folder: <INSERT <work dir>/parity/<run id>/<ID>[-legN][-retryN]/>
 Repo root: <INSERT>
 Parity command: <INSERT parity-command, or "None">

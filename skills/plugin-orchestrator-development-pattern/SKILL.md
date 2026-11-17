@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.20.0"
+  version: "1.21.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -179,6 +179,18 @@ When the repo has `.claude/hub.json` and a live hub session (`hub.sessionName`),
 6. **On "safe stop" / account switch**: finish the current gate, commit by path, update the PMBook and
    handoff, send `parked <hash>`, and start nothing new.
 7. A file outside your component's roots is asked of the hub, never changed here.
+8. **Know you are a worker; never guess.** Worker mode needs both: hub.json lists this component
+   (`components[]`, by name or checkout), **and** the hub has briefed this session ("I am the hub ...")
+   or `ListAgents` shows `hub.sessionName` live. Either missing → a solo run. Step 0.4 records it in
+   run-state as `hubWorker: { worker: true|false, parityTolerancePx, source }` (`source`: what proved
+   it). A worker's parity tolerance is hub.json `triage.workerParityTolerancePx` (20 when unset); a solo
+   run's is 2px (`references/ui-packets.md` §Major and minor gaps). Every UI packet's `## Design
+   Reference` and every Parity Prompt carries it, so the Developer and the Board Parity check use the
+   same number. A resumed run re-checks the mode and updates the record.
+9. **Findings from the hub's after-group disparity check** ("pull main, then run Findings Intake on
+   `<path>`"): pull main, and at your next group boundary run Findings Intake on that file (Step 0.1e).
+   Functional findings become functional bugs, ahead of queued features; look findings join the UI bug
+   fixes. Strike any parity-backlog line the intake covers. Then send the hub your new queue.
 
 ---
 
@@ -1013,7 +1025,11 @@ states and widths listed), `Suggested type: Bug`, `Severity` Medium or Low as `d
 step 5 says, `Component` this component, `Built by` the item, `Evidence` its parity folder. No IDs: a later
 Findings Intake (Step 0.1e) logs them. Add the file to `orchestratorFiles` so Step 3.5 commits it, and
 name it in the final summary. `findings-directory` unset → `./docs/{component}/findings`. A P0 fast lane writes its own
-the same way; a run that never reaches Phase 3 writes it at close-out.
+the same way; a run that never reaches Phase 3 writes it at close-out. **A worker under a hub** writes
+no findings file: it appends one line per element to hub.json `paths.parityBacklog` (`<component>`
+filled in) — item, state, width, element, board value, built value, gap — skipping any gap of
+`triage.tolerancePx` or less, commits it with the run, and names the count in its "ready to merge"
+message. The hub's strict disparity check picks them up.
 
 **Design rows owed — written before the Finalizers.** When `decisions.designRowsOwed` has an entry not
 yet written (a drawing a design ruling, a "build to the Acceptance Criteria" ruling or a not-drawn surface
@@ -1309,7 +1325,7 @@ The Orchestrator writes it directly — bookkeeping, not code.
 **Content:** run id (`<YYYY-MM-DD>-<component>-<first item id, lowercased>-<HHmm>`, the start time,
 fixed at Step 0.4; if that id already appears in `metrics-log-file` or `git log --grep "Run-Id: <id>"`,
 add `-2`, `-3`… until it is unique) and
-start time, component, Platform Profile (with Test scope once decided), Step 0.3's conventions
+start time, component, `hubWorker` (§Working under a hub), Platform Profile (with Test scope once decided), Step 0.3's conventions
 summary, the waves
 and ordered queue (ID + Type), per-item `status` (`in progress | passed review | awaiting
 verification | verified | findings recorded | escalated | dropped`, saved at each change: `in progress`

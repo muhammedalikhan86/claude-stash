@@ -135,7 +135,15 @@ Used by the Board Parity Check here, by the plain orchestrator's Parity Prompt, 
   filling its space); an accessibility failure (no accessible name, not reachable by keyboard, contrast
   below WCAG AA).
 - **Minor** (PASSes, deferred to `disparity-checker`): a value off on an element that is otherwise right:
-  a few px of spacing, size, radius or line height; a font-weight step; a colour shade.
+  spacing, size, radius or line height off by no more than the **parity tolerance** (below); a
+  font-weight step; a colour shade. Off by more than the tolerance is major.
+- **Parity tolerance.** Strict, **2px**, everywhere except one case: the plain orchestrator, a plugin run
+  on its own, and `disparity-checker` always use 2px. A plugin run that is a **worker under a hub**
+  (`SKILL.md` §Working under a hub; the mode Step 0.4 records) uses the hub's lenient per-item tolerance,
+  hub.json `triage.workerParityTolerancePx` (20 when unset): the hub's disparity check runs
+  strict at 2px and catches what the per-item check lets through. The tolerance only widens the px rule:
+  every other major gap above (a missing, extra or cut element, wrong control, words or order, a missing
+  state, broken layout, accessibility) fails at any size.
 - **When unsure, it is major.** A rule of thumb: if a user would notice something missing, wrong or
   broken, it is major; if only a measurement shows it, it is minor.
 
@@ -150,7 +158,8 @@ for a packet with no `## Design Reference`.
    (`artboard-server`), and check both answer. Fill `app-url` with this checkout's port offset.
 2. **Spawn** `subagent_type: "orchestrated-reviewer"`, its `model` from **Model Assignment**, with the **Parity Prompt**
    (`references/templates.md`): the packet path (Step 1.1), the app URL, the board URL,
-   `parity-viewports`, `parity-command` (or `None`), and the folder `<work dir>/parity/<run id>/<ID>[-legN][-retryN]/` (`-legN` from the second leg on; the
+   `parity-viewports`, `parity-command` (or `None`), the run's parity tolerance and mode (run-state
+   `hubWorker`: `20px, worker under a hub` or `2px, solo`), and the folder `<work dir>/parity/<run id>/<ID>[-legN][-retryN]/` (`-legN` from the second leg on; the
    run id is fixed at Step 0.4). A separate spawn: the code
    Reviewer stays narrow.
 3. **It measures** the elements this item changes, in every state in the packet's `States to compare`
@@ -178,4 +187,5 @@ for a packet with no `## Design Reference`.
 8. **Deferred minor gaps.** Unruled minor mismatches PASS: the check lists them under `Deferred to
    disparity-checker`. They are not issues and no retry fixes them. Save the latest Parity run's list
    on the item in run-state as `deferredGaps` (each Parity run replaces it). Phase 3 writes them into a
-   findings file (`SKILL.md` **Deferred minor gaps — written before the Finalizers**).
+   findings file (`SKILL.md` **Deferred minor gaps — written before the Finalizers**); a worker under a
+   hub writes them into the hub's parity backlog instead, for the hub's disparity check.

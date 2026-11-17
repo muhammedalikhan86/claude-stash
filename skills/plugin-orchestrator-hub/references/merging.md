@@ -43,7 +43,9 @@ git merge-tree --write-tree --name-only HEAD FETCH_HEAD | tail -n +2
 8. **Move main up** (when `hub.workBranch` ≠ `hub.mainBranch`): run `hub.fastForwardMain`. It fails if
    main is not an ancestor; then stop and tell the user.
 9. **After:** green counts (below), status patch (`references/status-page.md`), tell any worker waiting on
-   these items that they are on main and it should pull, and tell the user the milestone.
+   these items that they are on main and it should pull, and tell the user the milestone. Then start
+   the strict **after-group disparity check** for that component in a background helper
+   (`references/priorities-and-groups.md` §After-group disparity check).
 
 ## Push
 

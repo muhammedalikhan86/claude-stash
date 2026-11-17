@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.5.0"
+  version: "0.6.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -111,7 +111,7 @@ the user unless the last column says so.
 | Issue found mid-build | Rule it by `references/priorities-and-groups.md` §Issue triage, record the ruling | No |
 | Next-group proposal | Regroup by `references/priorities-and-groups.md` §Group planning and give the go yourself; never ask the user | No (one FYI line at most) |
 | Gate (Reviewer PASS etc.) | Approve within `delegation`; else ask the user | Only if it went to the user |
-| "Committed, ready to merge" | Merge (`references/merging.md`), green counts, status patch, wake any worker waiting on it | Milestone line only |
+| "Committed, ready to merge" | Merge (`references/merging.md`), green counts, status patch, wake any worker waiting on it, then the strict after-group disparity check in a helper (`references/priorities-and-groups.md`) | Milestone line only |
 | Item for another component | Route it to the owner, pass the new ID back, note the dependency | No |
 | Shared-file change request | Make it in the hub checkout (or give it to the worker that owns shared files) | No |
 | Needs a restart / test data / ports | §Stack and environment | Yes, if a restart is needed |

@@ -43,7 +43,8 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `paths.screenshots` | Where browser screenshots go (gitignored) |
 | `merge.ruledExceptions` | Files outside a component's roots that its branch may still change (e.g. its green-count lines). Each with a one-line reason |
 | `watch.heartbeatCron` | Cron expression for the heartbeat |
-| `triage.tolerancePx` | A look gap this size or smaller is not recorded (`2`) |
+| `triage.tolerancePx` | The strict tolerance (`2`): a look gap this size or smaller is not recorded, and the hub's disparity check fails anything larger |
+| `triage.workerParityTolerancePx` | The lenient per-item Board Parity tolerance a worker uses under this hub (`20`). A px gap between the two goes to the parity backlog, not a FAIL; functional gaps fail at any size |
 
 ### `components[]`
 
@@ -103,7 +104,7 @@ dev-ports script and the run skill read; the hub reads it from there, never from
     { "path": "docs/dev-environment.md", "reason": "green-count lines; the hub re-applies only that component's change" }
   ] },
   "watch": { "heartbeatCron": "45 4,9,14,18,23 * * *" },
-  "triage": { "tolerancePx": 2 }
+  "triage": { "tolerancePx": 2, "workerParityTolerancePx": 20 }
 }
 ```
 

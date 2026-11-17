@@ -12,8 +12,9 @@ files share a group.
 
 1. New functionality (features).
 2. Functional bugs.
-3. The disparity check: the parity sweep (one per component, §Parity sweep).
-4. UI bug fixes: the UI-only items and parity-backlog lines left after the disparity check.
+3. The disparity check: strict, after **every** group merges (§After-group disparity check), plus one
+   final parity sweep per component before "ready to test" (§Parity sweep).
+4. UI bug fixes: the look findings, UI-only items and parity-backlog lines the disparity checks leave.
 5. Anything else: housekeeping (doc sweeps, refactors, tooling, clean-up).
 
 ## Issue triage (any issue a worker finds mid-build)
@@ -55,13 +56,33 @@ A group is one orchestrator run: one Integration, one Finalise, one merge.
 
 See `SKILL.md` §Talking to the user. Sizes come from each PMBook; unknown sizes show `??`.
 
-## Parity sweep (end game)
+## After-group disparity check (every group)
 
-When a component's feature and functional queue is empty:
+The workers' per-item Board Parity check is lenient (`triage.workerParityTolerancePx`, 20px); this check
+is the **strict** one (`triage.tolerancePx`, 2px) and its safety net. It runs after **every** group
+merges, not only at the end.
 
-1. **Disparity check** (order step 3): every screen against its board, at the repo's parity viewports.
-   Use the `disparity-checker` skill if the repo has it. A functional gap it finds is a functional bug
-   and goes ahead of the UI fixes.
+1. **When:** right after a group's merge (`references/merging.md` step 9), for that group's component.
+2. **Who:** a background helper (Guardrail 6), briefed with this section, the guardrails and exact paths.
+   It brings up the hub checkout's stack on the hub checkout's port offset, runs the `disparity-checker`
+   skill for that component at 2px (the screens the group touched first, then the component's other
+   screens), and stops what it started. The worker keeps going on its next group meanwhile.
+3. **The findings file** lands in the component's findings directory in the hub checkout. The hub commits
+   it by path and moves main up. Nothing found → no file; one ⚪ FYI line at most.
+4. **Back to the worker:** "pull main, then run Findings Intake on `<path>` at your next group boundary".
+   Its Findings Intake turns each finding into a PMBook row: **functional** gaps become functional bugs
+   and go ahead of queued features (order step 2); **look** gaps join the UI bug fixes (order step 4). A
+   parity-backlog line the intake now covers is struck, so nothing is fixed twice.
+5. The hub regroups that worker's queue with the new rows (§Group planning) and gives the go as usual.
+
+## Parity sweep (final pass)
+
+When a component's feature and functional queue is empty, one final full pass before "ready to test":
+
+1. **Disparity check** (order step 3): every screen against its board, at the repo's parity viewports,
+   strict at `triage.tolerancePx` (2px), with the `disparity-checker` skill if the repo has it. The
+   after-group checks have caught most gaps already; this one confirms the whole component. A
+   functional gap it finds is a functional bug and goes ahead of the UI fixes.
 2. **UI bug fixes** (order step 4): the check's UI gaps above the tolerance, plus the component's
    `paths.parityBacklog` lines and UI-only items, in as few groups as the files allow.
 3. When those are merged and green, tell the user the component is ready to test. Housekeeping

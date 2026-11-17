@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.22.1"
+  version: "2.22.2"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator

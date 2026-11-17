@@ -26,6 +26,7 @@ App URL: <INSERT app-url, filled with this checkout's port offset>
 Board URL: <INSERT the board's URL from artboard-server>
 Compared against: <"Board <file>" | "Acceptance Criteria — <surface> not drawn">
 Widths: <INSERT parity-viewports, at least 1440>
+Parity tolerance: 2px — strict; a spacing, size, radius or line-height gap over 2px is major
 Parity folder: <INSERT <work dir>/parity/<run id>/<ID>[-legN][-retryN]/>
 Repo root: <INSERT>
 Parity command: <INSERT parity-command, or "None">

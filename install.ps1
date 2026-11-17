@@ -21,7 +21,10 @@
     3. Each path in retired.txt (things this repo used to install, now renamed or retired) is backed up
        and deleted.
     4. settings.json is never overwritten. If you have none, one is written from settings.template.json;
-       if you have one, settings.stash.json is written beside it (the old stash is backed up first).
+       if you have one that lacks a template setting (a key or an array item), settings.stash.json is
+       written beside it and the missing ones are listed (the old stash is backed up first). A value
+       that only differs is your choice and writes nothing; with nothing missing, an old stash is
+       backed up and deleted.
   Everything else in ~/.claude (your own skills, public skills, links to ~/.agents) is left alone.
 
   ~/.claude/rules/shaw-db.md (the Shaw DB login, this machine only) is created once from
@@ -66,6 +69,9 @@ $ClaudeDirGiven = $PSBoundParameters.ContainsKey('ClaudeDir')
 $ClaudeDir = [IO.Path]::GetFullPath($ClaudeDir).TrimEnd('\')
 $ProdDir = $ProdDir.TrimEnd('\')
 $Src = if ($Link) { $ProdDir } else { $Repo }   # where the items come from
+$settingsDiff = Join-Path $Repo "scripts\settings-diff.ps1"
+if (Test-Path -LiteralPath $settingsDiff) { . $settingsDiff }
+else { function Get-MissingSettings { '(scripts\settings-diff.ps1 not found: compare by hand)' } }
 $Merged = "skills", "agents", "agent-notes", "agent-tasks", "commands", "hooks", "output-styles", "rules", "memory", "mods"
 $KeepGenerated = ".claude-plugin\types", ".last_update_check"
 # -Link: folders linked whole; items copied rather than linked.
@@ -669,11 +675,23 @@ if ($Context7Key) { $template = $template.Replace("__CONTEXT7_API_KEY__", $Conte
 $settings = Join-Path $ClaudeDir "settings.json"
 if (Test-Path $settings) {
     $out = Join-Path $ClaudeDir "settings.stash.json"
-    if (Test-Exists $out) { $info = Backup-Item "settings.stash.json"; $info.action = 'replace'; Add-Action $info }
-    else { Add-Action @{ action = 'create'; path = "settings.stash.json" } }
-    if (-not $WhatIf) { Remove-Target $out; Write-Text $out $template }   # removed first, so a link there is never written through
-    Say "NOTE  " "settings.json already exists (not touched). Wrote settings.stash.json next to it." Cyan
-    Write-Host "         Merge the hooks / env / permissions you want, then delete settings.stash.json."
+    # Only when the template adds something settings.json lacks; a value that only differs is the user's choice.
+    $missing = @(Get-MissingSettings $template (Read-Text $settings))
+    if ($missing.Count) {
+        if (Test-Exists $out) { $info = Backup-Item "settings.stash.json"; $info.action = 'replace'; Add-Action $info }
+        else { Add-Action @{ action = 'create'; path = "settings.stash.json" } }
+        if (-not $WhatIf) { Remove-Target $out; Write-Text $out $template }   # removed first, so a link there is never written through
+        Say "NOTE  " "settings.json lacks $($missing.Count) setting(s) from the template (not touched). Wrote settings.stash.json next to it:" Cyan
+        $missing | ForEach-Object { Write-Host "           $_" }
+        Write-Host "         Merge the ones you want, then delete settings.stash.json."
+    }
+    else {
+        if (Test-Exists $out) {
+            $info = Backup-Item "settings.stash.json"; $info.action = 'delete'; Add-Action $info
+            if (-not $WhatIf) { Remove-Target $out }
+        }
+        Say "OK    " "settings.json (has everything the template has)"
+    }
 }
 else {
     Add-Action @{ action = 'create'; path = "settings.json" }

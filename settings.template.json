@@ -30,7 +30,6 @@
       "__REPOS_DIR__"
     ]
   },
-  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {

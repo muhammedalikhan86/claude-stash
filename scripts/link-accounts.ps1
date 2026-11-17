@@ -11,8 +11,10 @@
       that already points at the main folder is left alone.
     - CLAUDE.md: copied from the main folder each run.
     - settings.json: copied from the main folder when the account has none. When it has one that
-      differs, it is left alone and the main one is written beside it as settings.stash.json, to merge
-      by hand (as install.ps1 does).
+      lacks a setting the main one has (a key, or an array item), it is left alone and the main one is
+      written beside it as settings.stash.json, to merge by hand (as install.ps1 does). A value that
+      only differs is the account's own choice and writes nothing; with nothing missing, an old
+      settings.stash.json is deleted.
   Never touches a login (.credentials.json, .claude.json), sessions, projects, history or caches: each
   account keeps its own. install.ps1 runs this at the end of a normal install.
 
@@ -28,6 +30,7 @@ param(
     [string]$BackupRoot = (Join-Path $env:USERPROFILE ".claude-backups")
 )
 $ErrorActionPreference = "Stop"
+. (Join-Path $PSScriptRoot "settings-diff.ps1")
 $Shared = "skills", "agents", "agent-notes", "agent-tasks", "commands", "hooks", "output-styles", "rules", "memory", "mods", "plugins"
 $MainDir = [IO.Path]::GetFullPath($MainDir).TrimEnd('\')
 
@@ -86,11 +89,19 @@ foreach ($acc in $accounts) {
             if (-not $WhatIf) { Copy-Item -LiteralPath $mainSettings -Destination $settings }
             Say "NEW   " "settings.json (from the main account)" Green
         }
-        elseif ((Get-FileHash -LiteralPath $settings).Hash -ne (Get-FileHash -LiteralPath $mainSettings).Hash) {
-            if (-not $WhatIf) { Copy-Item -LiteralPath $mainSettings -Destination (Join-Path $dir "settings.stash.json") -Force }
-            Say "NOTE  " "settings.json differs from the main account's; wrote settings.stash.json beside it to merge" Cyan
+        else {
+            $stash = Join-Path $dir "settings.stash.json"
+            $missing = @(Get-MissingSettings (Get-Content -Raw -LiteralPath $mainSettings) (Get-Content -Raw -LiteralPath $settings))
+            if ($missing.Count) {
+                if (-not $WhatIf) { Copy-Item -LiteralPath $mainSettings -Destination $stash -Force }
+                Say "NOTE  " "settings.json lacks $($missing.Count) setting(s) the main account has; wrote settings.stash.json beside it to merge:" Cyan
+                $missing | ForEach-Object { Write-Host "           $_" }
+            }
+            else {
+                if ((Test-Path -LiteralPath $stash) -and -not $WhatIf) { Remove-Item -LiteralPath $stash -Force }
+                Say "OK    " "settings.json (has everything the main account's has)"
+            }
         }
-        else { Say "OK    " "settings.json (same as the main account's)" }
     }
 }
 if (-not $WhatIf) { Write-Host "`nDone. Restart Claude Code in each account to pick it up." -ForegroundColor Cyan }

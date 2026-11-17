@@ -24,6 +24,13 @@ The file shape it expects is in references/status-page.md.
 """
 import json, os, sys, math, datetime as dt
 
+# Print UTF-8 on Windows too (a cp1252 console turns an em dash into a replacement character).
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding='utf-8', errors='replace')
+    except (AttributeError, ValueError):
+        pass
+
 argv = sys.argv[1:]
 rebase = '--rebase' in argv
 dry = '--dry-run' in argv

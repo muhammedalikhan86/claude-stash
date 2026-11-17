@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.9.1"
+  version: "0.9.2"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator

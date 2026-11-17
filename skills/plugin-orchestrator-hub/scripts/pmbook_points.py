@@ -10,6 +10,7 @@ branch), and sorts each row by its Status cell:
   excluded  Withdrawn, Not needed, Folded, Moved, Split into, Duplicate, Superseded
   open      anything else (Planned, Open, In progress, Blocked, Deferred, Parked, ...)
 
+A row whose ID cell has no letter or digit (a note row, `| — | ... |`) is not an item and is skipped.
 A row with no number in its Size cell (or in a table with no Size column) is unsized: never counted,
 always reported (an open one breaks the size-when-raised rule; a done one is sized at Finalization).
 A table with a Size column but no Status column, other than the Spike Log, is reported, not counted.
@@ -18,6 +19,13 @@ usage (a check, nothing written):
     python -I pmbook_points.py <hub checkout> [<component name or statusName> ...]
 """
 import json, os, re, subprocess, sys
+
+# Print UTF-8 on Windows too (a cp1252 console turns an em dash into a replacement character).
+for _s in (sys.stdout, sys.stderr):
+    try:
+        _s.reconfigure(encoding='utf-8', errors='replace')
+    except (AttributeError, ValueError):
+        pass
 
 DONE = re.compile(r'^(done|fixed|closed)\b')
 EXCLUDED = re.compile(r'^(withdrawn|not needed|folded|moved|split into|duplicate|superseded)\b')
@@ -83,7 +91,8 @@ def count(root, rev, pmbooks):
         for section, header, cells in rows(text):
             row = dict(zip(header, cells))
             rid = clean(row.get('id', ''))
-            if not rid or (rid, f) in seen:
+            # A note row ("| — | Feature IDs are never reused ...") has no letter or digit in its ID cell.
+            if not re.search(r'[A-Za-z0-9]', rid) or (rid, f) in seen:
                 continue
             seen.add((rid, f))
             if 'status' in header:

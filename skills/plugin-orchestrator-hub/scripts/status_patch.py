@@ -149,7 +149,9 @@ def when(rem, rate):
 
 for name, pc in f['perComponent'].items():
     if name not in comps: continue
-    rem = comps[name]['pointsRemaining']; a, b = pc['rateLast10'], pc['rateWhole']
+    rem = comps[name]['pointsRemaining']
+    # The faster rate gives the optimistic date, whichever it is (rateWhole can outrun rateLast10).
+    a, b = max(pc['rateLast10'], pc['rateWhole']), min(pc['rateLast10'], pc['rateWhole'])
     pc['optimistic'], pc['likely'], pc['pessimistic'] = when(rem, a), when(rem, (a + b) / 2), when(rem, b)
 o = f['overall']
 o['rateLast10'], o['rateWhole'] = v['pointsPerWorkingDay'], v['pointsPerWorkingDayWholePeriod']

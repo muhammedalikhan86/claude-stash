@@ -59,20 +59,27 @@ def size_of(cell):
 def rows(text):
     """Yield (section, header, cells) for every row of an item table: an ID column plus a Size or a
     Status column (an Open Items table, with neither, is not an item table)."""
-    section, header = '', None
-    for line in text.splitlines():
+    section, header, last = '', None, None
+    lines = text.splitlines()
+    is_sep = lambda s: s.startswith('|') and set(s.replace('|', '').strip()) <= set('-: ')
+    for i, line in enumerate(lines):
         s = line.strip()
         if s.startswith('#'):
-            section, header = s.lstrip('#').strip(), None
+            section, header, last = s.lstrip('#').strip(), None, None
             continue
         if not s.startswith('|'):
             header = None
             continue
         cells = [c.strip() for c in s.strip('|').split('|')]
         if header is None:
-            header = [clean(c).lower() for c in cells]
-            continue
-        if set(s.replace('|', '').strip()) <= set('-: '):
+            nxt = lines[i + 1].strip() if i + 1 < len(lines) else ''
+            if is_sep(nxt) or last is None:
+                header = last = [clean(c).lower() for c in cells]
+                continue
+            # A table broken by a blank line: rows with no header of their own continue the last
+            # table in this section (they were silently dropped before).
+            header = last
+        if is_sep(s):
             continue
         if 'id' in header and ('size' in header or 'status' in header):
             yield section, header, cells

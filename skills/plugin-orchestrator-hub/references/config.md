@@ -5,6 +5,10 @@ names only (the switcher's names), never emails, tokens or folders. Paths to oth
 **relative to the hub checkout** (`../my-repo-advisor`), so the same file works on another machine.
 Paths inside a checkout are relative to that checkout's root.
 
+**One place for each fact.** hub.json holds only what no other file holds. A checkout's dev-server port
+offset lives in its own gitignored `.portoffset` (the first non-comment line), which the build, the
+dev-ports script and the run skill read; the hub reads it from there, never from a copy here.
+
 ## Fields
 
 | Field | Meaning |
@@ -17,6 +21,7 @@ Paths inside a checkout are relative to that checkout's root.
 | `components[]` | One entry per component (below) |
 | `accounts` | Account names the user switches between, in the order they are usually used (`["muhammed", "john"]`). Names only |
 | `launch.mode` | `vscode` or `terminal`: how `launch-workers.ps1` opens each worker |
+| `launch.hubMode` | `vscode` or `terminal`: how the user opens the hub itself (`./launch-as <account>`, plus `-Terminal` for `terminal`). `launch-workers.ps1` never opens the hub |
 | `launch.script` | The per-checkout launcher, relative to each checkout (`launch-as.ps1`) |
 | `delegation` | What the hub may approve for the user: `gates` (`"ui-and-non-ui"`, `"non-ui-only"` or `"none"`), `manualVerificationWaiver` (the wording, or empty), `pullPush` (may tell workers to pull the main branch / push their own branch) |
 | `push.main` | Always `"user"`: the hub prints the command, the user runs it |
@@ -49,7 +54,6 @@ Paths inside a checkout are relative to that checkout's root.
 | `branch` | The branch that checkout sits on |
 | `inHubCheckout` | `true` when this worker works inside the hub checkout and commits straight onto `hub.workBranch`. The hub never merges it, and never touches its uncommitted files |
 | `roots` | The paths the component owns (source, docs, tests, graph). The merge check filters by these |
-| `portOffset` | Its dev-server port offset |
 | `statusName` | Its name on the status page, or empty when it is not on it |
 | `pmbook` | Its PMBook path |
 | `handoff` | Its handoff doc path |
@@ -67,16 +71,16 @@ Paths inside a checkout are relative to that checkout's root.
   },
   "components": [
     { "name": "shell", "short": "shell", "checkout": ".", "branch": "skills-test", "inHubCheckout": true,
-      "roots": ["apps/shell", "libs", "docs/shell", "business-tests/shell"], "portOffset": 0,
+      "roots": ["apps/shell", "libs", "docs/shell", "business-tests/shell"],
       "statusName": "Shell", "pmbook": "docs/shell/project-management.md", "handoff": "docs/shell/handoff.md" },
     { "name": "advisor-dashboard", "short": "advisor", "checkout": "../plugin-dashboard-advisor",
       "branch": "advisor-dashboard", "inHubCheckout": false,
       "roots": ["apps/advisor-dashboard", "services/AdvisorDashboard.WebAPI", "docs/advisor-dashboard", "business-tests/advisor-dashboard", "graphify-out/advisor-dashboard"],
-      "portOffset": 20, "statusName": "Advisor",
+      "statusName": "Advisor",
       "pmbook": "docs/advisor-dashboard/project-management.md", "handoff": "docs/advisor-dashboard/handoff.md" }
   ],
   "accounts": ["muhammed", "john"],
-  "launch": { "mode": "vscode", "script": "launch-as.ps1" },
+  "launch": { "mode": "terminal", "hubMode": "vscode", "script": "launch-as.ps1" },
   "delegation": { "gates": "ui-and-non-ui", "manualVerificationWaiver": "", "pullPush": true },
   "push": { "main": "user", "statusRepo": true },
   "status": { "repo": "../plugin-dashboard-status", "file": "status.json", "patcher": "skill", "excludeComponents": [] },

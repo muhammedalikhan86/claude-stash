@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.1.0"
+  version: "0.2.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -77,7 +77,8 @@ Read each only when its trigger occurs. They are part of this skill.
    is not reopened.
 5. **Open the rest.** Ask once, with buttons, whether to open the missing workers; on yes run
    `scripts/launch-workers.ps1 -Only <names>` (mode from `launch.mode`). Each worker opens with the
-   checkout's `launch-as.ps1` on the hub's account.
+   checkout's `launch-as.ps1` on the hub's account. It never opens the hub: the user opens the hub
+   with `./launch-as <account>` in the hub checkout, as `launch.hubMode` says (`-Terminal` for `terminal`).
 6. **Brief each worker** in one message: "I am the hub (`<session name>`). Send me every question, gate
    and issue; send a default with each question and keep working. Your queue: <groups>. Next: <step>."
    Subscribe to its idle notice (`notify_when_idle: true`).
@@ -152,7 +153,8 @@ follow that file.
 ## Stack and environment
 
 The hub coordinates anything shared between checkouts: dev-server restarts, test-data refreshes, the
-port offset per checkout (`components[].portOffset`), shared databases. A restart needs every affected
+port offset per checkout (read from `<checkout>/.portoffset`, its first non-comment line; never kept in
+hub.json), shared databases. A restart needs every affected
 worker at a safe stop first; the hub asks them, waits for "parked", then tells the user which windows
 to restart. After merges that move test counts, the hub updates the green counts and the known-red list
 in `paths.devEnvironment` (`references/merging.md` §Green counts).

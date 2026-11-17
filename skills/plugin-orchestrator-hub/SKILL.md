@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.4.0"
+  version: "0.5.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -109,7 +109,7 @@ the user unless the last column says so.
 |---|---|---|
 | Question with a default | Answer from settled rules (rulings log, board, PMBook, ADRs, hub.json). None applies and it is the user's call → ask the user, reply "holding your default until <user> answers" | Only if it went to the user |
 | Issue found mid-build | Rule it by `references/priorities-and-groups.md` §Issue triage, record the ruling | No |
-| Next-group proposal | Regroup by §Group planning; check in with the user before each new group | Yes: the check-in |
+| Next-group proposal | Regroup by `references/priorities-and-groups.md` §Group planning and give the go yourself; never ask the user | No (one FYI line at most) |
 | Gate (Reviewer PASS etc.) | Approve within `delegation`; else ask the user | Only if it went to the user |
 | "Committed, ready to merge" | Merge (`references/merging.md`), green counts, status patch, wake any worker waiting on it | Milestone line only |
 | Item for another component | Route it to the owner, pass the new ID back, note the dependency | No |
@@ -175,8 +175,9 @@ in `paths.devEnvironment` (`references/merging.md` §Green counts).
 
 ## End game
 
-Features first, functional bugs next, cosmetic gaps last. When a component's feature and functional
-queue is empty, plan its **one parity sweep** (`references/priorities-and-groups.md` §Parity sweep). When
+Work order (`references/priorities-and-groups.md` §Order of work): dependencies and related items
+first; within that, features, functional bugs, the disparity check, UI bug fixes, then housekeeping.
+When a component's feature and functional queue is empty, plan its **one parity sweep** (`references/priorities-and-groups.md` §Parity sweep). When
 the sweep is merged and green, tell the user the component is **ready to test**, with what to open.
 
 ## Other skills this one calls

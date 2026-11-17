@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.6.0"
+  version: "0.7.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -35,7 +35,8 @@ Read each only when its trigger occurs. They are part of this skill.
 | `references/designer-loop.md` | Design rows pile up, the user asks for the designer prompt, or says "designer is done" |
 | `references/status-page.md` | Story points change (an item raised, resized, done or withdrawn) |
 | `scripts/launch-workers.ps1` | Opening the worker sessions |
-| `scripts/status_patch.py` | Patching the status page |
+| `scripts/status_patch.py` | Patching the status page (counts from the PMBooks) |
+| `scripts/pmbook_points.py` | Counting a component's points and unsized rows from its PMBooks |
 
 ## Guardrails (hard rules, every turn)
 

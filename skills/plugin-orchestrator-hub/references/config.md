@@ -58,6 +58,7 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `roots` | The paths the component owns (source, docs, tests, graph). The merge check filters by these |
 | `statusName` | Its name on the status page, or empty when it is not on it |
 | `pmbook` | Its PMBook path |
+| `statusPmbooks` | Optional: every PMBook its status-page figure sums, when it is more than `pmbook` (e.g. `["docs/shell/project-management.md", "docs/landing-page/project-management.md"]`). Closed tranches under each one's `archive/*/` are always included |
 | `handoff` | Its handoff doc path |
 
 ## Example

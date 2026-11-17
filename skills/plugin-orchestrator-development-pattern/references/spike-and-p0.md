@@ -10,7 +10,8 @@ Bug. Both are named exceptions to specific steps, not parallel pipelines.
 Triggered instead of Step 0.1 only when the user explicitly asked for a spike — "spike this", "run a
 spike on X" — never inferred from exploratory-sounding language.
 
-1. **No PMBook row needed** (an ad-hoc spike). Take the question directly from the user, plus any approaches to try
+1. **No PMBook row needed beforehand** (an ad-hoc spike): once step 2 sizes it, write its `## Spike Log`
+   row (Size, Recommendation `In progress`; `SKILL.md` §Sizing). Take the question directly from the user, plus any approaches to try
    ("explore freely" is a valid answer). If the question is unclear, ask.
 2. **Assign a Spike ID.** Next number after the highest `<COMPONENT>-S-XXX` in the PMBook's `## Spike Log`
    or among the IDs run-state's queue or `heldForNextRun` already holds; start at `<COMPONENT>-S-001` if none.

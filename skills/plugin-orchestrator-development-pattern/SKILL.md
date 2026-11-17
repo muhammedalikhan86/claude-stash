@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.21.0"
+  version: "1.22.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -378,17 +378,33 @@ each part sized. On the user's yes, add the parts as new Feature Backlog rows (n
 `Depends on:` between them), set the old row's Status to `Split into <IDs>`, and queue the parts
 that belong to this phase. Save each item's size in run-state; its metrics row carries it.
 
+**Sized and on the PMBook the moment it is raised.** Every new item (Bug Fix Intake, Spike Intake,
+Findings Intake, a split part, a mid-run or held intake, an item another component routes here) gets
+its size **and** its row in `project-management-doc` at intake, before it is queued: a `## Bug Log` row
+with Status `Open` and its Size; a `## Spike Log` row with its Size and Recommendation `In progress`; a
+Feature Backlog row `Planned` with its Size. Write only that row (no Version bump, as for a Status cell),
+add the file to `orchestratorFiles`, and never hold a reserved ID without a row: the status page counts
+points from the PMBook, so an item with no row is invisible. A mid-run intake while a PMBook writer is
+running (**One PMBook writer at a time**) writes its row as soon as that writer finishes. Wherever this
+skill says Phase 3, a P0 lane or the Spike Log Finalizer *writes* an item's row, it **updates** the row
+written at intake (Status, Fixed In, Recommendation, ...), and adds one only when none exists.
+**Retrospective size:** an item that reaches `Done` or `Fixed` with no size (a row from before this rule)
+is sized at Finalization from the work actually done (files, loops, tests; `sizing.md`), its Edit List
+carrying `Size → <n> (retrospective)`. A `Withdrawn` or `Closed` item with no work stays unsized and
+uncounted.
+
 ### Step 0.1b — Bug Fix Intake (alternate entry point)
 
-1. **No PMBook row needed.** Take from the user: what's broken, how to reproduce, expected vs actual, and
+1. **No PMBook row needed beforehand** (step 2 writes it). Take from the user: what's broken, how to reproduce, expected vs actual, and
    suspected files if known. Ask for anything missing.
 2. **Assign a Bug ID.** If the bug already has a `## Bug Log` row (Status `Open`), use that ID and that
    row's description as the report. Otherwise: if the Bug Log states the next ID (e.g. "The next bug is
    `SHELL-B-005`"), use exactly that; else next after the highest `<COMPONENT>-B-XXX` in `## Bug Log`;
    `<COMPONENT>-B-001` if none. Either way, skip any ID run-state's queue or `heldForNextRun` already holds.
    A grep for IDs also matches the "next ID" line itself — read the table, not the grep. **Size it** (`~/.claude/skills/idea-triage/references/sizing.md`); an open Bug Log row that has a size keeps it.
-   Save the size on the item in run-state. An 8 is held as in Step 0.1: propose a spike to find the
-   cause, or a split, and wait for the user's yes.
+   Save the size on the item in run-state, and write its `## Bug Log` row now (Status `Open`, its Size;
+   §Sizing, *Sized and on the PMBook the moment it is raised*). An 8 is held as in Step 0.1: propose a
+   spike to find the cause, or a split, and wait for the user's yes.
 3. **Several bugs at once** are queued in the order given. Step 1.0 decides which can share a wave.
 4. **A design mismatch on a built screen** (the screen differs from its board): find the work item that
    built that surface (the PMBook or `git log` on its files) and note it now; record its `Mismatch` row

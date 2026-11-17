@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.22.2"
+  version: "2.23.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -341,20 +341,37 @@ each part sized. On the user's yes, add the parts as new Feature Backlog rows (n
 `Depends on:` between them), set the old row's Status to `Split into <IDs>`, and queue the parts
 that belong to this phase. Save each item's size in run-state; its metrics row carries it.
 
+**Sized and on the PMBook the moment it is raised.** Every new item (Bug Fix Intake, Spike Intake,
+Findings Intake, a split part, a mid-run or held intake, an item another component routes here) gets
+its size **and** its row in `project-management-doc` at intake, before it is queued: a `## Bug Log` row
+with Status `Open` and its Size; a `## Spike Log` row with its Size and Recommendation `In progress`; a
+Feature Backlog row `Planned` with its Size. Write only that row (no Version bump, as for a Status cell),
+add the file to `orchestratorFiles`, and never hold a reserved ID without a row: the status page counts
+points from the PMBook, so an item with no row is invisible. A mid-run intake while a PMBook writer is
+running (**One PMBook writer at a time**) writes its row as soon as that writer finishes. Wherever this
+skill says Phase 3, a P0 lane or the Spike Log Finalizer *writes* an item's row, it **updates** the row
+written at intake (Status, Fixed In, Recommendation, ...), and adds one only when none exists.
+**Retrospective size:** an item that reaches `Done` or `Fixed` with no size (a row from before this rule)
+is sized at Finalization from the work actually done (files, loops, tests; `sizing.md`), its Edit List
+carrying `Size → <n> (retrospective)`. A `Withdrawn` or `Closed` item with no work stays unsized and
+uncounted.
+
 ### Step 0.1b — Bug Fix Intake (alternate entry point)
 
 Triggered instead of Step 0.1 on an explicit ask (see **Invocation boundary**). It replaces only where
 the work item comes from; Phase 1 onward is shared.
 
-1. **Do not require a PMBook row.** Take the bug directly from the user: what's broken, how to reproduce
+1. **Do not require a PMBook row beforehand** (step 2 writes it). Take the bug directly from the user: what's broken, how to reproduce
    it, expected vs. actual behavior, and (if known) the suspected files or component. If any of these is
    missing, ask — a Task Packet built from a vague report produces a vague fix.
 2. **Assign a Bug ID.** Scan `project-management-doc` for the highest existing `B-XXX` (in its `## Bug Log`
    table, if one exists yet — see Step 3.2) **and** run-state's queue and `decisions.heldForNextRun` (IDs
    already assigned, not yet logged), and assign the next free number. If none exists, start at `B-001`.
    IDs are stable once assigned, same rule as `F-XXX`. **Size it** (`~/.claude/skills/idea-triage/references/sizing.md`); an open Bug Log row that has a size keeps it.
-   Save the size on the item in run-state. An 8 is held as in Step 0.1: propose a spike to find the
-   cause, or a split, and wait for the user's yes.
+   Save the size on the item in run-state, and write its `## Bug Log` row now (Status `Open`, its Size;
+   **Sizing**, *Sized and on the PMBook the moment it is raised*; create the table if it does not exist
+   yet). An 8 is held as in Step 0.1: propose a spike to find the cause, or a split, and wait for the
+   user's yes.
 3. **Multiple bugs reported at once** are processed in the order given. Bugs don't carry PMBook dependency
    edges the way features do, so no dependency-order analysis is needed — but if two reported bugs are
    likely to touch the same files, say so and serialize them rather than risking colliding Developer
@@ -382,7 +399,8 @@ spike on X", "let's explore Y" said as an explicit ask, not inferred from explor
 point, but the work item it produces exits that loop almost immediately — see **Spike Flow**, reached right
 after the Developer Agent step instead of going to the Reviewer.
 
-1. **Do not require a PMBook row.** Take the spike directly from the user: what question it's meant to
+1. **Do not require a PMBook row beforehand** (an ad-hoc spike's `## Spike Log` row is written once it is
+   sized, Recommendation `In progress`; **Sizing**). Take the spike directly from the user: what question it's meant to
    answer, and any specific approaches to try (optional — "explore freely" is a valid answer). If the
    question itself is unclear, ask; a Spike Task Packet built from a vague question produces vague findings.
 2. **Assign a Spike ID.** Scan `project-management-doc` for the highest existing `S-XXX` (in its `## Spike

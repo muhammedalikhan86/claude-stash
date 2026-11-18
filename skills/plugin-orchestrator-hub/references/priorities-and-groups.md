@@ -41,13 +41,19 @@ Record the ruling in the rulings log only when it sets a new rule, not for each 
 
 ## Group planning
 
-A group is one orchestrator run: one Integration, one Finalise, one merge.
+A group is one orchestrator run: one Integration, one Finalise, one merge. **Why groups:** the
+Integration gate, the Finalizers (PMBook, handoff, changelog, runbook, graph) and the merge cost about
+the same for one item as for five, so finalizing item by item spends that cost again for every item.
+Group as much related work as the files allow; a single item runs alone only when it is urgent (another
+worker waits on it, a P0, a red after merge).
 
 1. Before each new group, the worker sends the hub its proposed group plus its open queue, and waits.
 2. The hub regroups: waited-on items first, related items together (§Order of work); fold in newly raised items (design-sync follow-ups, functional
    bugs) so groups are fewer and fuller; batch 1-2 point items into the current group as a parallel wave
    when their files don't overlap, even if their theme differs. No unrelated large feature rides along.
 3. Size-8 items are split by their own worker, never by the hub.
+3a. **A one-item proposal** is regrouped with the rest of that worker's queue. Send it alone only when
+   it is urgent (above) or the queue holds nothing else that fits; say which in the go.
 4. **The hub gives the go itself.** Grouping is the hub's call, not the user's: regroup by §Order of work
    and the rules above, reply to the worker with the group and "go". Tell the user nothing, or one ⚪ FYI
    line when a group starts. The user sees groups in the worker picture on request, and can reorder there.

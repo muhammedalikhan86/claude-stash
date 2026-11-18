@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.11.0"
+  version: "0.12.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -67,6 +67,14 @@ Read each only when its trigger occurs. They are part of this skill.
    impacts, at most their component's; the hub never tells a worker "just run everything".
 10. **The task bar is updated every turn that changes it** (§Task bar). Never end a turn with a stale
    bar.
+11. **Work goes out in logical groups, finalized as a group.** A group is one worker run: develop every
+   item in it, then one Integration, one set of Finalizers and one merge for the whole group. This saves
+   time: finalizing item by item repeats the gate, the doc updates, the graph rebuild and the merge for
+   every item. Build groups by `references/priorities-and-groups.md` §Group planning: related and
+   dependent items together, small items with non-overlapping files folded in, as few and as full as the
+   files allow. **Refuse a single-item run** — a worker that starts or proposes one item alone gets it
+   regrouped with its queue — unless that item is urgent: another worker waits on it, it is a P0, or it
+   is a red after merge.
 
 ## Start-up
 
@@ -118,6 +126,7 @@ in one line, and say nothing to the user unless the last column says so.
 | Question with a default | Answer from settled rules (rulings log, board, PMBook, ADRs, hub.json). None applies and it is the user's call → ask the user, reply "holding your default until <user> answers" | Only if it went to the user |
 | Issue found mid-build | Rule it by `references/priorities-and-groups.md` §Issue triage, record the ruling | No |
 | Next-group proposal | Regroup by `references/priorities-and-groups.md` §Group planning and give the go yourself; never ask the user | No (one FYI line at most) |
+| A worker starting or finishing items one at a time (one item per run, or a finalize per item) | Stop it at its next safe point and regroup its queue (Guardrail 11), unless the item is urgent | No |
 | Gate (Reviewer PASS etc.) | Approve within `delegation`; else ask the user | Only if it went to the user |
 | "Committed, ready to merge" | Merge (`references/merging.md`), green counts, status patch, wake any worker waiting on it, then in helpers the strict after-group disparity check (`references/priorities-and-groups.md`) and, when §Testing decides one is needed, the full test run (`references/merging.md` §Full run after merge) | Milestone line only |
 | "Full suite: suggested — <why>" (alone or in a ready-to-merge message) | Decide by §Testing: run it after the merge, order "run full before merge: <why>", or record "not needed — <why>" in the rulings log | Only if a full run goes red |

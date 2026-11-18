@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.26.0"
+  version: "1.27.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -181,7 +181,14 @@ When the repo has `.claude/hub.json` and a live hub session (`hub.sessionName`),
 2. **Any issue found mid-build** goes to the hub before you raise or take it on. The hub rules it
    functional (an item, ahead of queued features), UI-only (a line in the parity backlog, no item) or
    not recorded.
-3. **Before each new group**, send the hub the proposed group plus your open queue, and wait for the go.
+3. **Work only in groups, and propose one before you start.** One run builds a logical group of items
+   (related, dependent, or sharing files, plus small items whose files don't overlap) and then runs one
+   Integration, one set of Finalizers and one merge for the whole group. That saves time: finalizing item
+   by item repeats the Integration gate, the doc updates, the graph rebuild and the merge for every item.
+   Before each new group, send the hub the proposed group plus your open queue, and wait for the go.
+   Never start a single item on its own; propose a group even when the queue holds one item, and let the
+   hub decide. A single-item run is fine only when the hub sends it as one (an item another worker waits
+   on, a P0, a red after merge).
 4. **Read the rulings log** (`paths.rulingsLog`) before asking; a ruling there is settled.
 5. **When committed and gated**, send "ready to merge `<hash>`: `<item IDs>`, `<points>`, green counts
    `<changes>`". Leave the green-count file (`paths.devEnvironment`) out of your commits.

@@ -44,7 +44,8 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `paths.devEnvironment` | The file that holds green test counts and the known-red list, or empty |
 | `paths.screenshots` | Where browser screenshots go (gitignored) |
 | `merge.ruledExceptions` | Files outside a component's roots that its branch may still change (e.g. its green-count lines). Each with a one-line reason |
-| `watch.heartbeatCron` | Cron expression for the heartbeat |
+| `watch.heartbeatCron` | Cron expression for the heartbeat (`references/timers.md`) |
+| `watch.nightlyCron` | Optional. Cron expression for the nightly layout and parity crawl (`testing.onDemand`); empty or missing → no crawl timer |
 | `triage.tolerancePx` | The strict tolerance (`2`): a look gap this size or smaller is not recorded, and the hub's disparity check fails anything larger |
 | `testing.workerScope` | No longer read. Workers always run only the impacted tests (`affected`), widening to `component` on a component-wide impact; the entire suite is the hub's decision (`SKILL.md` §Testing). An old `full` here does not make workers run everything |
 | `testing.affectedCommand` | The affected-tier command(s) a worker runs (e.g. `npx nx affected -t test --base=origin/main`, its `.slnx`, `npm run test:business -- --project=<component>`). Base on `origin/main`, never plain `main` (no local main in a worker checkout); never `--only-changed` (it can select 0 tests and pass); `components[].testAffected` overrides it per component |

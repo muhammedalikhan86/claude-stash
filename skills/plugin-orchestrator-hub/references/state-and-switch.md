@@ -46,9 +46,10 @@ Newest day at the bottom. A worker that meets a question checks this file before
      ⚪ FYI. No rulings found → create it with just its heading.
    - **Hub operations file over its size limit** (§Where state lives) → prune it now: done items out,
      paragraphs cut to one-line facts, hub.json settings replaced by their key.
-6. Recreate the crons: the heartbeat from hub.json `watch.heartbeatCron`; from the session note, the
-   designer-log check and a usage-limit resume timer whose reset + 5 minutes is still ahead (one already
-   past → resume the workers now instead).
+6. Recreate the crons by `references/timers.md` §Start-up, Resume: check the old hub session is closed
+   first (`ListAgents`), `CronList`, then the heartbeat from hub.json `watch.heartbeatCron`; from the
+   session note, the designer-log check and each usage-limit resume timer whose reset + 5 minutes is
+   still ahead (one already past → resume those workers now instead).
 7. Carry on from Start-up step 4 in `SKILL.md`.
 
 ## Account switch
@@ -60,7 +61,8 @@ Start early: before the limit, not at it. One worker group can take an hour to r
    to each one's idle notice.
 2. **Wait for every `parked`.** A worker that goes idle without one gets one nudge with its live state.
 3. **Merge** every parked branch (`references/merging.md`), green counts, status patch.
-4. **Cancel the crons** (`CronList`, then `CronDelete` each).
+4. **Cancel the crons** (`CronList`, then `CronDelete` each). A cron left on the old account keeps
+   firing and spends that account's limit (`references/timers.md`).
 5. **Prune the hub operations file** to its limit (§Where state lives): done items and old hand-overs
    out, paragraphs cut to one-line facts, any restated hub.json setting replaced by its key. Any ruling
    still sitting in a note moves to the rulings log.

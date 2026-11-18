@@ -41,5 +41,6 @@ Two parts, both in the reply:
    repo's bindings, and reports: rows done, rows still open, failing board tests split into stale tests
    (the owning worker updates the test) and boards that look wrong (a new row).
 2. Hand each finding to its owning worker; new rows go in the next prompt.
-3. Optional: a one-off hourly cron that reads `design.changeLogs` and starts the sync when the round's row
-   IDs appear, then deletes itself.
+3. Optional: one hourly cron that reads `design.changeLogs` and starts the sync when the round's row
+   IDs appear, then deletes itself. At most one at a time; recreated at Resume only while the round is
+   still out (`references/timers.md` §Other timers).

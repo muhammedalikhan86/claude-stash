@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.14.0"
+  version: "0.15.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -30,6 +30,7 @@ Read each only when its trigger occurs. They are part of this skill.
 |---|---|
 | `references/config.md` | Start-up, or hub.json is missing, wrong or being written |
 | `references/state-and-switch.md` | Start-up (resume, including reading the queue file), writing the session note, or an account switch is coming |
+| `references/timers.md` | Creating, firing or cancelling any timer: the heartbeat, a usage-limit resume, the designer-log check, the nightly crawl; start-up, Resume, `/clear` and the account switch |
 | `references/merging.md` | A worker reports a commit ready to merge, or green counts move |
 | `references/priorities-and-groups.md` | A worker raises an issue, proposes a group, or the user asks for the worker picture or a reorder |
 | `references/designer-loop.md` | A worker asks for design row IDs, design rows pile up, the user asks for the designer prompt, or says "designer is done" |
@@ -77,6 +78,9 @@ Read each only when its trigger occurs. They are part of this skill.
    is a red after merge.
 12. **The queue file is updated in the same turn as every change to a worker's direction** (§Queue
    file). It shows what the hub has told the workers, never what the workers plan.
+13. **The hub owns every timer** (`references/timers.md`). `CronList` before every `CronCreate`; one
+   one-shot resume timer per limit reset, never a recurring one; every live timer listed in the session
+   note; all cancelled before an account switch.
 
 ## Start-up
 
@@ -113,8 +117,9 @@ Read each only when its trigger occurs. They are part of this skill.
 7. **Brief each worker** in one message: "I am the hub (`<session name>`). Send me every question, gate
    and issue; send a default with each question and keep working. Your queue: <groups>. Next: <step>."
    Subscribe to its idle notice (`notify_when_idle: true`). Then send the task bar (§Task bar).
-8. **Crons.** Recreate the heartbeat from `watch.heartbeatCron` (never from a note) and any open
-   designer-log check. Crons die with the session, so the session note lists them.
+8. **Timers.** Follow `references/timers.md` §Start-up, Resume: `CronList` first, then the heartbeat from
+   `watch.heartbeatCron` (never from a note), any open designer-log check, `watch.nightlyCron` if set,
+   and any resume timer still ahead. Crons die with the session, so the session note lists them.
 9. Tell the user, in one short tiered reply, every worker by name (N of N live), what each runs next, and
    anything waiting on them.
 
@@ -175,18 +180,17 @@ follow that file.
    in the same message, to send "parked" (or its report) when it stops, and rely on that message and the
    heartbeat. Subscribe again once the worker is idle.
 2. **Heartbeat cron** (`watch.heartbeatCron`): one pass of ListAgents, merge whatever is ready, green
-   counts, open answers, nudge any worker idle without a reason, status page, task bar. It is a
-   fallback, not a poll.
-3. **Usage limits.** When the user says a limit is near, or a worker reports one, or the hub sees one
-   coming, start the switch prep (`references/state-and-switch.md` §Account switch) early enough that
-   every worker reaches a safe stop before the limit.
-   **When a limit hits** (the 5-hour or the weekly one) and the work stays on this account, set a
-   **resume timer**: a one-shot cron (`CronCreate`) at the reset time + 5 minutes. When it fires: read
-   each worker's live state (`references/state-and-switch.md` §Where state lives); tell every parked or
-   idle worker to carry on from its handoff's next step, and a worker that stopped mid-step to resume
-   that step; subscribe to each one's idle notice. Then tell the user, in one line, who resumed. Session
-   crons die with the session: the timer goes in the session note, and a hub that restarts or takes over
-   on another account recreates it if the reset is still ahead.
+   counts, open answers, nudge any worker idle without a reason, status page, task bar, queue file. It is
+   a fallback, not a poll. A pass that finds nothing says nothing (`references/timers.md` §Heartbeat).
+3. **Usage limits.** When the user says the weekly limit is near, or the hub sees it coming, start the
+   switch prep (`references/state-and-switch.md` §Account switch) early enough that every worker reaches
+   a safe stop before the limit. A 5-hour limit the hub sees coming for itself: tell the workers what to
+   do alone first (`references/timers.md` §Usage-limit resume timers step 6).
+   **When the 5-hour limit hits** a worker or the hub, set a **resume timer**: one one-shot cron per
+   distinct reset time, at reset + 5 minutes, naming the workers it resumes; never a recurring one. How
+   to read the reset time, what the timer does when it fires, a reset already past, and the hub's own
+   limit: `references/timers.md` §Usage-limit resume timers. **The weekly limit** is an account switch,
+   started about an hour early, not a timer.
 4. Suggest `/summarise` and `/clear` to the user when the hub's context is long and the workers are
    quiet.
 

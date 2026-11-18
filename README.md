@@ -188,10 +188,10 @@ To update later: `git pull`, then `.\install.ps1`.
 | Mod | State |
 |---|---|
 | `answer-buttons` | **On.** Buttons under Claude's `[Question]:` lines (rhetorical questions get none). Loaded through `CLAUDE_CODE_PLUGIN_DIRS` |
-| `task-bar` | Off by default. Task list pinned above the prompt |
+| `task-bar` | **On.** Task list and a full-width progress bar pinned above the prompt, with per-task elapsed and estimated times. Loaded through `CLAUDE_CODE_PLUGIN_DIRS`; turn off any uploaded copy in `/plugin` so only one draws |
 | `comment-on-response` | Off by default. `/comment` on selected reply text |
 
-To turn on an extra mod for one session: `claude --plugin-dir "$env:USERPROFILE\.claude\mods\task-bar"`.
+To turn on an extra mod for one session: `claude --plugin-dir "$env:USERPROFILE\.claude\mods\comment-on-response"`.
 
 The mods' `tsconfig.json` points at `.claude-plugin/types/`. Claude Code generates that folder, so
 it is not in git. It only matters for editor type-checking, not for running the mod.

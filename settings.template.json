@@ -1,7 +1,7 @@
 {
   "env": {
     "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "300000",
-    "CLAUDE_CODE_PLUGIN_DIRS": "__CLAUDE_DIR__\\mods\\answer-buttons",
+    "CLAUDE_CODE_PLUGIN_DIRS": "__CLAUDE_DIR__\\mods\\answer-buttons;__CLAUDE_DIR__\\mods\\task-bar",
     "CONTEXT7_API_KEY": "__CONTEXT7_API_KEY__"
   },
   "permissions": {

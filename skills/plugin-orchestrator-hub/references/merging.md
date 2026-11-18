@@ -46,14 +46,16 @@ git merge-tree --write-tree --name-only HEAD FETCH_HEAD | tail -n +2
    these items that they are on main and it should pull, and tell the user the milestone. Then start
    the strict **after-group disparity check** for that component in a background helper
    (`references/priorities-and-groups.md` §After-group disparity check).
-10. **Full test run** (when `testing.workerScope` is `affected`): the workers' gates ran only the
-   affected tier, so the hub runs the full set (§Full run after merge), after this merge or once per
-   batch (`testing.fullAfter`).
+10. **Full test run — the hub's decision.** Workers gate only the tests their change impacts (at most
+   their component's), so the entire suite is the hub's call alone: decide it now by `SKILL.md`
+   §Testing (the worker's `Full suite:` line, what the merge touched, `testing.fullAfter`), record the
+   decision in the rulings log, and when it is yes run §Full run after merge.
 
 ## Full run after merge
 
-Workers under tiered testing gate only what their change affects. The full set runs here, in a
-background helper, on the hub checkout (its port offset), never in a worker's checkout.
+Workers gate only what their change impacts. The entire suite runs only here, when the hub decides
+(`SKILL.md` §Testing), in a background helper, on the hub checkout (its port offset), never in a
+worker's checkout.
 
 1. Run `testing.fullCommand` with each suite's output sent to a log file (summary lines and failures
    only, never a whole log). Leave out `testing.onDemand` suites.

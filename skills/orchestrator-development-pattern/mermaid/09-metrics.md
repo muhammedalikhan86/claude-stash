@@ -11,7 +11,7 @@ flowchart TD
     Pause["Escalation pause:<br/>run-state saved,<br/>NOT marked complete"]
     Mis["Step 0.1b: design mismatch<br/>on a built screen, noted;<br/>written after Step 0.4<br/>saves run-state and event time"]
     RowI["Item row: loop_count minus<br/>loopCountAtEscalation, UNVERIFIED<br/>and Parity mismatches for this<br/>leg, from run-state"]
-    RowInt["Integration row: Test scope full,<br/>Divide-and-Conquer?, Known-reds"]
+    RowInt["Integration row: Test scope affected or full,<br/>Divide-and-Conquer?, Known-reds"]
     RowRun["RUN row: Type Run; Verdict<br/>Complete at 🏁, or Paused (escalation)<br/>at a pause; Phase times P0 · P1 · MV · P2 · P3"]
     Commit["User says commit"]
     Ids["Set commit ids from<br/>git log --grep Run-Id<br/>on this run's latest RUN row"]

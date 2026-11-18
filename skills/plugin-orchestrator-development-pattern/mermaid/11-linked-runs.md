@@ -35,7 +35,7 @@ flowchart TD
     Par --> Resp
     Seq --> Resp["Raised from a FAIL: once the<br/>linked item passes Review,<br/>respawn the first Reviewer"]
     Resp --> MV["One batched Step 1.5<br/>for every linked bug"]
-    MV --> Int["ONE combined Phase 2,<br/>Test scope full,<br/>Diff Guard per item"]
+    MV --> Int["ONE combined Phase 2,<br/>Test scope component (each),<br/>full suite suggested to hub,<br/>Diff Guard per item"]
     Int --> Met["Integration metrics row<br/>in each component's file:<br/>linked with other component"]
     Met --> Fin["Each component's Finalizers,<br/>as apply, all in one message"]
     Fin --> Commit["One commit per component,<br/>depended-on first,<br/>push only on a go"]

@@ -18,7 +18,10 @@ plugin change that breaks a test or contract the shell owns. They run in one orc
 - **Phase 1** runs per item as normal; the dependency orders them (the depended-on item first, or in
   parallel when their files are disjoint).
 - **Step 1.5** is one batched message covering every linked run's Bugs.
-- **Phase 2 runs once, combined**, at `Test scope: full`, over the whole tree. Its Integration metrics
+- **Phase 2 runs once, combined**, at `Test scope: component` for every linked component (each one's
+  `Test (component)`, run together), never `full` on this skill's own judgement: a linked change reaches
+  past one component, so it always carries `Full suite: suggested — linked run`, for the hub (or, solo,
+  the user) to decide (Step 2.0). Its Integration metrics
   row goes into each component's `metrics-log-file`, the Verdict noting `linked with <other component>`.
 - **Phase 3** spawns each component's Finalizers (Step 3.1–3.4, as apply), all in one message — their
   files are disjoint.

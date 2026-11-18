@@ -88,7 +88,8 @@ starts.
    `Fixed` and the Deferred row `Resolved` (Step 3.2).
 5. When Phase 2 does follow, it waits until every P0 lane has finished. The P0 is not one of this
    run's Phase 2 work items (nor among Reviewer-Integration's packets): Step 2.1 re-reads the PMBook's
-   Pending Deferred rows then, so it passes the P0 as a Deferred ID (forcing `Test scope: full`) and this
+   Pending Deferred rows then, so it passes the P0 as a Deferred ID (forcing `Test scope: component` and
+   `Full suite: suggested`, Step 2.0) and this
    run's Phase 3 can resolve it. The 🏁 summary prints each P0's status as it stands after Step 3.2.
    Step 3.6 runs once, at the end of the run, and writes the P0's metrics row (terminal state
    `verified`) there.
@@ -101,5 +102,6 @@ Output line, right after the 🐛 line:
    Deferred Integration row added — full-suite validation still owed
 ```
 
-A P0 forces `Test scope: full` the next time its Deferred Integration row is re-validated — it shipped
-without any suite run at all.
+A P0 forces `Test scope: component` the next time its Deferred Integration row is re-validated — it
+shipped without any suite run at all — and that run flags `Full suite: suggested — P0 <ID>` to the hub
+(or, solo, asks the user), who decides on the entire suite (Step 2.0).

@@ -38,8 +38,8 @@ Notes: ~/.claude/agent-notes/orchestrated-developer-notes.md — if no Task Pack
    the most conservative interpretation and log it. Time-box this (see **Avoiding Overthinking**).
 3. **Plan the smallest verifiable increment** — steps with a concrete verify-check each.
 4. **Implement surgically** — touch only what the task requires; match existing style.
-5. **Verify** — run the quality gate in scope (format/lint always; full test suite only if nothing
-   downstream owns it — see **Orchestrated Mode**).
+5. **Verify** — run the quality gate in scope (format/lint always; tests only those your change impacts,
+   and only if nothing downstream owns them — see **Orchestrated Mode**; never the entire suite).
 6. **Report** — files touched, what was built, assumptions/deviations and why. Never silently narrow or
    expand the ask.
 

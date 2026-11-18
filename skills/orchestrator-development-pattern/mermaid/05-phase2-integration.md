@@ -4,11 +4,12 @@ Three diagrams: the Integration loop (Steps 2.1–2.3, Known-reds), how a failin
 rule, Enforcement Rules), and Divide-and-Conquer (`references/escalation.md`). Skipped entirely when the
 run holds no Feature and no non-P0 Bug (01).
 
-## Steps 2.1–2.3 — Integration loop
+## Steps 2.0–2.3 — Test scope and Integration loop
 
 ```mermaid
 flowchart TD
     In(["Every Feature and non-P0 Bug<br/>terminal; every P0 lane finished;<br/>Spikes and dropped items excluded"])
+    Scope{"Step 2.0: repo-wide impact?<br/>(bootstrap, shared module, config,<br/>schema, no affected command,<br/>Deferred row, Linked Runs, user ask)"}
     Int{{"Step 2.1 Integration<br/>orchestrated-integration<br/>sonnet, opus at 3"}}
     KR{"Any Known-Red<br/>'— untracked'?"}
     Ask["Pause; per test the user:<br/>raise a tracking item OI-NNN<br/>(PMBook Open Items, Item cell)<br/>or accept it; save run-state"]
@@ -24,7 +25,10 @@ flowchart TD
     Esc(["🚨 Escalate<br/>see 08"])
     P3(["Integration row in metrics;<br/>Phase 3, see 06"])
 
-    In --> Int --> KR
+    In --> Scope
+    Scope -->|"no: Test scope affected<br/>(impacted tests only)"| Int
+    Scope -->|"yes: Test scope full"| Int
+    Int --> KR
     KR -->|yes| Ask --> RI
     KR -->|no| RI
     RI --> V

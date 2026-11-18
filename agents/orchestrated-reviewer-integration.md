@@ -109,7 +109,9 @@ to make its report look clean. Check that the report is true, not just coherent.
 - **Test scope.** The Integration Output may report a component-scoped run
   (`Tests (component scope: <command>)`). That is legitimate only when the prompt says the orchestrator
   set Test scope to `component`; an affected-tier run (`Tests (affected scope: <command>)`) only when it
-  set `affected`. A narrower run than the scope set — or no stated scope at all — is an Issue.
+  set `affected`; a full run only when it set `full`. A narrower run than the scope set — or no stated
+  scope at all — is an Issue. So is a wider run the agent chose itself: it reports a wider need as
+  `Wider scope suggested: <tier> — <why>`, it does not run it.
 
 ### 2. Fixes Applied — Root Cause or Gamed
 

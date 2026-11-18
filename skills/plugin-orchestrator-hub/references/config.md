@@ -45,10 +45,10 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `merge.ruledExceptions` | Files outside a component's roots that its branch may still change (e.g. its green-count lines). Each with a one-line reason |
 | `watch.heartbeatCron` | Cron expression for the heartbeat |
 | `triage.tolerancePx` | The strict tolerance (`2`): a look gap this size or smaller is not recorded, and the hub's disparity check fails anything larger |
-| `testing.workerScope` | `affected`: a worker's Integration gate runs only the affected tier (tiered testing); `full` or absent: workers keep their own scope rules |
+| `testing.workerScope` | No longer read. Workers always run only the impacted tests (`affected`), widening to `component` on a component-wide impact; the entire suite is the hub's decision (`SKILL.md` §Testing). An old `full` here does not make workers run everything |
 | `testing.affectedCommand` | The affected-tier command(s) a worker runs (e.g. `npx nx affected -t test --base=origin/main`, its `.slnx`, `npm run test:business -- --project=<component>`). Base on `origin/main`, never plain `main` (no local main in a worker checkout); never `--only-changed` (it can select 0 tests and pass); `components[].testAffected` overrides it per component |
-| `testing.fullCommand` | The full set the hub runs after a merge (every suite) |
-| `testing.fullAfter` | `merge` (each merge) or `batch` (once per batch of merges, at the latest at the next heartbeat) |
+| `testing.fullCommand` | The entire suite (every suite), run only when the hub decides (`SKILL.md` §Testing) |
+| `testing.fullAfter` | The backstop on top of the hub's per-change decision: `decide` (default: only when §Testing says, plus once before "ready to test"), `batch` (also once per batch of merges, at the latest at the next heartbeat) or `merge` (after every merge) |
 | `testing.onDemand` | Suites kept out of every gate and run on demand or nightly (the layout and parity crawls) |
 | `triage.workerParityTolerancePx` | The lenient per-item Board Parity tolerance a worker uses under this hub (`20`). A px gap between the two goes to the parity backlog, not a FAIL; functional gaps fail at any size |
 
@@ -112,8 +112,8 @@ dev-ports script and the run skill read; the hub reads it from there, never from
   ] },
   "watch": { "heartbeatCron": "45 4,9,14,18,23 * * *" },
   "triage": { "tolerancePx": 2, "workerParityTolerancePx": 20 },
-  "testing": { "workerScope": "affected", "affectedCommand": "make test-affected COMPONENT=<component>",
-               "fullCommand": "make test-full", "fullAfter": "merge", "onDemand": ["layout crawl", "parity crawl"] }
+  "testing": { "affectedCommand": "make test-affected COMPONENT=<component>",
+               "fullCommand": "make test-full", "fullAfter": "decide", "onDemand": ["layout crawl", "parity crawl"] }
 }
 ```
 

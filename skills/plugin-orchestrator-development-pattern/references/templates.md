@@ -413,7 +413,9 @@ You are operating in **orchestrated mode**.
 
 ## Platform Profile
 <INSERT PLATFORM PROFILE, including the Test scope line:
- "Test scope: full — <reason>"  or  "Test scope: component — <component test command> — <reason>">
+ "Test scope: affected — <affected test command> — <reason>"  or
+ "Test scope: component — <component test command> — <the component-wide impact>"  or
+ "Test scope: full — <reason: ordered by the hub | the user's yes | override>">
 
 ## Gate Log Directory
 <INSERT <work dir>/gate-logs/<run id>/>

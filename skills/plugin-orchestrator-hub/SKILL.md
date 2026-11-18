@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.10.1"
+  version: "0.11.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -63,6 +63,10 @@ Read each only when its trigger occurs. They are part of this skill.
    `paths.screenshots` (gitignored); a browser tool refuses the scratchpad.
 8. **Never busy-poll.** Use idle notices and the heartbeat (§Watching), never a loop of `ListAgents`
    or "are you done?" messages.
+9. **Only the hub decides the entire test suite** (§Testing). Workers run only the tests their change
+   impacts, at most their component's; the hub never tells a worker "just run everything".
+10. **The task bar is updated every turn that changes it** (§Task bar). Never end a turn with a stale
+   bar.
 
 ## Start-up
 
@@ -98,7 +102,7 @@ Read each only when its trigger occurs. They are part of this skill.
    still missing is named back to the user. Never brief a worker that is not listed, and never poll.
 7. **Brief each worker** in one message: "I am the hub (`<session name>`). Send me every question, gate
    and issue; send a default with each question and keep working. Your queue: <groups>. Next: <step>."
-   Subscribe to its idle notice (`notify_when_idle: true`).
+   Subscribe to its idle notice (`notify_when_idle: true`). Then send the task bar (§Task bar).
 8. **Crons.** Recreate the heartbeat from `watch.heartbeatCron` (never from a note) and any open
    designer-log check. Crons die with the session, so the session note lists them.
 9. Tell the user, in one short tiered reply, every worker by name (N of N live), what each runs next, and
@@ -106,8 +110,8 @@ Read each only when its trigger occurs. They are part of this skill.
 
 ## The hub loop
 
-Each incoming worker message is one of these. Act, reply to the worker in one line, and say nothing to
-the user unless the last column says so.
+Each incoming worker message is one of these. Act, update the task bar (§Task bar), reply to the worker
+in one line, and say nothing to the user unless the last column says so.
 
 | Message | Hub does | Tell the user? |
 |---|---|---|
@@ -115,7 +119,8 @@ the user unless the last column says so.
 | Issue found mid-build | Rule it by `references/priorities-and-groups.md` §Issue triage, record the ruling | No |
 | Next-group proposal | Regroup by `references/priorities-and-groups.md` §Group planning and give the go yourself; never ask the user | No (one FYI line at most) |
 | Gate (Reviewer PASS etc.) | Approve within `delegation`; else ask the user | Only if it went to the user |
-| "Committed, ready to merge" | Merge (`references/merging.md`), green counts, status patch, wake any worker waiting on it, then in helpers the strict after-group disparity check (`references/priorities-and-groups.md`) and, under tiered testing, the full test run (`references/merging.md` §Full run after merge) | Milestone line only |
+| "Committed, ready to merge" | Merge (`references/merging.md`), green counts, status patch, wake any worker waiting on it, then in helpers the strict after-group disparity check (`references/priorities-and-groups.md`) and, when §Testing decides one is needed, the full test run (`references/merging.md` §Full run after merge) | Milestone line only |
+| "Full suite: suggested — <why>" (alone or in a ready-to-merge message) | Decide by §Testing: run it after the merge, order "run full before merge: <why>", or record "not needed — <why>" in the rulings log | Only if a full run goes red |
 | Design row IDs request | Hand them out (`references/designer-loop.md` §Row IDs) | No |
 | Item for another component | Route it to the owner, pass the new ID back, note the dependency | No |
 | Shared-file change request | Make it in the hub checkout (or give it to the worker that owns shared files) | No |
@@ -158,8 +163,8 @@ follow that file.
    in the same message, to send "parked" (or its report) when it stops, and rely on that message and the
    heartbeat. Subscribe again once the worker is idle.
 2. **Heartbeat cron** (`watch.heartbeatCron`): one pass of ListAgents, merge whatever is ready, green
-   counts, open answers, nudge any worker idle without a reason, status page. It is a fallback, not a
-   poll.
+   counts, open answers, nudge any worker idle without a reason, status page, task bar. It is a
+   fallback, not a poll.
 3. **Usage limits.** When the user says a limit is near, or a worker reports one, or the hub sees one
    coming, start the switch prep (`references/state-and-switch.md` §Account switch) early enough that
    every worker reaches a safe stop before the limit.
@@ -172,6 +177,49 @@ follow that file.
    on another account recreates it if the reset is still ahead.
 4. Suggest `/summarise` and `/clear` to the user when the hub's context is long and the workers are
    quiet.
+
+## Task bar
+
+The user reads the hub's progress from the task bar (`mcp__task-bar__set_tasks`), not from scrollback.
+The hub has kept forgetting it, so it is part of every turn, not a nicety.
+
+1. **What it holds.** One line per live piece of hub work, whole list every call:
+   - each worker: `<worker>: <running group or item> — <state>` (building, in review, waiting on hub,
+     waiting on user, parked);
+   - each merge waiting or running, each full test run, each background helper (disparity check, status
+     patch, sync);
+   - each open question to the user, as `Waiting on you: <one line>`.
+   Done work stays `completed` until the user has seen it in a reply, then drops off.
+2. **When to send it.** In the same turn as any of these, before the reply: a worker message handled
+   (every row of §The hub loop), a merge started or finished, a helper started or finished, a full run
+   started or finished, a question asked or answered, a worker opened, parked or resumed, a reorder, and
+   every heartbeat pass. Start-up sends it once the workers are briefed (step 7).
+3. **Check before ending a turn.** Last step of every hub turn: does the bar match what just changed?
+   If not, send it now. A turn that changed nothing sends nothing.
+4. No task-bar tool in this session → carry on without it, and say so once at start-up.
+
+## Testing: the hub alone decides the entire suite
+
+Workers run only the tests their change impacts (`affected`), widening to their component's tests
+(`component`) only on a component-wide impact. They never decide the entire suite; **the hub does**,
+per change. Each "ready to merge" message carries `Test scope: <affected|component> — <why>` and
+`Full suite: not needed | suggested — <why>`.
+
+1. **Run the entire suite** (after the merge, `references/merging.md` §Full run after merge) when any of
+   these holds: the worker suggested it; the merge touches the shell, a root manifest or lockfile,
+   shared `libs/`, CI config, or a `merge.ruledExceptions` file; it changes a contract another component
+   reads; it re-validates a P0's Deferred Integration row; or two or more merges since the last green
+   full run touched the same shared area.
+2. **Order it before the merge** ("run full before merge: <why>") only when a red after merge would be
+   costly to undo (a schema or migration, a change several workers will pull at once). The worker then
+   sets `Test scope: full`.
+3. **Otherwise no full run** for that merge. Record each decision — run, ordered, or not needed, with
+   the reason — in the rulings log.
+4. **Backstop** (`testing.fullAfter`): `decide` (default) runs only on the rules above, plus once
+   before a component is called ready to test; `batch` also runs it once per batch of merges, at the
+   latest at the next heartbeat; `merge` runs it after every merge.
+5. The user's explicit ask runs it any time. A worker told **override** by the user runs it itself and
+   says so in its report.
 
 ## Stack and environment
 

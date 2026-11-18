@@ -31,10 +31,13 @@ its Developer Output records it as a justified deviation; a file inside another 
    root-cause discipline below. `find-skills` may search the marketplace, but never install — flag the
    gap under Unresolvable Issues.
 1. **Orient** — Establish the Platform Profile (or discover it) and the test scope. If the profile carries
-   `Test scope: component` with a component-scoped command, or `Test scope: affected` with an
-   affected-tier command (a worker under a hub), that is your scope; `full` or no line means
-   the entire codebase — every command the profile lists for the full suite, including other
-   languages' suites. Never narrow it yourself ("no .NET file changed" is not a reason to skip one); a
+   `Test scope: affected` with an affected-tier command (only the tests the change impacts — the
+   default), or `Test scope: component` with a component-scoped command, that is your scope; `full` or
+   no line means the entire codebase — every command the profile lists for the full suite, including
+   other languages' suites. Never narrow it yourself ("no .NET file changed" is not a reason to skip
+   one), and never widen it yourself either: who runs a wider tier is the orchestrator's call (and, for
+   the entire suite in a plugin repo, the hub's). If you see a reason the change reaches further than
+   your scope, report it as `Wider scope suggested: <tier> — <why>` in Overall Status. A
    `## Sub-problem` section is the one narrowing the prompt itself makes (Orchestrated Mode item 6). If
    the prompt gives a stack order (what needs the app running and what needs it stopped), follow it. Note any `## Deferred Integration` Bug IDs for Step 9.
 2. **Run the quality gate once** — format, lint, tests (at the given scope), security audit. Log every
@@ -54,9 +57,10 @@ its Developer Output records it as a justified deviation; a file inside another 
 5. **Re-run, bounded** — a green first run of the gate is final; do not re-run a passing suite. Re-run
    only (a) the specific tests touched by a fix, then the gate once more after all fixes are in, or (b) a
    test that showed flakiness, per the single isolated re-run in Step 3. Never run the same passing suite
-   more than once "for confidence". If any fix lands outside the component's code roots while under
-   `component` scope, switch to the full suite for that final run and say so (under `affected`, re-run
-   the affected command: it already takes in what the fix touched). **A retry marked
+   more than once "for confidence". Under `affected`, the final run re-runs the affected command: it
+   already takes in what the fix touched. If any fix lands outside the component's code roots while
+   under `affected` or `component` scope, do not switch to the full suite yourself: re-run your scope,
+   and report `Wider scope suggested: full — fix touched <paths>` so the orchestrator passes it on. **A retry marked
    `Doc-only retry` re-runs nothing:** fix only docs and your report, edit no code, test or config file,
    and carry the gate results forward, marked `carried forward from pass <N>`. Docs do not change test
    outcomes.

@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.25.0"
+  version: "1.26.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -149,6 +149,15 @@ instead; it is never a bug. A new conversation starts back at the high bar.
 - **Developers write tests and may run only their packet's `Tests you may run`, never the suite.**
   Several Developers may be working at once against an incomplete codebase; the Integration Agent owns
   test execution and build health.
+- **A component runs only the tests its change impacts.** Three tiers, and each has one owner:
+  1. **Impacted** (`affected`) — the default for every run: the tests that cover what this run changed
+     (Step 0.2's `Test (affected)`). The Developer's and Reviewer's own runs are narrower still (the
+     item's own test classes).
+  2. **Component** (`component`) — the most this skill ever runs. Integration widens to it only when
+     Step 2.0 finds the change could have a component-wide impact.
+  3. **Entire suite** (`full`) — never this skill's decision. Under a hub, only the hub decides it and
+     runs it (`plugin-orchestrator-hub`); this run flags `Full suite: suggested — <why>` in its report.
+     With no hub, the user decides (Step 2.0).
 - **Parallel where it cannot collide, serial where it can.** Independent work items run as waves
   (Step 1.0). Anything sharing a file, a build unit or a root manifest runs one after another.
 - **Cold spawns, paths not contents.** Every sub-agent is a fresh single-purpose spawn. Retries spawn
@@ -194,17 +203,23 @@ When the repo has `.claude/hub.json` and a live hub session (`hub.sessionName`),
 10. **Design row IDs come from the hub.** Before writing any design row, ask the hub for its IDs
    ("row IDs: `<letter>` × `<count>`, for `<item>`") and use exactly those. Never take the next number
    from your own rows file: another worker may already hold it on its branch.
-11. **Tiered testing: your gate runs only the affected tier.** When hub.json `testing.workerScope` is
-   `affected`, Step 2.0 sets `Test scope: affected`: the command in hub.json `testing.affectedCommand`
-   (this component's `testAffected` overrides it), e.g. `npx nx affected -t test --base=origin/main`,
-   its own `.slnx`, and its own business tests by project (`npm run test:business --
-   --project=<component>`). Never a base of plain `main` (a worker checkout has no local main) and never
-   `--only-changed` (generated BDD specs don't track `.feature` edits, so it can select 0 tests and
-   pass). It replaces both
-   `component` and `full`, the shell included; only the user's explicit ask gets `full`. The crawls in
+11. **Tiered testing: the hub alone decides the entire suite.** A worker's gate is `affected` by
+   default, `component` at most (Step 2.0), never `full` unless the hub orders it ("run full before
+   merge: <why>"). The affected command is hub.json `testing.affectedCommand` (this component's
+   `testAffected` overrides it), e.g. `npx nx affected -t test --base=origin/main`, its own `.slnx`, and
+   its own business tests by project (`npm run test:business -- --project=<component>`); with neither
+   set, Step 0.2's `Test (affected)`. Never a base of plain `main` (a worker checkout has no local main)
+   and never `--only-changed` (generated BDD specs don't track `.feature` edits, so it can select 0 tests
+   and pass). This holds for the shell too, and whatever `testing.workerScope` says. The crawls in
    `testing.onDemand` (layout and parity crawls) stay out of the gate. Per-item Board Parity (Step 1.3b)
-   is unchanged. The hub runs the full set after it merges and sends any red back to its owner; take it
-   as a functional bug, ahead of queued features. A solo run (item 8) keeps the full gate.
+   is unchanged. **When the change could reach past this component** (Step 2.0's full-suite triggers),
+   do not widen: put `Full suite: suggested — <trigger>` in the "ready to merge" message, and the hub
+   decides. An Integration Output's `Wider scope suggested: full — <why>` is sent the same way, as
+   `Full suite: suggested — <why>`. Every "ready to merge" message carries `Test scope: <affected|component> — <why>` and
+   `Full suite: not needed | suggested — <why>`. The hub runs the entire suite when it decides to and
+   sends any red back to its owner; take it as a functional bug, ahead of queued features. A user who
+   asks this worker directly for a full run is sent to the hub: "the hub decides full runs; ask it, or
+   say **override** to run it here". Only "override" runs it here.
 
 ---
 
@@ -278,7 +293,8 @@ Edit this table to change a model; nothing else needs to change. Values are tier
   ▼
 [MANUAL VERIFICATION GATE] all queued Bugs in one message → "verified" / reports a failure → retry loop
   ▼
-[INTEGRATION] Test scope decided (component or full) → [INTEGRATION AGENT] diff guard, gate (output to
+[INTEGRATION] Test scope decided (affected, or component on a component-wide change; full only
+              when the hub or, solo, the user says) → [INTEGRATION AGENT] diff guard, gate (output to
               log files), fixes, audit, E2E, drift, self-check → [REVIEWER-INTEGRATION, skipped on a
               clean first pass] → retry ≤3 (doc-only retry: no gate re-run) → Divide-and-Conquer → escalate
   ▼
@@ -477,8 +493,17 @@ check mode, the gate is that mode — it fails on unformatted code, where a plai
 **Component test command.** Also record how to run *only this component's* tests — derived from what
 the repo actually has, e.g. `npx nx run-many -t test -p <projects under the component's roots>`, or
 `dotnet test <the component's test projects>`. Record it in the Platform Profile as
-`Test (component): <command>`. If no reliable component-scoped command exists, record `none` — every run
-then uses the full suite.
+`Test (component): <command>`. If no reliable component-scoped command exists, record `none`.
+
+**Affected test command.** Also record how to run *only the tests a change impacts*, as
+`Test (affected): <recipe>`: a command that takes the run's changed files and selects the tests that
+cover them and what depends on them. Use the runner's own impact tool where there is one: Nx
+`npx nx affected -t test --base=origin/main` (or `--files=<changed files>`), Jest
+`npx jest --findRelatedTests <files>`, .NET the test projects that reference the changed projects
+(`dotnet test <those test projects>`), Go `go test <changed packages and their importers>`, Python
+`pytest <the test files for the changed modules>`. Under a hub, hub.json `testing.affectedCommand` (or the
+component's `testAffected`) is the recipe. Check it once with a list-only run, like any scoped command.
+If none can be built reliably, record `none`: Step 2.0 then uses `component`.
 
 **Stack lifecycle.** If any gate needs the app running (E2E, a Bug whose regression test is E2E) or
 stopped (a build or test run that a running process would lock), record it in the Platform Profile as
@@ -528,7 +553,8 @@ Held for design: <ID> — waits on <row IDs> (round <NNN>, open | sent <date>)  
 Too big (8):     <ID> — proposed: <part> (<pts>) + <part> (<pts>) | spike first — waits for your yes   (or omit)
 
 Developer Quality Gate (per item):  Format: <command>  Lint: <command>
-Integration Quality Gate:           Test (full): <command>  Test (component): <command or none>
+Integration Quality Gate:           Test (affected): <recipe or none>  Test (component): <command or none>
+                                    Test (full): <command> (the hub's call, or the user's when solo)
                                     Audit: <command>
 
 Estimated spawns: best <B> · typical ~<T> · worst <W>
@@ -556,11 +582,13 @@ skips both (Step 0.1b, item 7).
 
 Before any spawn, run the tests once on the untouched tree, so a test that was already red is never
 mistaken for this run's regression. Bring the stack to the state the tests need (Step 0.2's `Stack`
-line). Run `Test (component)` — or `Test (full)` when the component is the shell or `Test (component)` is
-`none` — writing the output to the gate log directory, not into context. Save every failing or flaky test
+line). Run `Test (component)` — never `Test (full)`, the shell included: the entire suite is the hub's
+call — writing the output to the gate log directory, not into context. Save every failing or flaky test
 in run-state as `baseline.reds` (the test, how it failed, the command that ran it), and print
-`Baseline: <N> red at start (<command>)`. Step 2.0 may later choose `full` after a component baseline:
-then reds outside the component were not measured — say so in the Integration prompt.
+`Baseline: <N> red at start (<command>)`. When `Test (component)` is `none`, skip it and print
+`Baseline: skipped — no component command; known reds from <the hub's known-red list, or none>`. If a
+`full` run is later ordered (Step 2.0), reds outside the component were not measured — say so in the
+Integration prompt.
 
 **Skip it** for a P0-only or Spike-only run, a UI Iteration, and a mid-run intake (the run's baseline
 already exists), and print `Baseline: skipped — <why>`. **A resume reuses the saved `baseline.reds`,
@@ -865,17 +893,38 @@ Decide from **the run's own file set** — the same set the Diff Guard reads: ev
 the `integration` block's `files`. Ignore paths under `docs-directory` and `graphify-out` (docs don't
 change test outcomes). Then:
 
-- **`affected`** when this run is a hub worker (§Working under a hub item 11) and hub.json
-  `testing.workerScope` is `affected`, unless the user asked for a full run. The rules below are then
-  skipped: the hub's full run after merge is the backstop.
+A component runs only the tests its change impacts (Key design principles). Pick the narrowest tier
+that covers the change:
 
-- **`full`** if any of these is true: the component is the **shell** (every plugin builds against it);
-  any path in the run's file set lies outside this component's `code` roots (root manifest, lockfile,
-  shared `libs/`, CI config); `Test (component)` is `none`; a `## Deferred Integration` row is being
-  re-validated; or the user asked for a full run.
+- **`affected`** (the default) — `Test (affected)` from Step 0.2 run over the run's file set, plus the
+  `test-cases-doc` scenarios for the flows those files serve.
 
-- **`component`** otherwise — use `Test (component)` from Step 0.2, plus this component's scenarios in
-  `test-cases-doc`, plus any contract or conformance tests `platform-architecture-file` names.
+- **`component`** — only when the change **could have a component-wide impact**. Any one of these is
+  enough, and the reason names it: a file the whole component loads (its bootstrap or startup, DI or
+  module registration, routing, global styles or theme, interceptors or middleware); a shared module,
+  base class or helper inside the component that many features use; the component's own build, test or
+  package config, or its lockfile; a schema or migration, or a contract other features of this component
+  read; `Test (affected)` is `none` or selects 0 tests for a run that changed code; or a
+  `## Deferred Integration` row is being re-validated (a P0 shipped without any suite run). Use
+  `Test (component)`, plus this component's scenarios in `test-cases-doc`, plus any contract or
+  conformance tests `platform-architecture-file` names. `Test (component)` is `none` → stay at
+  `affected` and say so.
+
+- **`full`** — **never this skill's own decision.** Only when the hub ordered it for this change ("run
+  full before merge: <why>"), or, in a solo run, the user said yes below, or the user said **override**
+  (§Working under a hub item 11).
+
+**Full-suite triggers** (the change could reach past this component): the component is the **shell**
+(every plugin builds against it); any path in the run's file set lies outside this component's `code`
+roots (root manifest, root lockfile, shared `libs/`, CI config); a `## Deferred Integration` row is being
+re-validated; or the change alters a contract another component reads. A trigger never widens the gate
+past `component` by itself:
+- **Hub worker:** run at `affected` or `component` as above, and send the hub `Full suite: suggested —
+  <trigger>` with the "ready to merge" message. The hub decides.
+- **Solo run** (no hub): ask the user before Step 2.1, with the trigger and what each tier costs:
+  `[Question]: <trigger> could reach past <component>. Run the entire suite?` with `Options: 1. «Component
+  only; I'll run the full suite later (Recommended)» 2. «Run the entire suite now» 3. «Other»`. Only option
+  2 sets `full`.
 
 **`git status --porcelain` is only a cross-check.** A path changed in the tree but in no file set of
 this run belongs to another session or the user: list it as **foreign** (`<path> — foreign (another
@@ -884,8 +933,10 @@ section, and in the final summary. A foreign path never forces `full`, and the I
 fixes nor reverts it.
 
 This does not weaken the gate: the Cross-Component Diff Guard proves no other component's code changed,
-and every change that could reach another component forces `full`. Write the result into the Platform
-Profile as `Test scope: <full|component|affected> — <command> — <reason>`, and print it.
+and every change that could reach another component is flagged to the one who decides the entire suite.
+Write the result into the Platform Profile as `Test scope: <affected|component|full> — <command> —
+<reason>` and, when a trigger fired, `Full suite: suggested — <trigger> (sent to <hub|user>)`; print
+both. Put both lines in the 🏁 summary and, under a hub, in the "ready to merge" message.
 
 ### Step 2.1 — Invoke Integration Agent
 
@@ -1331,8 +1382,10 @@ saved but not complete.
   instruction (Step 3.5).
 - NEVER accept a Bug's regression test on the Developer's word — the Reviewer runs it (Step 1.3).
 - NEVER let a Bug past Step 1.5 without the user's "verified" (Step 1.5).
-- NEVER narrow `Test scope: full`; `full` means every command in `Test (full)`, and no agent may narrow
-  it on its own judgement (Step 2.0).
+- NEVER narrow the Test scope that was set; `full` means every command in `Test (full)`, and no agent may
+  narrow it on its own judgement (Step 2.0).
+- NEVER set `Test scope: full` on this skill's own judgement — only on the hub's order, or a solo user's
+  yes or **override**; widen to `component` only on a component-wide impact (Step 2.0).
 - NEVER accept a known-red without its owner and a tracking ID or the user's acceptance (Step 2.2).
 - NEVER let a drift finding or a flaky test pass silently (Integration and Reviewer-Integration agents).
 - NEVER run Divide-and-Conquer more than once per run, or at any loop_count but 3 (`references/escalation.md`).
@@ -1566,7 +1619,8 @@ Escalated? counters.
 📦 Feature Loop Complete
 Features:  <IDs>
 Bugs:      <IDs> (or "None this run")
-Test scope: <full|component|affected> — <reason>
+Test scope: <affected|component|full> — <reason>
+Full suite: not needed | suggested — <trigger> (sent to <hub|user>)
 Starting integration validation...
 ```
 
@@ -1574,7 +1628,7 @@ Starting integration validation...
 ```
 ✅ Integration — PASS after <N> iteration(s)   (<M> doc-only)
    Reviewer-Integration: PASS / skipped — clean first pass
-   Test scope: <full|component|affected>
+   Test scope: <affected|component|full>
    Fixes applied: <N>
    Tests: <N> passed, <F> failed (each a known-red or flaky, listed)
 ```
@@ -1598,7 +1652,8 @@ Design rows owed: <ID> — <surface: change> — written as <row ID> in round <N
 Baseline reds:    <test> — still red / now green (one per line; "None"; or "skipped — <why>")
 New ADRs:         ADR-<NNN> <title> — Accepted (ruled at <ID>) | Proposed — needs your ruling (one per line; or "None")
 Foreign paths:    <path> — foreign (another session or the user) (one per line; or "None")
-Quality gate:     ✅  (test scope: <full|component>)
+Quality gate:     ✅  (test scope: <affected|component|full>)
+Full suite:       not needed | suggested — <trigger> — sent to <the hub | you>: run `<Test (full)>`
 Integration:      ✅ (or "Not run — <why: only P0 fast lanes / Spikes / escalated items>")
 Known-reds:       <test> — owner <component> — tracked by <ID> / accepted by the user (one per line; or "None")
 Retries this run: <N1>/<N2> items needed a retry, <N3> escalations

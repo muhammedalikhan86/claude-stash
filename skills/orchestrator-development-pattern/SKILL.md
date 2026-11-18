@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.25.0"
+  version: "2.26.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -108,7 +108,8 @@ them from `init-adlc-repo upgrade` (plugin: `plugin-init-adlc-repo upgrade`), on
 
 The Orchestrator reads the Project Management Book (PMBook), detects the platform, turns work into Task
 Packets, and runs a Developer and a Reviewer sub-agent per work item. After every item passes, an
-Integration Agent runs the full test suite, fixes build and test failures and validates end to end, and a
+Integration Agent runs the tests the run's changes impact (the whole suite only when a change could
+reach the whole repo, Step 2.0), fixes build and test failures and validates end to end, and a
 Reviewer-Integration gate checks it. Finalization then runs the Step 3.1–3.5 Finalizers in parallel,
 then one that drafts commit messages (Phase 3).
 
@@ -160,6 +161,12 @@ fast lanes only.
 - **Developers write tests and may run only their packet's `Tests you may run`, never the suite.**
   Several Developers may run in parallel against an incomplete codebase, so suite results would be
   unreliable; the Integration Agent owns test execution, test fixing and build health.
+- **A run executes only the tests its change impacts.** The default Integration scope is `affected`:
+  the tests that cover what this run changed (Step 0.2's `Test (affected)`). The Developer's and
+  Reviewer's own runs are narrower still (the item's own test classes). This repo is one component, so
+  its component tier is the whole suite: Integration widens to `full` only when Step 2.0 finds the change
+  could have a repo-wide impact. (In a plugin repo, the entire suite is the hub's decision alone — see
+  `plugin-orchestrator-hub`.)
 - **Cold spawns keep context small.** Compaction is the harness's job; this skill keeps there being
   little to compact. Every sub-agent is a fresh single-purpose spawn (Task Packet in, Output out). A retry
   never continues the old conversation: it spawns fresh with the Task Packet, the issues list and the
@@ -187,7 +194,7 @@ so that definition's discipline and tool restrictions apply.
 | **Orchestrator** | User (this skill) | Reads PMBook or intakes an ad-hoc bug report, detects platform, generates task packets, dispatches sub-agents, tracks state, escalates | — (this skill) |
 | **Developer** | Orchestrator | Implements one feature or bug fix, writes tests, runs Format + Lint only | `orchestrated-developer` / see **Model Assignment** |
 | **Reviewer** | Orchestrator | Reviews Developer Output against the task packet; on Bug packets, also executes the single named regression test; returns PASS or FAIL with actionable issues | `orchestrated-reviewer` / see **Model Assignment** |
-| **Integration** | Orchestrator | Runs full test suite, fixes test/build failures, runs security audit, validates E2E — after all work items complete | `orchestrated-integration` / see **Model Assignment** |
+| **Integration** | Orchestrator | Runs the tests at the run's Test scope (impacted tests; the whole suite only on a repo-wide impact, Step 2.0), fixes test/build failures, runs security audit, validates E2E — after all work items complete | `orchestrated-integration` / see **Model Assignment** |
 | **Reviewer-Integration** | Orchestrator | Reviews Integration Output; returns PASS or FAIL | `orchestrated-reviewer-integration` / see **Model Assignment** |
 | **Finalizer** | Orchestrator | Performs exactly one Phase 3 task (Graphify / PMBook / Handoff / Revision+Changelog / Test Runbook / Commit Messages), or a Spike's solo **Spike Log** — see **Phase 3**, **Spike Flow** and **P0 Hotfix Fast-Lane Finalization** | `orchestrated-finalizer` / see **Model Assignment** |
 
@@ -444,6 +451,16 @@ without `--verify-no-changes` never fails.
 
 **A scoped test command must actually scope.** Before putting one in a packet, check it once with a list-only run (Jest `--listTests`, `dotnet test --list-tests`). Through Nx, the runner's flags go after `--`: `npx nx test <project> -- --testPathPattern=<pattern>`; without the `--`, Nx runs the whole project. Quote a pattern that holds `|`, `(` or `\` (`--testPathPattern="(a|b)\.spec\.ts"`), or pass plain file paths; unquoted, the shell mangles it and the whole suite runs.
 
+**Affected test command.** Also record how to run *only the tests a change impacts*, as
+`Test (affected): <recipe>`: a command that takes the run's changed files and selects the tests that
+cover them and what depends on them. Use the runner's own impact tool where there is one: Nx
+`npx nx affected -t test --base=<base>` (or `--files=<changed files>`), Jest
+`npx jest --findRelatedTests <files>`, .NET the test projects that reference the changed projects
+(`dotnet test <those test projects>`), Go `go test <changed packages and their importers>`, Python
+`pytest <the test files for the changed modules>`. Check it once with a list-only run, like any scoped
+command. If none can be built reliably, record `none`: Step 2.0 then uses `full`. The table's Test
+column is `Test (full)`.
+
 If no marker is found or multiple platforms are detected, **stop and ask the user to confirm the primary platform** before proceeding.
 
 The `snyk-command` variable acts as an override for the security audit step when set.
@@ -552,7 +569,8 @@ Held for design: <ID> — waits on <row IDs> (round <NNN>, open | sent <date>) (
 Too big (8):     <ID> — proposed: <part> (<pts>) + <part> (<pts>) | spike first — waits for your yes (Step 0.1; or omit)
 
 Integration Quality Gate (after all features):
-  Test:    <command>   ← Integration Agent owns this + fixes failures
+  Test (affected): <recipe or none>   ← the default; Integration Agent owns this + fixes failures
+  Test (full):     <command>          ← only on a repo-wide impact (Step 2.0)
   Audit:   <command>
 
 Estimated Spawns (N = <item count> items, plus fixed Integration/Finalization overhead):
@@ -907,10 +925,32 @@ re-validated here as a Deferred ID. Spike items never reach Phase 2 at all (see 
 has no Feature and no non-P0 Bug (`dropped` ones not counted), it skips Phases 2 and 3** and goes straight to close-out (the metrics rows
 and run-state marked complete, at the 🏁 summary), which always runs.
 
+### Step 2.0 — Decide the Test Scope
+
+A run executes only the tests its change impacts (Key design principles). Decide from **the run's own
+file set**: every item's run-state `files` (every attempt) and the Pending Deferred IDs' files. Ignore
+paths under `docs-directory` and `graphify-out` (docs don't change test outcomes). Pick the narrowest
+tier that covers the change:
+
+- **`affected`** (the default) — `Test (affected)` from Step 0.2 run over the run's file set, plus the
+  `test-cases-doc` scenarios for the flows those files serve.
+- **`full`** — only when the change **could have a repo-wide impact** (this repo is one component, so
+  its component tier is the whole suite). Any one of these is enough, and the reason names it: a file
+  the whole app loads (bootstrap or startup, DI or module registration, routing, global styles or theme,
+  interceptors or middleware); a shared module, base class or helper many features use; the build,
+  test, package or CI config, or the lockfile; a schema or migration, or a contract other features
+  read; `Test (affected)` is `none` or selects 0 tests for a run that changed code; a
+  `## Deferred Integration` row is being re-validated (a P0 shipped without any suite run); Linked Runs;
+  or the user asked for a full run. Use every `Test (full)` command.
+
+`git status --porcelain` is only a cross-check: a changed path in no file set of this run is foreign
+(another session or the user) and never widens the scope. Write the result into the Platform Profile as
+`Test scope: <affected|full> — <command> — <reason>`, print it, and put it in the 🏁 summary.
+
 ### Step 2.1 — Invoke Integration Agent
 
 Spawn an Integration sub-agent via the Agent tool with `subagent_type: "orchestrated-integration"` and its `model` from **Model Assignment**, using the **Integration Agent Prompt Template**, passing:
-- Platform Profile (all quality gate commands)
+- Platform Profile (all quality gate commands), with Step 2.0's Test scope line
 - List of all completed features (F-IDs, names, files changed) and verified non-P0 bugs (B-IDs, one-line description, files changed; a fast-laned P0 comes in only as a Deferred ID, below). "Files changed" is the item's run-state `files` (see **Run-State Checkpointing**)
 - `source-code-directory`
 - Path of `test-cases-doc`, if present (see Step 0.0 — this is a soft dependency; if absent, pass "None provided")
@@ -1585,7 +1625,7 @@ Bug: Bug Report's Expected/Actual behavior only. Drop every other packet field; 
 them.>
 
 ## Platform Profile
-<INSERT PLATFORM PROFILE, including Test scope: full>
+<INSERT PLATFORM PROFILE, including Step 2.0's Test scope line>
 
 ## Doc Paths
 Test cases: <path or "None provided"> · Architecture: <path> · PMBook: <path> ·
@@ -1699,6 +1739,7 @@ holds what to save, the reports, "drop"/"defer" and "resume". Nothing resumes un
 - NEVER overrule an issue that cites an acceptance criterion, constraint, convention, failing test or gate, or a Parity mismatch (Step 1.4)
 - NEVER run a repo-wide format — Format is scoped to the item's files, and its gate is the verify form (Step 0.2)
 - NEVER let a Developer run tests beyond its packet's `Tests you may run` (Task Packet Format)
+- NEVER run the whole suite unless Step 2.0 found a repo-wide impact; NEVER narrow the Test scope that was set (Step 2.0)
 - NEVER skip Step 0.3b's baseline, except for a P0/Spike-only run, a mid-run intake or a resume (Step 0.3b)
 - NEVER let a Finalizer write attribution lines it was not given verbatim (Step 3.6)
 - NEVER treat UNVERIFIED as PASS or FAIL — respawn per Handling an UNVERIFIED Verdict
@@ -1880,7 +1921,7 @@ the Orchestrator also appends a row for every step, as soon as it ends, never ba
   `Verdict`, not here.
 - `UNVERIFIED count` — this leg's count: the item's (or the `integration` block's) `unverifiedTotal`,
   UNVERIFIED verdicts since its last row. Zero it once the row is written.
-- `Test scope` — Integration row only: `full` (this skill always runs the full suite).
+- `Test scope` — Integration row only: `affected` or `full` (Step 2.0), with its reason.
   `Divide-and-Conquer triggered?` and `Known-reds` (each `### Known-Reds` line's test and its tracked-by
   ID or `accepted by the user`, or `none`) — Integration row only.
 - **`RUN` row:** written at the 🏁 summary (Verdict `Complete`) or at an escalation pause (Verdict
@@ -1972,7 +2013,7 @@ Outside items:    <ID> — <what, where: a defect, or a board difference (state,
 Overruled:        <ID> — <issue> — not an issue: <reason> (one per line; or "None")
 Held for design:  <ID> — waits on <row IDs> (round <NNN>, open | sent <date>) (one per line; or "None")
 Design rows owed: <ID> — <surface: change> — written as <row ID> in round <NNN> | not written — <why> (one per line; or "None")
-Quality gate:     ✅
+Quality gate:     ✅  (test scope: <affected|full> — <reason>)
 Integration:      ✅ (or "Not run — the run has no Feature and no non-P0 Bug")
 Baseline reds:    <N> red at start — <test: still red / now green> (one per line; or "green", or "skipped — <why>")
 New ADRs:         ADR-<NNN> <title> — Accepted (ruled at <ID>) | Proposed — needs your ruling (one per line; or "None")

@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.27.0"
+  version: "1.28.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -127,7 +127,7 @@ Read each only when its trigger occurs. They are part of this skill.
 | `references/escalation.md` | A work item or Integration is about to escalate, or Divide-and-Conquer triggers |
 | `references/resume.md` | A resume is confirmed at Step 0.0's Resume check, or the user types "resume" at an escalation pause — what to read first, where the run rejoins, resuming after an escalation |
 | `references/ui-iteration.md` | A UI Iteration is opened (Step 0.1d) or found open on resume |
-| `references/ui-packets.md` | A planned packet touches a user interface (Step 0.4) — UI bindings, Design rows hold and Data sources check (Step 0.4), Design Gate (Step 1.1b), Board Parity Check (Step 1.3b) |
+| `references/ui-packets.md` | A planned packet touches a user interface (Step 0.4) — UI bindings, Design rows hold and Data sources check (Step 0.4), Design Gate (Step 1.1b), Board Parity Check (Step 1.3b), Board rules (always, for any UI item) |
 | `references/linked-runs.md` | Work items in two components must land together (Step 0.0a), or a FAIL lies in another component's files (Step 1.4) |
 | `references/push-and-pull.md` | Before any push or pull — a go arrives from the user or a hub session, or this session is the hub |
 | `references/version-pointer-sweep.md` | Never by you — its path is handed to the PMBook Update Finalizer when a `> Version:` header moved |
@@ -227,6 +227,19 @@ When the repo has `.claude/hub.json` and a live hub session (`hub.sessionName`),
    sends any red back to its owner; take it as a functional bug, ahead of queued features. A user who
    asks this worker directly for a full run is sent to the hub: "the hub decides full runs; ask it, or
    say **override** to run it here". Only "override" runs it here.
+12. **Shared machine, scheduled by the hub** (`plugin-orchestrator-hub` §Stack and environment). Use
+   only commands that need no approval; a step that would prompt is skipped, swapped or parked and
+   reported to the hub, never left waiting. Ask the hub before any browser or business-test run and
+   before starting a stack ("stack: <what>, <why>", batched once per wave); unit tests and plain builds
+   need no ask. On "quiet", stop every test and build and reply "quiet". Restart only your own
+   checkout's stack, inside a window you were given, and tell the hub after. After a shell version bump,
+   merge main and move your Platform Architecture pointer before your next "ready to merge", not
+   mid-build.
+13. **Raising items** (`plugin-orchestrator-hub` §Raising and holding items). Work owed on an
+   unfinished dependency is its own sized item, never a note on a row; a known build gap a scenario will
+   hit gets its item now. A new parameter or field other components must adopt ships optional, and
+   each caller adopts it in its own item. New business behaviour nobody asked for is raised but held for
+   the owner's intake.
 
 ---
 

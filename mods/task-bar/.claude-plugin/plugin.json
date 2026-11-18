@@ -1,1 +1,1 @@
-{ "name": "task-bar", "version": "0.1.0", "description": "Keeps the current task list and a progress bar pinned above the prompt, with a Clear button.", "types": "./types/index.d.ts" }
+{ "name": "task-bar", "version": "0.2.0", "description": "Keeps the current task list and a full-width progress bar pinned above the prompt, with per-task elapsed and estimated times and a Clear button.", "types": "./types/index.d.ts" }

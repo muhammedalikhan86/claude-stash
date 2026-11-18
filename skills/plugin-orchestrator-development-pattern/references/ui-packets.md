@@ -1,4 +1,4 @@
-# UI Packets — Bindings, Design Rows Hold, Design Gate, Board Parity Check
+# UI Packets — Bindings, Design Rows Hold, Design Gate, Board Rules, Board Parity Check
 
 Read by `plugin-orchestrator-development-pattern` when a planned packet touches a user interface (see the
 trigger lines in `SKILL.md` at Step 0.4, Step 1.1b and Step 1.3b). Step numbers are `SKILL.md`'s.
@@ -119,6 +119,41 @@ draws the boards. A `Depends on:` item being done is not proof the data exists: 
 7. **Say where each surface's styling comes from** — shared theme, existing class vocabulary, a new
    shared class (its own work item), or local CSS.
 8. **Print the diff** before the Developer is spawned.
+
+---
+
+## Board rules (the Developer, the Reviewer and Board Parity all apply them)
+
+1. **The board is the spec.** It wins unless the owner rules otherwise or Material cannot draw it. A
+   ruled difference is written in the component's PMBook row (Ruled deviations), never left in chat.
+2. **Sample content is not a finding.** A board's sample rows, counts, names, loading states and
+   sample lists show the shape, not the data. Fewer or different sample rows than the seed is not a gap,
+   and business tests read the seed, never the board's sample rows.
+3. **When the board conflicts with something settled:**
+   - against a settled shared contract (a shell rule, a platform class) or a sibling screen's working
+     pattern: the build stays and the board gets a design row;
+   - two boards disagree: follow the one that matches the PMBook row, design row on the other; with no
+     PMBook answer, the majority of boards wins;
+   - board values win only where they are design-system tokens; a non-token value that fights the
+     system is a design defect (design row), not a build gap.
+4. **Never invent client-facing wording.** A state, message or label the board has no words for is
+   left undrawn (or shows the source's own words) with a design row. No Developer writes copy.
+5. **Always a functional bug, whatever the board draws:** a control with no accessible name (a `title`
+   alone is not one); field help with no visible info icon; a control swapped for a different one; a
+   field the source holds but the screen does not show (show it when present, even if today's data is
+   empty); a fix that trades a wrong message for an endless spinner; a test made to pass by loosening
+   its step instead of fixing the product.
+6. **Exports follow the screen.** Export cells use the screen's words and values under its headings; an
+   export column whose screen column is gone is dropped and noted.
+7. **Test tags** in business-test scenarios:
+   - `@not-built-<ID>` — waits on an item; it still runs on the board target;
+   - `@review-<row> @skip` — waits on a design row not yet drawn;
+   - `@skip` alone only when it cannot run on the board, with a `Waits on:` comment;
+   - a design row marked Done whose app side is not built gets `@not-built-<item>`, not a bare skip
+     removal; a tag is dropped only when the owner runs the scenario on a stack and it passes.
+   A failure on the shell (built-app) target goes to triage, never to a new `@skip`.
+8. **Test-case gaps.** A gap in `test-cases-doc` with no behaviour change (a flow already built but not
+   written down) goes into the doc with a scenario, size 0, and no item.
 
 ---
 

@@ -50,6 +50,9 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `testing.fullCommand` | The entire suite (every suite), run only when the hub decides (`SKILL.md` §Testing) |
 | `testing.fullAfter` | The backstop on top of the hub's per-change decision: `decide` (default: only when §Testing says, plus once before "ready to test"), `batch` (also once per batch of merges, at the latest at the next heartbeat) or `merge` (after every merge) |
 | `testing.onDemand` | Suites kept out of every gate and run on demand or nightly (the layout and parity crawls) |
+| `stack.browserWorkers` | The most parallel browser workers one business-test or Playwright run may use while more than one checkout is active (e.g. `4`; `1` inside a stack window) |
+| `stack.minFreeMemoryGb` | Stop a stack run when free memory drops below this (e.g. `4`). Empty: no floor |
+| `stack.sliceMinutes` | The longest a foreground stack-test slice may run before it is split (e.g. `10`). Empty: no limit |
 | `triage.workerParityTolerancePx` | The lenient per-item Board Parity tolerance a worker uses under this hub (`20`). A px gap between the two goes to the parity backlog, not a FAIL; functional gaps fail at any size |
 
 ### `components[]`

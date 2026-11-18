@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.12.0"
+  version: "0.13.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -238,6 +238,36 @@ hub.json), shared databases. A restart needs every affected
 worker at a safe stop first; the hub asks them, waits for "parked", then tells the user which windows
 to restart. After merges that move test counts, the hub updates the green counts and the known-red list
 in `paths.devEnvironment` (`references/merging.md` §Green counts).
+
+1. **No waiting on prompts.** Workers run unsupervised, so they use only commands that need no
+   approval. A step that would prompt is skipped, swapped for a prompt-free one, or parked, and
+   reported to the hub; it is never left waiting on a prompt nobody is watching.
+2. **The hub schedules heavy runs.** One machine serves every checkout. Browser and business-test runs
+   and stack starts (`make up` or the like) go through the hub: a worker asks first ("stack: <what>,
+   <why>"), and the hub queues them. Batch the asks once per wave. Unit tests and plain builds need no
+   ask. A **stack window** is exclusive: while one stack builds or runs, no other checkout runs tests or
+   builds; the hub asks every worker for "quiet", runs the queued stack jobs back to back, then releases
+   them. The numbers (parallel browser workers per run, the memory floor, how long a slice may run)
+   come from hub.json `stack` (`references/config.md`).
+3. **Own stack only.** A worker may restart its own checkout's stack when its gates need it, inside a
+   window it was given, and tells the hub after. It never starts, stops or restarts another checkout's
+   stack.
+4. **After a shell (platform) version bump,** every worker merges main and moves its Platform
+   Architecture pointer before its next "ready to merge", never mid-build. In a merge conflict on those
+   version header lines, take the branch's lines and point them at the current shell version.
+
+## Raising and holding items
+
+1. **Owed work is an item.** Work owed on an unfinished dependency is raised as its own sized item in
+   the owning component, never a note on a row. A known build gap that a scenario will hit gets its item
+   raised now, not after the test fails.
+2. **Contract changes ship optional.** A new parameter, field or endpoint shape that other components
+   must adopt ships optional (absent = the old behaviour). Each caller adopts it in its own dependent
+   item, after the change is on main.
+3. **New business behaviour waits for the owner.** An item that adds behaviour the owner never asked
+   for may be raised, but it is held until the owner's intake. The hub never gives it a go itself.
+4. **The user's manual-test feedback** is turned into items by the hub, each in its owning component,
+   sized when raised, and handed to that worker by §Issue triage order (functional ahead of features).
 
 ## End game
 

@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for a PLUGIN-BASED repository 
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "1.24.1"
+  version: "1.25.0"
   forked-from: "orchestrator-development-pattern@2.9.0 (2026-09-10)"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
@@ -1222,6 +1222,20 @@ fixes says `Items: integration`.
    uncommitted, grouped as usual; a group with nothing left uncommitted is
    skipped. This is also what makes a re-run commit step safe — no git-log check here.
    Gitignored files (run-state, metrics) are never forced in.
+   **A file split between items** (a group must hold only part of a file, because another item's
+   uncommitted change sits in the same file):
+   a. **Stage whole files, never hunks.** Copy the working file to the scratchpad, remove only the other
+      item's lines, and stage that copy:
+      `git update-index --cacheinfo <mode>,$(git hash-object -w <scratch copy>),<path>` (mode from
+      `git ls-files -s <path>`, `100644` for a new file). Never `git diff -U0`, `git apply --cached
+      --unidiff-zero`, or `git add -p`: zero-context hunks land in the wrong place.
+   b. **Prove the staged tree.** `git write-tree`, then `git archive <tree> | tar -x -C <scratch export>`,
+      then build and test there. Every build output goes inside that export (for example
+      `dotnet test --artifacts-path <scratch export>/artifacts`): output outside it breaks tests that walk
+      up from the build folder to find the project.
+   c. **Read the proof's result first, then commit in a separate command.** Never chain `git commit`
+      after a check with `&&` or `;`. A failed proof stops the step: `git restore --staged <path>` for the
+      split files, report, and ask.
 3. **Commit on the current branch.** Never create, switch or merge branches; never amend; never pass
    `--no-verify` or skip signing. A hook failure stops the commits: report its output, leave the rest
    unstaged, and ask.
@@ -1335,7 +1349,9 @@ saved but not complete.
 
 ## Git Restrictions
 
-The Orchestrator's only git writes are `git add <exact paths>` and `git commit` at Step 3.5, on the
+The Orchestrator's only git writes are `git add <exact paths>` and `git commit` at Step 3.5 (plus, for
+a file split between items, step 2's `git hash-object -w`, `git update-index --cacheinfo`,
+`git write-tree` and `git restore --staged <path>`), on the
 current branch, after Reviewer-Integration has passed, or was skipped under Step 2.2's rule, or at the
 end of a P0 fast lane. Apart from a push or
 pull on a go (below), it never runs `git merge`, `git checkout`, `git switch`, `git branch`, `git stash`, `git reset`,

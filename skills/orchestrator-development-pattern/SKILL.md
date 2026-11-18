@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.24.0"
+  version: "2.25.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -1205,7 +1205,19 @@ and run-state's `orchestratorFiles`; in a P0
 lane, that Bug's `files` plus its lane Finalizers' files. It commits whatever of that list `git status`
 still shows uncommitted, grouped as usual; a group with nothing left uncommitted is skipped. Before
 committing it runs `git diff --cached --name-only`: staged paths all in this step's file list are
-committed with it; any staged path outside that list stops the step and asks the user. A "commit" said
+committed with it; any staged path outside that list stops the step and asks the user.
+**A file split between items** (a group must hold only part of a file, because another item's
+uncommitted change sits in the same file): (a) stage whole files, never hunks — copy the working file to
+the scratchpad, remove only the other item's lines, and stage that copy with
+`git update-index --cacheinfo <mode>,$(git hash-object -w <scratch copy>),<path>` (mode from
+`git ls-files -s <path>`, `100644` for a new file); never `git diff -U0`, `git apply --cached
+--unidiff-zero` or `git add -p`, since zero-context hunks land in the wrong place. (b) Prove the staged
+tree: `git write-tree`, then `git archive <tree> | tar -x -C <scratch export>`, then build and test
+there, with every build output inside that export (for example
+`dotnet test --artifacts-path <scratch export>/artifacts`), because output outside it breaks tests that
+walk up from the build folder to find the project. (c) Read the proof's result first, then commit in a
+separate command; never chain `git commit` after a check with `&&` or `;`. A failed proof stops the
+step: `git restore --staged <path>` for the split files, report, and ask. A "commit" said
 after a commit step chose `no` first sets `decisions.commit: yes` (saved), then runs **one** commit pass
 over the union of every commit step's saved file list in this run: each item (Feature, Bug, P0) gets its
 own code group from its own `files`, with `Items:` naming only that item; Integration fixes outside any
@@ -1715,7 +1727,7 @@ holds what to save, the reports, "drop"/"defer" and "resume". Nothing resumes un
 
 ## Git Restrictions
 
-The Orchestrator never runs: `git push`, `git merge`, `git checkout main`, or any destructive git operation, and never `git commit` unprompted. The git commands it runs are read-only — `git log` (Phase 0's run-id check, Steps 0.1b, 2.1, 3.6, and `git log --grep "Run-Id: <run id>"` for the RUN row's commit ids at close-out and at an escalation pause), `git status --porcelain` (Steps 2.1, 3.6), `git show` and `git diff` (Step 1.5) and `git diff --cached --name-only` (Step 3.6's staged check) — plus `git worktree add`/`remove` of a temporary detached worktree in the scratchpad (Steps 0.3b, 1.5), plus `git add` and `git commit` with the drafted messages in Step 3.6's commit step once the user has said "commit". Every commit message ends with the `Run-Id:` and `Items:` trailers, so `git log --grep "Run-Id: <run id>"` is the run's commit record.
+The Orchestrator never runs: `git push`, `git merge`, `git checkout main`, or any destructive git operation, and never `git commit` unprompted. The git commands it runs are read-only — `git log` (Phase 0's run-id check, Steps 0.1b, 2.1, 3.6, and `git log --grep "Run-Id: <run id>"` for the RUN row's commit ids at close-out and at an escalation pause), `git status --porcelain` (Steps 2.1, 3.6), `git show` and `git diff` (Step 1.5) and `git diff --cached --name-only` (Step 3.6's staged check) — plus `git worktree add`/`remove` of a temporary detached worktree in the scratchpad (Steps 0.3b, 1.5), plus `git add` and `git commit` with the drafted messages in Step 3.6's commit step once the user has said "commit" (and, for a file split between items, that step's `git hash-object -w`, `git update-index --cacheinfo`, `git write-tree`, `git archive` and `git restore --staged <path>`). Every commit message ends with the `Run-Id:` and `Items:` trailers, so `git log --grep "Run-Id: <run id>"` is the run's commit record.
 
 Never create or switch branches — ask the user, provide the command.
 

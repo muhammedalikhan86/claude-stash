@@ -39,6 +39,7 @@ dev-ports script and the run skill read; the hub reads it from there, never from
 | `paths.sessionNote` | `docs/sessions/latest.md` |
 | `paths.hubOperations` | The hub operations file (`docs/sessions/knowledge/hub-operations.md`). May be gitignored |
 | `paths.rulingsLog` | `docs/hub/rulings.md`, committed so workers read it |
+| `paths.queue` | The queue file: the hub's current direction for every worker (`SKILL.md` §Queue file). Default `.claude/queue.md`, committed |
 | `paths.parityBacklog` | `docs/<component>/parity-backlog.md` |
 | `paths.devEnvironment` | The file that holds green test counts and the known-red list, or empty |
 | `paths.screenshots` | Where browser screenshots go (gitignored) |
@@ -106,6 +107,7 @@ dev-ports script and the run skill read; the hub reads it from there, never from
     "sessionNote": "docs/sessions/latest.md",
     "hubOperations": "docs/sessions/knowledge/hub-operations.md",
     "rulingsLog": "docs/hub/rulings.md",
+    "queue": ".claude/queue.md",
     "parityBacklog": "docs/<component>/parity-backlog.md",
     "devEnvironment": "docs/dev-environment.md",
     "screenshots": "docs/design/screenshots"

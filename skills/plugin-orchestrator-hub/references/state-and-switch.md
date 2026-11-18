@@ -13,6 +13,9 @@
    paragraphs. Prune what is done. It never restates a setting hub.json holds (cron expressions, paths,
    delegation): it points at the hub.json key instead.
 4. **Rulings log** (`paths.rulingsLog`) — every ruling, committed, read by workers and the next hub.
+5. **Queue file** (`paths.queue`, `SKILL.md` §Queue file) — the hub's current direction for every
+   worker: groups, order, pointer, done. Committed. Live state still wins over it where they differ;
+   fix the file then.
 
 Notes go stale; live state does not. Never resume a worker from a note alone: check its checkout first.
 hub.json wins over every note for a setting it holds: a cron expression in a note that differs from
@@ -33,7 +36,9 @@ Newest day at the bottom. A worker that meets a question checks this file before
 2. If the user pointed you at the previous account's folder (e.g. `~/.claude-<old>/projects/<project>/memory`),
    read its `MEMORY.md` index and the entries it marks as hub entries. Do not copy them; read them in place.
 3. Read live state for every component (above).
-4. Read the session note, then the hub operations file, then the rulings log tail.
+4. Read the queue file (`paths.queue`) and check it against the live state you just read; correct
+   any row live state contradicts. Missing → create it (`SKILL.md` §Queue file step 6).
+5. Read the session note, then the hub operations file, then the rulings log tail.
    - **Rulings log missing** → create it at `paths.rulingsLog` in the format above, from the rulings
      the session note and the hub operations file hold (look for "standing rulings" or "rulings"
      sections), one line each, ruled-by and items as recorded (`—` when unknown). Then move them: the
@@ -41,10 +46,10 @@ Newest day at the bottom. A worker that meets a question checks this file before
      ⚪ FYI. No rulings found → create it with just its heading.
    - **Hub operations file over its size limit** (§Where state lives) → prune it now: done items out,
      paragraphs cut to one-line facts, hub.json settings replaced by their key.
-5. Recreate the crons: the heartbeat from hub.json `watch.heartbeatCron`; from the session note, the
+6. Recreate the crons: the heartbeat from hub.json `watch.heartbeatCron`; from the session note, the
    designer-log check and a usage-limit resume timer whose reset + 5 minutes is still ahead (one already
    past → resume the workers now instead).
-6. Carry on from Start-up step 4 in `SKILL.md`.
+7. Carry on from Start-up step 4 in `SKILL.md`.
 
 ## Account switch
 
@@ -62,6 +67,8 @@ Start early: before the limit, not at it. One worker group can take an hour to r
 6. **Write the hand-over** in the hub operations file under `## Hand-over <date>`: the old account, the new
    one, each worker's parked hash and next step, what is waiting on the user or the designer, open
    hand-outs. Never restate the heartbeat expression: write "heartbeat: hub.json `watch.heartbeatCron`".
+   Point at the queue file for each worker's order ("queue: hub.json `paths.queue`") instead of
+   copying it, and make sure the queue file is current and committed first.
    Then run `summarise` so `paths.sessionNote` points at it.
 7. **Tell the user** (tiered):
    - 🔴 the push command for the main branch, if anything merged;

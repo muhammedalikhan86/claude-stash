@@ -43,6 +43,8 @@ Options: 1. «Sync first (Recommended)» 2. «Backfill first» 3. «Other»
 # task-bar
 When you start any job of three or more steps, call `mcp__task-bar__set_tasks` (the task-bar mod's tool, if you have it) with the whole task list. Call it again whenever a task starts, finishes or is added, or the plan changes, and send an empty list once the user has seen everything done. The user reads progress from the bar above the prompt instead of scrolling. If you do not have the tool, carry on without it.
 
+Give each task an `estimateMinutes` guess when you can. Parallel work (several workers or agents) gets a `group` per task, the worker's or agent's name, so each draws under its own heading. A helper (subagent) has its own list, drawn indented under its task name: send only your own steps, never your caller's.
+
 # Reply shape
 
 Sort every reply to the user into up to three labelled tiers, in this order. Leave out a tier that has nothing in it.

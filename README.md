@@ -188,7 +188,7 @@ To update later: `git pull`, then `.\install.ps1`.
 | Mod | State |
 |---|---|
 | `answer-buttons` | **On.** Buttons under Claude's `[Question]:` lines (rhetorical questions get none). Loaded through `CLAUDE_CODE_PLUGIN_DIRS` |
-| `task-bar` | **On.** Task list and a full-width progress bar pinned above the prompt, with per-task elapsed and estimated times. Loaded through `CLAUDE_CODE_PLUGIN_DIRS`; turn off any uploaded copy in `/plugin` so only one draws |
+| `task-bar` | **On.** Task list and a full-width progress bar pinned above the prompt, with per-task elapsed and estimated times; groups and helper (subagent) lists drawn indented under their own headings. Loaded through `CLAUDE_CODE_PLUGIN_DIRS`; turn off any uploaded copy in `/plugin` so only one draws |
 | `comment-on-response` | Off by default. `/comment` on selected reply text |
 
 To turn on an extra mod for one session: `claude --plugin-dir "$env:USERPROFILE\.claude\mods\comment-on-response"`.

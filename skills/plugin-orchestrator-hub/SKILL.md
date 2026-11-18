@@ -4,7 +4,7 @@ description: The Hub role for a PLUGIN-BASED repository split across several che
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "0.13.0"
+  version: "0.14.0"
   domain: development-workflow
   triggers: be the hub, start the hub, launch the workers, hub mode, show the workers, worker picture, account switch, merge the workers, designer prompt
   role: coordinator
@@ -29,7 +29,7 @@ Read each only when its trigger occurs. They are part of this skill.
 | File | Read when |
 |---|---|
 | `references/config.md` | Start-up, or hub.json is missing, wrong or being written |
-| `references/state-and-switch.md` | Start-up (resume), writing the session note, or an account switch is coming |
+| `references/state-and-switch.md` | Start-up (resume, including reading the queue file), writing the session note, or an account switch is coming |
 | `references/merging.md` | A worker reports a commit ready to merge, or green counts move |
 | `references/priorities-and-groups.md` | A worker raises an issue, proposes a group, or the user asks for the worker picture or a reorder |
 | `references/designer-loop.md` | A worker asks for design row IDs, design rows pile up, the user asks for the designer prompt, or says "designer is done" |
@@ -75,6 +75,8 @@ Read each only when its trigger occurs. They are part of this skill.
    files allow. **Refuse a single-item run** — a worker that starts or proposes one item alone gets it
    regrouped with its queue — unless that item is urgent: another worker waits on it, it is a P0, or it
    is a red after merge.
+12. **The queue file is updated in the same turn as every change to a worker's direction** (§Queue
+   file). It shows what the hub has told the workers, never what the workers plan.
 
 ## Start-up
 
@@ -84,10 +86,10 @@ Read each only when its trigger occurs. They are part of this skill.
 2. **Account.** The current account is the one whose folder matches `CLAUDE_CONFIG_DIR` in the
    switcher's registry (`launch-workers.ps1 -WhoAmI` prints it). Workers open on the same account.
 3. **Resume.** Read `references/state-and-switch.md` §Resume and follow it: live state first (each
-   checkout's `git log`, `git status`, PMBook and handoff), then the session note, then the hub
-   operations file and the rulings log. Live state wins over notes, and hub.json wins over notes for
-   any setting it holds (cron expressions above all). A missing rulings log is created there
-   (§Resume step 4).
+   checkout's `git log`, `git status`, PMBook and handoff), then the queue file (§Queue file), then the
+   session note, then the hub operations file and the rulings log. Live state wins over notes and the
+   queue file, and hub.json wins over notes for any setting it holds (cron expressions above all). A
+   missing rulings log is created there (§Resume step 5).
 4. **Find the workers.** Every component in hub.json is a worker, the ones with `inHubCheckout: true`
    included. `ListAgents`. A worker already live (its checkout's session row is idle or busy) is not
    reopened.
@@ -118,7 +120,8 @@ Read each only when its trigger occurs. They are part of this skill.
 
 ## The hub loop
 
-Each incoming worker message is one of these. Act, update the task bar (§Task bar), reply to the worker
+Each incoming worker message is one of these. Act, update the task bar (§Task bar) and, when a worker's
+direction moved, the queue file (§Queue file), reply to the worker
 in one line, and say nothing to the user unless the last column says so.
 
 | Message | Hub does | Tell the user? |
@@ -205,7 +208,47 @@ The hub has kept forgetting it, so it is part of every turn, not a nicety.
    every heartbeat pass. Start-up sends it once the workers are briefed (step 7).
 3. **Check before ending a turn.** Last step of every hub turn: does the bar match what just changed?
    If not, send it now. A turn that changed nothing sends nothing.
-4. No task-bar tool in this session → carry on without it, and say so once at start-up.
+4. **Groups and helpers.** Give each worker's line `group: "<worker>"` so each worker draws under its
+   own heading, and the hub's own work (merges, full runs, questions) without a group, on top. A
+   background helper's own list (a sync, a disparity check) is drawn indented under the helper's task
+   name and never replaces the hub's list, so a helper brief needs no task-bar rule. The hub's next
+   update drops the lists of helpers that have finished.
+5. No task-bar tool in this session → carry on without it, and say so once at start-up.
+
+## Queue file
+
+The queue file (hub.json `paths.queue`, default `.claude/queue.md`, in the hub checkout) holds the hub's
+**current direction for every worker**. The user reads it to see the plan at a glance and answers from
+it ("move X to group 2"). It replaces any hand-kept queue the user had (a desktop text file and the
+like). The task bar shows what is happening now; the queue file shows what comes next.
+
+1. **Shape.**
+   - A title, one line on what the file is, and `Updated: <date time>` (the project's own date rule
+     applies).
+   - An optional `## Now` section for anything time-boxed (an account-switch plan, a stack window).
+   - One section per worker: `## <Worker> (pointer: <current item or state, e.g. parked <hash>>)`, then a
+     table:
+
+     | # | Grp | ID | Item | Size | Status / depends on |
+     |---|---|---|---|---|---|
+
+     `>>` in the `#` column marks the item(s) the worker is on now. `Grp` is the group the hub approved
+     (1 runs first; `X` = not grouped yet). `Item` is in plain words, not the PMBook title.
+   - Under each table a `Done <date>:` line of IDs, and any parity-list lines.
+   - Last, a short `## Hub` section: the hub's own work, and any command waiting for the user (the push
+     command, for one).
+2. **When to update it.** In the same turn as, and before the reply to: every go, park, unpark,
+   reorder, group approval, ruling that moves an item, routed follow-up (a shell change's follow-ups
+   become rows in each affected component's table), and merge that finishes an item (it moves to
+   `Done`). Only what the hub has told the workers goes in, never a worker's own plan.
+3. **Commit it** by path only, in the hub's normal flow (commit on `hub.workBranch`, fast-forward main).
+   Small commits are fine: `docs(hub): queue, <what moved>`.
+4. **Check before ending a turn,** with the task bar (§Task bar step 3): did a worker's direction move
+   this turn? Then the queue file says so.
+5. **Account switch.** The hand-over points at the queue file, and the next hub reads it at Resume
+   (`references/state-and-switch.md`) and keeps it current.
+6. **Missing file** → create it at start-up from live state and the PMBook queues, commit it, and tell
+   the user in ⚪ FYI.
 
 ## Testing: the hub alone decides the entire suite
 

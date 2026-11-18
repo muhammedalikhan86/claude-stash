@@ -4,7 +4,7 @@ description: Multi-agent development orchestrator for PMBook-driven features, or
 license: MIT
 metadata:
   author: https://github.com/mak100186
-  version: "2.26.0"
+  version: "2.27.0"
   domain: development-workflow
   triggers: implement, build, develop, orchestrate, start development, run orchestrator, orchestrate a fix, run the orchestrator on this bug, run a spike, spike this, P0, hotfix
   role: orchestrator
@@ -475,8 +475,11 @@ Before any spawn, run the Platform Profile's Test command once on the tree as th
 test that was already red is never mistaken for this run's regression. Bring the app up first if the
 tests need it (the repo's run skill or `CLAUDE.md`). **The first `up` may be slow** (a cold build cache, e.g. a federated front end's first build): wait longer on the first start, and if it times out, retry it once before calling the stack failed.
 
-1. Run it. For each test that fails, re-run that one test alone once: it passes → `flaky`; it fails
-   again → `fails`.
+1. Run it **with its output sent to a file, never into your context** — this is the main session, where
+   tokens cost the most: `<command> > <work dir>/gate-logs/<run id>/baseline.log 2>&1; echo "exit=$?"`.
+   Read the runner's summary lines (`tail -n 40`), then `grep` for the failing test names, `FAIL` and
+   `error`, with a few lines around each. Never `cat` the whole log. For each test that fails, re-run
+   that one test alone once (also to a log file): it passes → `flaky`; it fails again → `fails`.
 2. Save the result in run-state as `baseline`: the time it ran and `reds` — one entry per test, with
    how it failed (`fails`, `flaky`, or `timeout`, plus the message's first line).
 3. Print it in the Step 0.4 announcement: `Baseline: <N> red at start — <test (how)>, …` or
@@ -951,6 +954,7 @@ tier that covers the change:
 
 Spawn an Integration sub-agent via the Agent tool with `subagent_type: "orchestrated-integration"` and its `model` from **Model Assignment**, using the **Integration Agent Prompt Template**, passing:
 - Platform Profile (all quality gate commands), with Step 2.0's Test scope line
+- The **gate log directory**, `<work dir>/gate-logs/<run id>/` (see **Run-State Checkpointing**): every gate log goes there, so it survives a session restart and the Reviewer-Integration reads the same files
 - List of all completed features (F-IDs, names, files changed) and verified non-P0 bugs (B-IDs, one-line description, files changed; a fast-laned P0 comes in only as a Deferred ID, below). "Files changed" is the item's run-state `files` (see **Run-State Checkpointing**)
 - `source-code-directory`
 - Path of `test-cases-doc`, if present (see Step 0.0 — this is a soft dependency; if absent, pass "None provided")
@@ -1309,6 +1313,8 @@ F-XXX
 - Format: <fix command> then <verify command> — both scoped to the files you create or change, never the
   whole repo (Step 0.2)
 - Lint:   <command>
+- Gate log directory: <work dir>/gate-logs/<run id>/ — every long command (build, lint, tests) writes
+  its output there, never into your context
 
 ## Note on Tests
 Write the test files. You may run only the tests under `Tests you may run`, to catch your own wrong
@@ -1388,6 +1394,8 @@ B-XXX
 - Format: <fix command> then <verify command> — both scoped to the files you create or change, never the
   whole repo (Step 0.2)
 - Lint:   <command>
+- Gate log directory: <work dir>/gate-logs/<run id>/ — every long command (build, lint, tests) writes
+  its output there, never into your context
 
 ## Note on Tests
 Write a regression test that reproduces the bug — it must fail against the pre-fix code and pass once the
@@ -1532,6 +1540,10 @@ You are operating in **orchestrated mode**.
 
 ## Bugs Fixed
 <INSERT LIST: B-ID, one-line description, files changed — or "None this phase">
+
+## Gate Log Directory
+<INSERT <work dir>/gate-logs/<run id>/>
+Use it as the log directory in your **Keeping Gate Output Out of Context** section.
 
 ## Source Directory
 <INSERT source-code-directory>

@@ -67,7 +67,8 @@ under the Developer Output's Test Files Written — via `Bash`, scoped to that o
 - Never a command that could mutate code, install dependencies, or touch anything beyond the test process.
 - If the exact single-test invocation isn't determinable from the Task Packet and Platform Profile, raise
   that as an Issue rather than guessing a broader command.
-- **Test output stays out of your context.** Send it to a file, never straight to you:
+- **Long output stays out of your context** — tests, and any build or lint you run. Send it to a file,
+  never straight to you:
   `<command> > <log dir>/<name>.log 2>&1; echo "exit=$?"`, where `<log dir>` is the gate log directory
   the packet names, else your session scratchpad (full path). Read the runner's summary lines
   (`tail -n 40`), then `grep` for the failing test names, `FAIL` and `error`, with a few lines around
